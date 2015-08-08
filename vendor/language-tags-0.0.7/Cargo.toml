@@ -1,0 +1,9 @@
+[package]
+name = "language-tags"
+version = "0.0.7"
+authors = ["Pyfisch <pyfisch@gmail.com>"]
+exclude = ["README.md", ".travis.yml", ".gitignore"]
+
+description = "Language tags for Rust"
+license = "MIT"
+repository = "https://github.com/pyfisch/rust-language-tags"

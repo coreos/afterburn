@@ -1,0 +1,20 @@
+[package]
+
+name = "log"
+version = "0.3.1"
+authors = ["The Rust Project Developers"]
+license = "MIT/Apache-2.0"
+readme = "README.md"
+repository = "https://github.com/rust-lang/log"
+documentation = "http://doc.rust-lang.org/log"
+homepage = "https://github.com/rust-lang/log"
+description = """
+A lightweight logging facade for Rust
+"""
+
+[[test]]
+name = "filters"
+harness = false
+
+[dependencies]
+libc = "0.1"
