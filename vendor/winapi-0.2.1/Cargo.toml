@@ -10,25 +10,25 @@ keywords = ["Windows", "FFI", "WinSDK"]
 license = "MIT"
 
 [dev-dependencies]
-advapi32-sys = { version = "*", path = "lib/advapi32-sys" }
-crypt32-sys = { version = "*", path = "lib/crypt32-sys" }
-d3d9-sys = { version = "*", path = "lib/d3d9-sys" }
-dbghelp-sys = { version = "*", path = "lib/dbghelp-sys" }
-dsound-sys = { version = "*", path = "lib/dsound-sys" }
-dwmapi-sys = { version = "*", path = "lib/dwmapi-sys" }
-gdi32-sys = { version = "*", path = "lib/gdi32-sys" }
-kernel32-sys = { version = "*", path = "lib/kernel32-sys" }
-ktmw32-sys = { version = "*", path = "lib/ktmw32-sys" }
-mpr-sys = { version = "*", path = "lib/mpr-sys" }
-ole32-sys = { version = "*", path = "lib/ole32-sys" }
-opengl32-sys = { version = "*", path = "lib/opengl32-sys" }
-psapi-sys = { version = "*", path = "lib/psapi-sys" }
-secur32-sys = { version = "*", path = "lib/secur32-sys" }
-shell32-sys = { version = "*", path = "lib/shell32-sys" }
-user32-sys = { version = "*", path = "lib/user32-sys" }
-usp10-sys = { version = "*", path = "lib/usp10-sys" }
-uuid-sys = { version = "*", path = "lib/uuid-sys" }
-vssapi-sys = { version = "*", path = "lib/vssapi-sys" }
-winmm-sys = { version = "*", path = "lib/winmm-sys" }
-winspool-sys = { version = "*", path = "lib/winspool-sys" }
-xinput-sys = { version = "*", path = "lib/xinput-sys" }
+advapi32-sys = "*"
+crypt32-sys = "*"
+d3d9-sys = "*"
+dbghelp-sys = "*"
+dsound-sys = "*"
+dwmapi-sys = "*"
+gdi32-sys = "*"
+kernel32-sys = "*"
+ktmw32-sys = "*"
+mpr-sys = "*"
+ole32-sys = "*"
+opengl32-sys = "*"
+psapi-sys = "*"
+secur32-sys = "*"
+shell32-sys = "*"
+user32-sys = "*"
+usp10-sys = "*"
+uuid-sys = "*"
+vssapi-sys = "*"
+winmm-sys = "*"
+winspool-sys = "*"
+xinput-sys = "*"

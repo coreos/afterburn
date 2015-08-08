@@ -22,9 +22,9 @@ documentation = "https://mlalic.github.io/hpack-rs/hpack/index.html"
 # headers encoded by other libraries. It is only ever used in test builds!
 interop_tests = ["rustc-serialize"]
 
-[dependencies]
-log = "^0.3"
+[dependencies.log]
+path = "../log-0.3.1"
 
 [dependencies.rustc-serialize]
-version = "^0.3"
+path = "../rustc-serialize-0.3.15"
 optional = true

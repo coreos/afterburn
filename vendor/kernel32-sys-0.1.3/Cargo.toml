@@ -14,7 +14,8 @@ links = "kernel32"
 [lib]
 name = "kernel32"
 
-[dependencies]
-winapi = { version = "*", path = "../.." }
-[build-dependencies]
-winapi-build = { version = "*", path = "../../build" }
+[dependencies.winapi]
+path = "../winapi-0.2.1"
+
+[build-dependencies.winapi-build]
+path = "../winapi-build-0.1.1"

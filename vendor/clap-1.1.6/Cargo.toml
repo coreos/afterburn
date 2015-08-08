@@ -24,9 +24,9 @@ unstable=[]
 debug=[]
 
 [dependencies.strsim]
-version = "0.4.0"
+path = "../strsim-0.4.0"
 optional = true
 
 [dependencies.ansi_term]
-version = "0.6.3"
+path = "../ansi_term-0.6.3"
 optional = true

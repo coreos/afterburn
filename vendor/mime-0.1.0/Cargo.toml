@@ -9,8 +9,8 @@ documentation = "http://hyperium.github.io/mime.rs"
 repository = "https://github.com/hyperium/mime.rs"
 keywords = ["mime", "media-extensions", "media types"]
 
-[dependencies]
-log = "*"
+[dependencies.log]
+path = "../log-0.3.1"
 
 [features]
 nightly = []

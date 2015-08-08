@@ -8,5 +8,5 @@ license = "MIT"
 repository = "https://github.com/seanmonstar/num_cpus"
 
 
-[dependencies]
-libc = "0.1.7"
+[dependencies.libc]
+path = "../libc-0.1.8"

@@ -21,18 +21,11 @@ aes_xts = []
 npn = []
 alpn = []
 
-[dependencies]
-libc = "0.1"
+[dependencies.libc]
+path = "../libc-0.1.8"
 
-[build-dependencies]
-pkg-config = "0.3"
-gcc = "0.3"
+[build-dependencies.pkg-config]
+path = "../pkg-config-0.3.5"
 
-[target.le32-unknown-nacl.dependencies]
-libressl-pnacl-sys = "2.1.0"
-[target.x86_64-unknown-nacl.dependencies]
-libressl-pnacl-sys = "2.1.0"
-[target.i686-unknown-nacl.dependencies]
-libressl-pnacl-sys = "2.1.0"
-[target.arm-unknown-nacl.dependencies]
-libressl-pnacl-sys = "2.1.0"
+[build-dependencies.gcc]
+path = "../gcc-0.3.12"

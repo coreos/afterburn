@@ -16,5 +16,5 @@ A lightweight logging facade for Rust
 name = "filters"
 harness = false
 
-[dependencies]
-libc = "0.1"
+[dependencies.libc]
+path = "../libc-0.1.8"

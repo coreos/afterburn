@@ -20,13 +20,16 @@ npn = ["openssl-sys/npn"]
 alpn = ["openssl-sys/alpn"]
 
 [dependencies.openssl-sys]
-path = "../openssl-sys"
-version = "0.6.4"
+path = "../openssl-sys-0.6.4"
 
-[dependencies]
-bitflags = ">= 0.2, < 0.4"
-lazy_static = "0.1"
-libc = "0.1"
+[dependencies.bitflags ]
+path = "../bitflags-0.3.2"
+
+[dependencies.lazy_static ]
+path = "../lazy_static-0.1.14"
+
+[dependencies.libc ]
+path = "../libc-0.1.8"
 
 [dev-dependencies]
 rustc-serialize = "0.3"

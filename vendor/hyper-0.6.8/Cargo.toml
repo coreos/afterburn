@@ -11,29 +11,49 @@ authors = ["Sean McArthur <sean.monstar@gmail.com>",
            "Jonathan Reem <jonathan.reem@gmail.com>"]
 keywords = ["http", "hyper", "hyperium"]
 
-[dependencies]
-httparse = "0.1"
-language-tags = "0.0.7"
-log = "0.3"
-mime = "0.1"
-num_cpus = "0.2"
-rustc-serialize = "0.3"
-time = "0.1"
-traitobject = "0.0.1"
-typeable = "0.1"
-unicase = "0.1"
-url = "0.2"
+[dependencies.httparse]
+path = "../httparse-0.1.5"
+
+[dependencies.language-tags]
+path = "../language-tags-0.0.7"
+
+[dependencies.log]
+path = "../log-0.3.1"
+
+[dependencies.mime]
+path = "../mime-0.1.0"
+
+[dependencies.num_cpus]
+path = "../num_cpus-0.2.6"
+
+[dependencies.rustc-serialize]
+path = "../rustc-serialize-0.3.15"
+
+[dependencies.time]
+path = "../time-0.1.32"
+
+[dependencies.traitobject]
+path = "../traitobject-0.0.1"
+
+[dependencies.typeable]
+path = "../typeable-0.1.2"
+
+[dependencies.unicase]
+path = "../unicase-0.1.0"
+
+[dependencies.url]
+path = "../url-0.2.36"
 
 [dependencies.cookie]
-version = "0.1"
+path = "../cookie-0.1.21"
 default-features = false
 
 [dependencies.openssl]
-version = "0.6.4"
+path = "../openssl-0.6.4"
 optional = true
 
 [dependencies.solicit]
-version = "0.4"
+path = "../solicit-0.4.1"
 default-features = false
 
 [dependencies.serde]

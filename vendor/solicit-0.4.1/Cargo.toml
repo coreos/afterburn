@@ -12,12 +12,14 @@ license = "MIT"
 keywords = ["http2", "protocol", "solicit"]
 documentation = "https://mlalic.github.io/solicit/solicit/index.html"
 
-[dependencies]
-hpack = "*"
-log = "^0.3"
+[dependencies.hpack]
+path = "../hpack-0.2.0"
+
+[dependencies.log]
+path = "../log-0.3.1"
 
 [dependencies.openssl]
-version = "*"
+path = "../openssl-0.6.4"
 features = ["tlsv1_2", "npn"]
 optional = true
 
