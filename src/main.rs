@@ -20,6 +20,7 @@ extern crate hyper;
 
 use clap::{App, Arg};
 use hyper::Client;
+use hyper::client::Response;
 use std::error::Error;
 use std::{fmt, fs, io};
 use std::fs::File;
@@ -28,6 +29,7 @@ use std::path::PathBuf;
 use std::process::exit;
 use std::net::Ipv4Addr;
 use std::str::FromStr;
+use std::thread::sleep_ms;
 
 arg_enum!{
     enum Provider {
@@ -99,8 +101,30 @@ fn parse_flags() -> (Provider, PathBuf) {
 }
 
 fn fetch_metadata(provider: Provider) -> Result<Metadata, MetadataError> {
+    fn get_with_retry(client: &Client, url: &str) -> Result<Response, MetadataError> {
+        for attempt in 0..10 {
+            writeln!(stderr(), "GET '{}': Attempt {}", url, attempt).unwrap();
+            match client.get(url).send() {
+                Ok(response) => return Ok(response),
+                Err(e) => writeln!(stderr(), "error: {:?}", e).unwrap()
+            };
+            let delay = {
+                let delay = (2 as u32).pow(attempt) * 100;
+                if delay > 1000 { 1000 } else { delay }
+            };
+            writeln!(stderr(), "sleeping {}ms", delay).unwrap();
+            sleep_ms(delay);
+        }
+
+        Err(MetadataError{
+            description: format!("timed out while fetching '{}'", url),
+            cause: None
+        })
+    }
+
     fn fetch_string(client: &Client, url: &'static str) -> Result<String, MetadataError> {
-        let mut response = try!(client.get(url).send());
+        let mut response = try!(get_with_retry(client, url));
+
         if response.status.is_success() {
             let mut value = String::new();
             try!(response.read_to_string(&mut value));
