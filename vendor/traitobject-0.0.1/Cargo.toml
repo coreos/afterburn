@@ -1,0 +1,10 @@
+[package]
+
+name = "traitobject"
+version = "0.0.1"
+authors = ["Jonathan Reem <jonathan.reem@gmail.com>"]
+repository = "https://github.com/reem/rust-traitobject.git"
+description = "Unsafe helpers for working with raw trait objects."
+readme = "README.md"
+license = "MIT"
+

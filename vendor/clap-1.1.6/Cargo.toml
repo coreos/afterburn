@@ -1,0 +1,32 @@
+[package]
+
+name = "clap"
+version = "1.1.6"
+authors = ["Kevin K. <kbknapp@gmail.com>"]
+exclude = ["examples/*", "clap-tests/*"]
+description = "A simple to use, efficient, and full featured  Command Line Argument Parser"
+repository = "https://github.com/kbknapp/clap-rs.git"
+documentation = "http://kbknapp.github.io/clap-rs"
+readme = "README.md"
+license = "MIT"
+keywords = ["argument", "command", "arg", "parser", "parse"]
+
+
+[features]
+default=["suggestions", "color"]
+suggestions=["strsim"]
+color = ["ansi_term"]
+
+# for building with nightly and unstable features
+unstable=[]
+
+# for building with debug messages
+debug=[]
+
+[dependencies.strsim]
+path = "../strsim-0.4.0"
+optional = true
+
+[dependencies.ansi_term]
+path = "../ansi_term-0.6.3"
+optional = true

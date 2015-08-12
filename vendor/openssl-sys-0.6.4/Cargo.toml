@@ -1,0 +1,31 @@
+[package]
+name = "openssl-sys"
+version = "0.6.4"
+authors = ["Alex Crichton <alex@alexcrichton.com>",
+           "Steven Fackler <sfackler@gmail.com>"]
+license = "MIT"
+description = "FFI bindings to OpenSSL"
+repository = "https://github.com/sfackler/rust-openssl"
+documentation = "https://sfackler.github.io/rust-openssl/doc/v0.6.4/openssl_sys"
+
+links = "openssl"
+build = "build.rs"
+
+[features]
+tlsv1_2 = []
+tlsv1_1 = []
+dtlsv1 = []
+dtlsv1_2 = []
+sslv2 = []
+aes_xts = []
+npn = []
+alpn = []
+
+[dependencies.libc]
+path = "../libc-0.1.8"
+
+[build-dependencies.pkg-config]
+path = "../pkg-config-0.3.5"
+
+[build-dependencies.gcc]
+path = "../gcc-0.3.12"

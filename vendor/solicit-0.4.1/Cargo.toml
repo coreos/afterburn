@@ -1,0 +1,28 @@
+[package]
+
+name = "solicit"
+version = "0.4.1"
+authors = ["Marko Lalic <marko.lalic@gmail.com>"]
+
+description = "A library implementation of HTTP/2"
+repository = "https://github.com/mlalic/solicit"
+homepage = "https://github.com/mlalic/solicit"
+readme = "README.md"
+license = "MIT"
+keywords = ["http2", "protocol", "solicit"]
+documentation = "https://mlalic.github.io/solicit/solicit/index.html"
+
+[dependencies.hpack]
+path = "../hpack-0.2.0"
+
+[dependencies.log]
+path = "../log-0.3.1"
+
+[dependencies.openssl]
+path = "../openssl-0.6.4"
+features = ["tlsv1_2", "npn"]
+optional = true
+
+[features]
+live_tests = []
+tls = ["openssl", "openssl/tlsv1_2", "openssl/npn"]

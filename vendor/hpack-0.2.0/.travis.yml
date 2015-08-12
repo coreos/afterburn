@@ -1,0 +1,15 @@
+language: rust
+script: cargo test --features "interop_tests"
+
+after_success: |
+  [ $TRAVIS_BRANCH = master ] &&
+  [ $TRAVIS_PULL_REQUEST = false ] &&
+  cargo doc &&
+  echo "<meta http-equiv=refresh content=0;url=hpack/index.html>" > target/doc/index.html &&
+  sudo pip install ghp-import &&
+  ghp-import -n target/doc &&
+  git push -fq https://${GH_TOKEN}@github.com/${TRAVIS_REPO_SLUG}.git gh-pages
+
+env:
+  global:
+    secure: HmpHD+2T5ZBPHcFfY4TVQtdjLsqENXIzn08WM4ZlE+XkQD8afToNN1dqKNm/jrFrCNkk4r6cU7PQFtuteJDTpeu/XbUb8eSmfmtECpxVJQfMDdgbzfEG5ZpNaU/nQLmU61/T7KLK9AsDbebX4sV+V5VfddXwJ0jt2bZlHd7DxOQ=
