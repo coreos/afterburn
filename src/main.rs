@@ -31,6 +31,8 @@ use std::net::Ipv4Addr;
 use std::str::FromStr;
 use std::thread::sleep_ms;
 
+const MAX_FETCH_DELAY_MS: u32 = 1000;
+
 arg_enum!{
     enum Provider {
         EC2
@@ -100,57 +102,54 @@ fn parse_flags() -> (Provider, PathBuf) {
     )
 }
 
-fn fetch_metadata(provider: Provider) -> Result<Metadata, MetadataError> {
-    fn get_with_retry(client: &Client, url: &str) -> Result<Response, MetadataError> {
-        for attempt in 0..10 {
-            writeln!(stderr(), "GET '{}': Attempt {}", url, attempt).unwrap();
-            match client.get(url).send() {
-                Ok(response) => return Ok(response),
-                Err(e) => writeln!(stderr(), "error: {:?}", e).unwrap()
-            };
-            let delay = {
-                let delay = (2 as u32).pow(attempt) * 100;
-                if delay > 1000 { 1000 } else { delay }
-            };
-            writeln!(stderr(), "sleeping {}ms", delay).unwrap();
-            sleep_ms(delay);
-        }
+fn get_with_retry(client: &Client, url: &str) -> Result<Response, MetadataError> {
+    for attempt in 0..10 {
+        writeln!(stderr(), "GET '{}': Attempt {}", url, attempt).unwrap();
+        match client.get(url).send() {
+            Ok(response) => return Ok(response),
+            Err(e) => writeln!(stderr(), "error: {:?}", e).unwrap()
+        };
+        let delay = std::cmp::max((2u32).pow(attempt) * 100, MAX_FETCH_DELAY_MS);
+        writeln!(stderr(), "sleeping {}ms", delay).unwrap();
+        sleep_ms(delay);
+    }
 
+    Err(MetadataError{
+        description: format!("timed out while fetching '{}'", url),
+        cause: None
+    })
+}
+
+fn fetch_string(client: &Client, url: &'static str) -> Result<String, MetadataError> {
+    let mut response = try!(get_with_retry(client, url));
+
+    if response.status.is_success() {
+        let mut value = String::new();
+        try!(response.read_to_string(&mut value));
+        Ok(value)
+    } else {
         Err(MetadataError{
-            description: format!("timed out while fetching '{}'", url),
+            description: match response.status.canonical_reason() {
+                Some(reason) => reason.to_string(),
+                None => format!("unknown HTTP failure ({})", response.status)
+            },
             cause: None
         })
     }
+}
 
-    fn fetch_string(client: &Client, url: &'static str) -> Result<String, MetadataError> {
-        let mut response = try!(get_with_retry(client, url));
-
-        if response.status.is_success() {
-            let mut value = String::new();
-            try!(response.read_to_string(&mut value));
-            Ok(value)
-        } else {
-            Err(MetadataError{
-                description: match response.status.canonical_reason() {
-                    Some(reason) => reason.to_string(),
-                    None => format!("unknown HTTP failure ({})", response.status)
-                },
-                cause: None
-            })
-        }
+fn fetch_ipv4(client: &Client, url: &'static str) -> Result<Ipv4Addr, MetadataError> {
+    let response = try!(fetch_string(client, url));
+    match Ipv4Addr::from_str(&response) {
+        Ok(ip) => Ok(ip),
+        Err(_) => Err(MetadataError{
+            description: format!("could not parse '{}' as IPv4 address", response),
+            cause: None
+        })
     }
+}
 
-    fn fetch_ipv4(client: &Client, url: &'static str) -> Result<Ipv4Addr, MetadataError> {
-        let response = try!(fetch_string(client, url));
-        match Ipv4Addr::from_str(&response[..]) {
-            Ok(ip) => Ok(ip),
-            Err(_) => Err(MetadataError{
-                description: format!("could not parse '{}' as IPv4 address", response),
-                cause: None
-            })
-        }
-    }
-
+fn fetch_metadata(provider: Provider) -> Result<Metadata, MetadataError> {
     match provider {
         Provider::EC2 => {
             let client = Client::new();
