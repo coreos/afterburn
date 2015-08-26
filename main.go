@@ -162,14 +162,14 @@ func fetchMetadata(provider string) (metadata, error) {
 }
 
 func writeIPVariable(out *os.File, key string, value net.IP) error {
-	if value.Equal(net.IPv4zero) || value.Equal(net.IPv6zero) {
+	if len(value) == 0 {
 		return nil
 	}
 	return writeVariable(out, key, value)
 }
 
 func writeStringVariable(out *os.File, key, value string) error {
-	if value == "" {
+	if len(value) == 0 {
 		return nil
 	}
 	return writeVariable(out, key, value)
