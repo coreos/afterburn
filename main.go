@@ -103,8 +103,8 @@ func main() {
 	}
 	defer out.Close()
 
-	if metadata, err := fetch_metadata(flags.provider); err == nil {
-		if err := write_metadata(out, metadata); err != nil {
+	if metadata, err := fetchMetadata(flags.provider); err == nil {
+		if err := writeMetadata(out, metadata); err != nil {
 			fmt.Fprintf(os.Stderr, "failed to write metadata: %v\n", err)
 			os.Exit(1)
 		}
@@ -114,7 +114,7 @@ func main() {
 	}
 }
 
-func fetch_string(url string) (string, error) {
+func fetchString(url string) (string, error) {
 	body, err := retryClient{
 		InitialBackoff: time.Second,
 		MaxBackoff:     time.Second * 5,
@@ -123,8 +123,8 @@ func fetch_string(url string) (string, error) {
 	return string(body), err
 }
 
-func fetch_ip(url string) (net.IP, error) {
-	str, err := fetch_string(url)
+func fetchIP(url string) (net.IP, error) {
+	str, err := fetchString(url)
 	if err != nil {
 		return nil, err
 	}
@@ -135,18 +135,18 @@ func fetch_ip(url string) (net.IP, error) {
 	}
 }
 
-func fetch_metadata(provider string) (metadata, error) {
+func fetchMetadata(provider string) (metadata, error) {
 	switch provider {
 	case "ec2":
-		public, err := fetch_ip("http://169.254.169.254/2009-04-04/meta-data/public-ipv4")
+		public, err := fetchIP("http://169.254.169.254/2009-04-04/meta-data/public-ipv4")
 		if err != nil {
 			return metadata{}, err
 		}
-		local, err := fetch_ip("http://169.254.169.254/2009-04-04/meta-data/local-ipv4")
+		local, err := fetchIP("http://169.254.169.254/2009-04-04/meta-data/local-ipv4")
 		if err != nil {
 			return metadata{}, err
 		}
-		hostname, err := fetch_string("http://169.254.169.254/2009-04-04/meta-data/hostname")
+		hostname, err := fetchString("http://169.254.169.254/2009-04-04/meta-data/hostname")
 		if err != nil {
 			return metadata{}, err
 		}
@@ -161,33 +161,33 @@ func fetch_metadata(provider string) (metadata, error) {
 	}
 }
 
-func write_ip_variable(out *os.File, key string, value net.IP) error {
+func writeIPVariable(out *os.File, key string, value net.IP) error {
 	if value.Equal(net.IPv4zero) || value.Equal(net.IPv6zero) {
 		return nil
 	}
-	return write_variable(out, key, value)
+	return writeVariable(out, key, value)
 }
 
-func write_string_variable(out *os.File, key, value string) error {
+func writeStringVariable(out *os.File, key, value string) error {
 	if value == "" {
 		return nil
 	}
-	return write_variable(out, key, value)
+	return writeVariable(out, key, value)
 }
 
-func write_variable(out *os.File, key string, value interface{}) error {
+func writeVariable(out *os.File, key string, value interface{}) error {
 	_, err := fmt.Fprintf(out, "%s=%s\n", key, value)
 	return err
 }
 
-func write_metadata(out *os.File, metadata metadata) error {
-	if err := write_ip_variable(out, "COREOS_IPV4_PUBLIC", metadata.PublicIPv4); err != nil {
+func writeMetadata(out *os.File, metadata metadata) error {
+	if err := writeIPVariable(out, "COREOS_IPV4_PUBLIC", metadata.PublicIPv4); err != nil {
 		return err
 	}
-	if err := write_ip_variable(out, "COREOS_IPV4_LOCAL", metadata.LocalIPv4); err != nil {
+	if err := writeIPVariable(out, "COREOS_IPV4_LOCAL", metadata.LocalIPv4); err != nil {
 		return err
 	}
-	if err := write_string_variable(out, "COREOS_HOSTNAME", metadata.Hostname); err != nil {
+	if err := writeStringVariable(out, "COREOS_HOSTNAME", metadata.Hostname); err != nil {
 		return err
 	}
 	return nil
