@@ -17,54 +17,18 @@ package main
 import (
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"net"
-	"net/http"
 	"os"
 	"path"
-	"time"
+
+	"github.com/coreos/coreos-metadata/src/config"
+	"github.com/coreos/coreos-metadata/src/providers/ec2"
 )
 
 var (
 	version       = "was not built properly"
 	versionString = fmt.Sprintf("coreos-metadata %s", version)
 )
-
-type metadata struct {
-	PublicIPv4 net.IP
-	LocalIPv4  net.IP
-	Hostname   string
-}
-
-type retryClient struct {
-	InitialBackoff time.Duration
-	MaxBackoff     time.Duration
-	MaxAttempts    int
-}
-
-func (c retryClient) Get(url string) ([]byte, error) {
-	delay := c.InitialBackoff
-	for attempt := 1; attempt <= c.MaxAttempts; attempt++ {
-		fmt.Printf("fetching %q: attempt #%d\n", url, attempt)
-
-		if response, err := http.Get(url); err != nil {
-			fmt.Printf("failed to fetch: %v\n", err)
-		} else if response.StatusCode != http.StatusOK {
-			fmt.Printf("failed to fetch: %s\n", http.StatusText(response.StatusCode))
-		} else {
-			defer response.Body.Close()
-			return ioutil.ReadAll(response.Body)
-		}
-
-		time.Sleep(delay)
-		delay *= 2
-		if delay > c.MaxBackoff {
-			delay = c.MaxBackoff
-		}
-	}
-
-	return nil, fmt.Errorf("timed out while fetching %q", url)
-}
 
 func main() {
 	flags := struct {
@@ -114,48 +78,10 @@ func main() {
 	}
 }
 
-func fetchString(url string) (string, error) {
-	body, err := retryClient{
-		InitialBackoff: time.Second,
-		MaxBackoff:     time.Second * 5,
-		MaxAttempts:    10,
-	}.Get(url)
-	return string(body), err
-}
-
-func fetchIP(url string) (net.IP, error) {
-	str, err := fetchString(url)
-	if err != nil {
-		return nil, err
-	}
-	if ip := net.ParseIP(str); ip != nil {
-		return ip, nil
-	} else {
-		return nil, fmt.Errorf("couldn't parse %q as IP address", str)
-	}
-}
-
-func fetchMetadata(provider string) (metadata, error) {
+func fetchMetadata(provider string) (config.Metadata, error) {
 	switch provider {
 	case "ec2":
-		public, err := fetchIP("http://169.254.169.254/2009-04-04/meta-data/public-ipv4")
-		if err != nil {
-			return metadata{}, err
-		}
-		local, err := fetchIP("http://169.254.169.254/2009-04-04/meta-data/local-ipv4")
-		if err != nil {
-			return metadata{}, err
-		}
-		hostname, err := fetchString("http://169.254.169.254/2009-04-04/meta-data/hostname")
-		if err != nil {
-			return metadata{}, err
-		}
-
-		return metadata{
-			PublicIPv4: public,
-			LocalIPv4:  local,
-			Hostname:   hostname,
-		}, nil
+		return ec2.FetchMetadata()
 	default:
 		panic("bad provider")
 	}
@@ -180,7 +106,7 @@ func writeVariable(out *os.File, key string, value interface{}) error {
 	return err
 }
 
-func writeMetadata(out *os.File, metadata metadata) error {
+func writeMetadata(out *os.File, metadata config.Metadata) error {
 	if err := writeIPVariable(out, "COREOS_IPV4_PUBLIC", metadata.PublicIPv4); err != nil {
 		return err
 	}
