@@ -22,6 +22,7 @@ import (
 	"path"
 
 	"github.com/coreos/coreos-metadata/src/config"
+	"github.com/coreos/coreos-metadata/src/providers/azure"
 	"github.com/coreos/coreos-metadata/src/providers/ec2"
 )
 
@@ -49,7 +50,7 @@ func main() {
 	}
 
 	switch flags.provider {
-	case "ec2":
+	case "ec2", "azure":
 	default:
 		fmt.Fprintf(os.Stderr, "invalid provider %q\n", flags.provider)
 		os.Exit(2)
@@ -82,6 +83,8 @@ func fetchMetadata(provider string) (config.Metadata, error) {
 	switch provider {
 	case "ec2":
 		return ec2.FetchMetadata()
+	case "azure":
+		return azure.FetchMetadata()
 	default:
 		panic("bad provider")
 	}
