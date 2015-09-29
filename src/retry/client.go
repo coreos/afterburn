@@ -44,3 +44,7 @@ func (c Client) Get(url string) ([]byte, error) {
 
 	return nil, fmt.Errorf("timed out while fetching %q", url)
 }
+
+func (c Client) Getf(format string, a ...interface{}) ([]byte, error) {
+	return c.Get(fmt.Sprintf(format, a...))
+}
