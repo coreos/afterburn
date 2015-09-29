@@ -32,19 +32,16 @@ func FetchMetadata() (config.Metadata, error) {
 	return fetchSharedConfig(addr)
 }
 
-func getClient(setAgent bool) retry.Client {
+func getClient() retry.Client {
 	client := retry.Client{
 		InitialBackoff: time.Second,
 		MaxBackoff:     time.Second * 5,
 		MaxAttempts:    10,
-	}
-
-	if setAgent {
-		client.Header = map[string][]string{
+		Header: map[string][]string{
 			"x-ms-agent-name": {AgentName},
 			"x-ms-version":    {FabricProtocolVersion},
 			"Content-Type":    {"text/xml; charset=utf-8"},
-		}
+		},
 	}
 
 	return client
@@ -104,7 +101,7 @@ func getFabricAddress() (net.IP, error) {
 }
 
 func assertFabricCompatible(endpoint net.IP, desiredVersion string) error {
-	body, err := getClient(false).Getf("http://%s/?comp=versions", endpoint)
+	body, err := getClient().Getf("http://%s/?comp=versions", endpoint)
 	if err != nil {
 		return fmt.Errorf("failed to fetch versions: %v", err)
 	}
@@ -132,7 +129,7 @@ func assertFabricCompatible(endpoint net.IP, desiredVersion string) error {
 }
 
 func fetchSharedConfig(endpoint net.IP) (config.Metadata, error) {
-	client := getClient(true)
+	client := getClient()
 
 	body, err := client.Getf("http://%s/machine/?comp=goalstate", endpoint)
 	if err != nil {
