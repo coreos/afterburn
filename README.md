@@ -13,5 +13,8 @@ The supported cloud providers and their respective metadata are as follows:
    - COREOS_IPV4_LOCAL
    - COREOS_IPV4_PUBLIC
    - COREOS_HOSTNAME
+ - azure
+   - COREOS_IPV4_LOCAL
+   - COREOS_IPV4_PUBLIC
 
 [ignition]: https://github.com/coreos/ignition
