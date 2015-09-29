@@ -90,7 +90,7 @@ func assertFabricCompatible(endpoint net.IP, desiredVersion string) error {
 		InitialBackoff: time.Second,
 		MaxBackoff:     time.Second * 5,
 		MaxAttempts:    10,
-	}.Get(fmt.Sprintf("http://%s/?comp=versions", endpoint))
+	}.Getf("http://%s/?comp=versions", endpoint)
 	if err != nil {
 		return fmt.Errorf("failed to fetch versions: %v", err)
 	}
@@ -129,7 +129,7 @@ func fetchSharedConfig(endpoint net.IP) (config.Metadata, error) {
 		},
 	}
 
-	body, err := client.Get(fmt.Sprintf("http://%s/machine/?comp=goalstate", endpoint))
+	body, err := client.Getf("http://%s/machine/?comp=goalstate", endpoint)
 	if err != nil {
 		return config.Metadata{}, fmt.Errorf("failed to fetch goal state: %v", err)
 	}
