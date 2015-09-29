@@ -10,15 +10,15 @@ import (
 )
 
 func FetchMetadata() (config.Metadata, error) {
-	public, err := fetchIP("http://169.254.169.254/2009-04-04/meta-data/public-ipv4")
+	public, err := fetchIP("public-ipv4")
 	if err != nil {
 		return config.Metadata{}, err
 	}
-	local, err := fetchIP("http://169.254.169.254/2009-04-04/meta-data/local-ipv4")
+	local, err := fetchIP("local-ipv4")
 	if err != nil {
 		return config.Metadata{}, err
 	}
-	hostname, err := fetchString("http://169.254.169.254/2009-04-04/meta-data/hostname")
+	hostname, err := fetchString("hostname")
 	if err != nil {
 		return config.Metadata{}, err
 	}
@@ -30,17 +30,17 @@ func FetchMetadata() (config.Metadata, error) {
 	}, nil
 }
 
-func fetchString(url string) (string, error) {
+func fetchString(key string) (string, error) {
 	body, err := retry.Client{
 		InitialBackoff: time.Second,
 		MaxBackoff:     time.Second * 5,
 		MaxAttempts:    10,
-	}.Get(url)
+	}.Get("http://169.254.169.254/2009-04-04/meta-data/" + key)
 	return string(body), err
 }
 
-func fetchIP(url string) (net.IP, error) {
-	str, err := fetchString(url)
+func fetchIP(key string) (net.IP, error) {
+	str, err := fetchString(key)
 	if err != nil {
 		return nil, err
 	}
