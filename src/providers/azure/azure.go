@@ -32,6 +32,24 @@ func FetchMetadata() (config.Metadata, error) {
 	return fetchSharedConfig(addr)
 }
 
+func getClient(setAgent bool) retry.Client {
+	client := retry.Client{
+		InitialBackoff: time.Second,
+		MaxBackoff:     time.Second * 5,
+		MaxAttempts:    10,
+	}
+
+	if setAgent {
+		client.Header = map[string][]string{
+			"x-ms-agent-name": {AgentName},
+			"x-ms-version":    {FabricProtocolVersion},
+			"Content-Type":    {"text/xml; charset=utf-8"},
+		}
+	}
+
+	return client
+}
+
 func findLease() (*os.File, error) {
 	ifaces, err := net.Interfaces()
 	if err != nil {
@@ -86,11 +104,7 @@ func getFabricAddress() (net.IP, error) {
 }
 
 func assertFabricCompatible(endpoint net.IP, desiredVersion string) error {
-	body, err := retry.Client{
-		InitialBackoff: time.Second,
-		MaxBackoff:     time.Second * 5,
-		MaxAttempts:    10,
-	}.Getf("http://%s/?comp=versions", endpoint)
+	body, err := getClient(false).Getf("http://%s/?comp=versions", endpoint)
 	if err != nil {
 		return fmt.Errorf("failed to fetch versions: %v", err)
 	}
@@ -118,16 +132,7 @@ func assertFabricCompatible(endpoint net.IP, desiredVersion string) error {
 }
 
 func fetchSharedConfig(endpoint net.IP) (config.Metadata, error) {
-	client := retry.Client{
-		InitialBackoff: time.Second,
-		MaxBackoff:     time.Second * 5,
-		MaxAttempts:    10,
-		Header: map[string][]string{
-			"x-ms-agent-name": {AgentName},
-			"x-ms-version":    {FabricProtocolVersion},
-			"Content-Type":    {"text/xml; charset=utf-8"},
-		},
-	}
+	client := getClient(true)
 
 	body, err := client.Getf("http://%s/machine/?comp=goalstate", endpoint)
 	if err != nil {
