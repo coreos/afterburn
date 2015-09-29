@@ -11,6 +11,7 @@ type Client struct {
 	InitialBackoff time.Duration
 	MaxBackoff     time.Duration
 	MaxAttempts    int
+	Header         http.Header
 }
 
 func (c Client) Get(url string) ([]byte, error) {
@@ -18,7 +19,14 @@ func (c Client) Get(url string) ([]byte, error) {
 	for attempt := 1; attempt <= c.MaxAttempts; attempt++ {
 		fmt.Printf("fetching %q: attempt #%d\n", url, attempt)
 
-		if response, err := http.Get(url); err != nil {
+		request, err := http.NewRequest("GET", url, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		request.Header = c.Header
+
+		if response, err := (&http.Client{}).Do(request); err != nil {
 			fmt.Printf("failed to fetch: %v\n", err)
 		} else if response.StatusCode != http.StatusOK {
 			fmt.Printf("failed to fetch: %s\n", http.StatusText(response.StatusCode))
