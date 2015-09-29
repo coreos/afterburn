@@ -1,0 +1,33 @@
+#!/bin/bash -eu
+
+source ./build
+
+SRC="
+	src
+	src/config
+	src/providers/azure
+	src/providers/ec2
+	src/retry
+"
+
+echo "Checking gofix..."
+go tool fix -diff $SRC
+
+echo "Checking gofmt..."
+res=$(gofmt -d -e -s $SRC)
+echo "${res}"
+if [ -n "${res}" ]; then
+	exit 1
+fi
+
+# split SRC into an array and prepend REPO_PATH to each local package for go vet
+split_vet=(${SRC// / })
+VET_TEST=${split_vet[@]/#/${REPO_PATH}/}
+
+echo "Checking govet..."
+go vet $VET_TEST
+
+echo "Running tests..."
+go test -timeout 60s -cover $@ ${VET_TEST} --race
+
+echo "Success"

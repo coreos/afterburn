@@ -8,4 +8,4 @@ matrix:
     - go: 1.5
 
 script:
- - ./build
+ - ./test
