@@ -17,9 +17,11 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"net"
 	"os"
 	"path"
+	"strings"
 
 	"github.com/coreos/coreos-metadata/src/config"
 	"github.com/coreos/coreos-metadata/src/providers/azure"
@@ -31,13 +33,20 @@ var (
 	versionString = fmt.Sprintf("coreos-metadata %s", version)
 )
 
+const (
+	cmdlinePath    = "/proc/cmdline"
+	cmdlineOEMFlag = "coreos.oem.id"
+)
+
 func main() {
 	flags := struct {
+		cmdline  bool
 		provider string
 		output   string
 		version  bool
 	}{}
 
+	flag.BoolVar(&flags.cmdline, "cmdline", false, "Read the cloud provider from the kernel cmdline")
 	flag.StringVar(&flags.provider, "provider", "", "The name of the cloud provider")
 	flag.StringVar(&flags.output, "output", "", "The file into which the metadata is written")
 	flag.BoolVar(&flags.version, "version", false, "Print the version and exit")
@@ -47,6 +56,16 @@ func main() {
 	if flags.version {
 		fmt.Println(versionString)
 		return
+	}
+
+	if flags.cmdline && flags.provider == "" {
+		args, err := ioutil.ReadFile(cmdlinePath)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "could not read cmdline: %v\n", err)
+			os.Exit(2)
+		}
+
+		flags.provider = parseCmdline(args)
 	}
 
 	switch flags.provider {
@@ -77,6 +96,23 @@ func main() {
 		fmt.Fprintf(os.Stderr, "failed to fetch metadata: %v\n", err)
 		os.Exit(1)
 	}
+}
+
+func parseCmdline(cmdline []byte) (oem string) {
+	for _, arg := range strings.Split(string(cmdline), " ") {
+		parts := strings.SplitN(strings.TrimSpace(arg), "=", 2)
+		key := parts[0]
+
+		if key != cmdlineOEMFlag {
+			continue
+		}
+
+		if len(parts) == 2 {
+			oem = parts[1]
+		}
+	}
+
+	return
 }
 
 func fetchMetadata(provider string) (config.Metadata, error) {
