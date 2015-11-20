@@ -10,7 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/coreos/coreos-metadata/src/config"
 	"github.com/coreos/coreos-metadata/src/retry"
 )
 
@@ -19,17 +18,30 @@ const (
 	FabricProtocolVersion = "2012-11-30"
 )
 
-func FetchMetadata() (config.Metadata, error) {
+type metadata struct {
+	virtualIPv4 net.IP
+	dynamicIPv4 net.IP
+}
+
+func FetchMetadata() (map[string]string, error) {
 	addr, err := getFabricAddress()
 	if err != nil {
-		return config.Metadata{}, err
+		return nil, err
 	}
 
 	if err := assertFabricCompatible(addr, FabricProtocolVersion); err != nil {
-		return config.Metadata{}, err
+		return nil, err
 	}
 
-	return fetchSharedConfig(addr)
+	config, err := fetchSharedConfig(addr)
+	if err != nil {
+		return nil, err
+	}
+
+	return map[string]string{
+		"AZURE_IPV4_DYNAMIC": config.dynamicIPv4.String(),
+		"AZURE_IPV4_VIRTUAL": config.virtualIPv4.String(),
+	}, nil
 }
 
 func getClient() retry.Client {
@@ -128,12 +140,12 @@ func assertFabricCompatible(endpoint net.IP, desiredVersion string) error {
 	return fmt.Errorf("fabric version %s is not compatible", desiredVersion)
 }
 
-func fetchSharedConfig(endpoint net.IP) (config.Metadata, error) {
+func fetchSharedConfig(endpoint net.IP) (metadata, error) {
 	client := getClient()
 
 	body, err := client.Getf("http://%s/machine/?comp=goalstate", endpoint)
 	if err != nil {
-		return config.Metadata{}, fmt.Errorf("failed to fetch goal state: %v", err)
+		return metadata{}, fmt.Errorf("failed to fetch goal state: %v", err)
 	}
 
 	goal := struct {
@@ -149,12 +161,12 @@ func fetchSharedConfig(endpoint net.IP) (config.Metadata, error) {
 	}{}
 
 	if err := xml.Unmarshal(body, &goal); err != nil {
-		return config.Metadata{}, fmt.Errorf("failed to unmarshal response: %v", err)
+		return metadata{}, fmt.Errorf("failed to unmarshal response: %v", err)
 	}
 
 	body, err = client.Get(goal.Container.RoleInstanceList.RoleInstance.Configuration.SharedConfig)
 	if err != nil {
-		return config.Metadata{}, fmt.Errorf("failed to fetch shared config: %v", err)
+		return metadata{}, fmt.Errorf("failed to fetch shared config: %v", err)
 	}
 
 	sharedConfig := struct {
@@ -175,18 +187,18 @@ func fetchSharedConfig(endpoint net.IP) (config.Metadata, error) {
 	}{}
 
 	if err := xml.Unmarshal(body, &sharedConfig); err != nil {
-		return config.Metadata{}, err
+		return metadata{}, err
 	}
 
-	metadata := config.Metadata{}
+	config := metadata{}
 	for _, i := range sharedConfig.Instances.Instances {
 		if i.Id == sharedConfig.Incarnation.Instance {
-			metadata.LocalIPv4 = net.ParseIP(i.Address)
+			config.dynamicIPv4 = net.ParseIP(i.Address)
 
 			for _, e := range i.InputEndpoints.Endpoints {
 				host, _, err := net.SplitHostPort(e.LoadBalancedPublicAddress)
 				if err == nil {
-					metadata.PublicIPv4 = net.ParseIP(host)
+					config.virtualIPv4 = net.ParseIP(host)
 					break
 				}
 			}
@@ -195,5 +207,5 @@ func fetchSharedConfig(endpoint net.IP) (config.Metadata, error) {
 		}
 	}
 
-	return metadata, nil
+	return config, nil
 }

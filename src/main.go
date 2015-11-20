@@ -18,12 +18,10 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
-	"net"
 	"os"
 	"path"
 	"strings"
 
-	"github.com/coreos/coreos-metadata/src/config"
 	"github.com/coreos/coreos-metadata/src/providers/azure"
 	"github.com/coreos/coreos-metadata/src/providers/ec2"
 )
@@ -115,7 +113,7 @@ func parseCmdline(cmdline []byte) (oem string) {
 	return
 }
 
-func fetchMetadata(provider string) (config.Metadata, error) {
+func fetchMetadata(provider string) (map[string]string, error) {
 	switch provider {
 	case "ec2":
 		return ec2.FetchMetadata()
@@ -126,34 +124,18 @@ func fetchMetadata(provider string) (config.Metadata, error) {
 	}
 }
 
-func writeIPVariable(out *os.File, key string, value net.IP) error {
-	if len(value) == 0 {
-		return nil
+func writeVariable(out *os.File, key string, value string) (err error) {
+	if len(value) > 0 {
+		_, err = fmt.Fprintf(out, "COREOS_%s=%s\n", key, value)
 	}
-	return writeVariable(out, key, value)
+	return
 }
 
-func writeStringVariable(out *os.File, key, value string) error {
-	if len(value) == 0 {
-		return nil
-	}
-	return writeVariable(out, key, value)
-}
-
-func writeVariable(out *os.File, key string, value interface{}) error {
-	_, err := fmt.Fprintf(out, "%s=%s\n", key, value)
-	return err
-}
-
-func writeMetadata(out *os.File, metadata config.Metadata) error {
-	if err := writeIPVariable(out, "COREOS_IPV4_PUBLIC", metadata.PublicIPv4); err != nil {
-		return err
-	}
-	if err := writeIPVariable(out, "COREOS_IPV4_LOCAL", metadata.LocalIPv4); err != nil {
-		return err
-	}
-	if err := writeStringVariable(out, "COREOS_HOSTNAME", metadata.Hostname); err != nil {
-		return err
+func writeMetadata(out *os.File, metadata map[string]string) error {
+	for key, value := range metadata {
+		if err := writeVariable(out, key, value); err != nil {
+			return err
+		}
 	}
 	return nil
 }
