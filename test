@@ -4,7 +4,6 @@ source ./build
 
 SRC="
 	src
-	src/config
 	src/providers/azure
 	src/providers/ec2
 	src/retry

@@ -5,28 +5,27 @@ import (
 	"net"
 	"time"
 
-	"github.com/coreos/coreos-metadata/src/config"
 	"github.com/coreos/coreos-metadata/src/retry"
 )
 
-func FetchMetadata() (config.Metadata, error) {
+func FetchMetadata() (map[string]string, error) {
 	public, err := fetchIP("public-ipv4")
 	if err != nil {
-		return config.Metadata{}, err
+		return nil, err
 	}
 	local, err := fetchIP("local-ipv4")
 	if err != nil {
-		return config.Metadata{}, err
+		return nil, err
 	}
 	hostname, err := fetchString("hostname")
 	if err != nil {
-		return config.Metadata{}, err
+		return nil, err
 	}
 
-	return config.Metadata{
-		PublicIPv4: public,
-		LocalIPv4:  local,
-		Hostname:   hostname,
+	return map[string]string{
+		"EC2_IPV4_LOCAL":  local.String(),
+		"EC2_IPV4_PUBLIC": public.String(),
+		"EC2_HOSTNAME":    hostname,
 	}, nil
 }
 
