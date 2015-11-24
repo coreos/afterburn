@@ -9,12 +9,12 @@ systemd service units via `EnvironmentFile=`.
 
 The supported cloud providers and their respective metadata are as follows:
 
- - ec2
-   - COREOS_IPV4_LOCAL
-   - COREOS_IPV4_PUBLIC
-   - COREOS_HOSTNAME
- - azure
-   - COREOS_IPV4_LOCAL
-   - COREOS_IPV4_PUBLIC
+  - ec2
+    - COREOS_EC2_IPV4_LOCAL
+    - COREOS_EC2_IPV4_PUBLIC
+    - COREOS_EC2_HOSTNAME
+  - azure
+    - COREOS_AZURE_IPV4_DYNAMIC
+    - COREOS_AZURE_IPV4_VIRTUAL
 
 [ignition]: https://github.com/coreos/ignition
