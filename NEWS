@@ -1,0 +1,5 @@
+24-Nov-2015 COREOS-METADATA v0.3.0
+
+  Changes
+
+    - Renamed all output variables to be provider specific
