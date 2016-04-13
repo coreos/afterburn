@@ -22,6 +22,7 @@ import (
 	"path"
 	"strings"
 
+	"github.com/coreos/coreos-metadata/internal/providers"
 	"github.com/coreos/coreos-metadata/internal/providers/azure"
 	"github.com/coreos/coreos-metadata/internal/providers/ec2"
 )
@@ -85,13 +86,14 @@ func main() {
 	}
 	defer out.Close()
 
-	if metadata, err := fetchMetadata(flags.provider); err == nil {
-		if err := writeMetadata(out, metadata); err != nil {
-			fmt.Fprintf(os.Stderr, "failed to write metadata: %v\n", err)
-			os.Exit(1)
-		}
-	} else {
+	metadata, err := fetchMetadata(flags.provider)
+	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to fetch metadata: %v\n", err)
+		os.Exit(1)
+	}
+
+	if err := writeMetadataAttributes(out, metadata); err != nil {
+		fmt.Fprintf(os.Stderr, "failed to write metadata attributes: %v\n", err)
 		os.Exit(1)
 	}
 }
@@ -113,7 +115,7 @@ func parseCmdline(cmdline []byte) (oem string) {
 	return
 }
 
-func fetchMetadata(provider string) (map[string]string, error) {
+func fetchMetadata(provider string) (providers.Metadata, error) {
 	switch provider {
 	case "ec2":
 		return ec2.FetchMetadata()
@@ -131,8 +133,8 @@ func writeVariable(out *os.File, key string, value string) (err error) {
 	return
 }
 
-func writeMetadata(out *os.File, metadata map[string]string) error {
-	for key, value := range metadata {
+func writeMetadataAttributes(out *os.File, metadata providers.Metadata) error {
+	for key, value := range metadata.Attributes {
 		if err := writeVariable(out, key, value); err != nil {
 			return err
 		}

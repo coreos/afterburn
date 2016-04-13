@@ -19,27 +19,30 @@ import (
 	"net"
 	"time"
 
+	"github.com/coreos/coreos-metadata/internal/providers"
 	"github.com/coreos/coreos-metadata/internal/retry"
 )
 
-func FetchMetadata() (map[string]string, error) {
+func FetchMetadata() (providers.Metadata, error) {
 	public, err := fetchIP("public-ipv4")
 	if err != nil {
-		return nil, err
+		return providers.Metadata{}, err
 	}
 	local, err := fetchIP("local-ipv4")
 	if err != nil {
-		return nil, err
+		return providers.Metadata{}, err
 	}
 	hostname, err := fetchString("hostname")
 	if err != nil {
-		return nil, err
+		return providers.Metadata{}, err
 	}
 
-	return map[string]string{
-		"EC2_IPV4_LOCAL":  local.String(),
-		"EC2_IPV4_PUBLIC": public.String(),
-		"EC2_HOSTNAME":    hostname,
+	return providers.Metadata{
+		Attributes: map[string]string{
+			"EC2_IPV4_LOCAL":  local.String(),
+			"EC2_IPV4_PUBLIC": public.String(),
+			"EC2_HOSTNAME":    hostname,
+		},
 	}, nil
 }
 

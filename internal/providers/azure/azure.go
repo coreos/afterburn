@@ -24,6 +24,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/coreos/coreos-metadata/internal/providers"
 	"github.com/coreos/coreos-metadata/internal/retry"
 )
 
@@ -37,24 +38,26 @@ type metadata struct {
 	dynamicIPv4 net.IP
 }
 
-func FetchMetadata() (map[string]string, error) {
+func FetchMetadata() (providers.Metadata, error) {
 	addr, err := getFabricAddress()
 	if err != nil {
-		return nil, err
+		return providers.Metadata{}, err
 	}
 
 	if err := assertFabricCompatible(addr, FabricProtocolVersion); err != nil {
-		return nil, err
+		return providers.Metadata{}, err
 	}
 
 	config, err := fetchSharedConfig(addr)
 	if err != nil {
-		return nil, err
+		return providers.Metadata{}, err
 	}
 
-	return map[string]string{
-		"AZURE_IPV4_DYNAMIC": config.dynamicIPv4.String(),
-		"AZURE_IPV4_VIRTUAL": config.virtualIPv4.String(),
+	return providers.Metadata{
+		Attributes: map[string]string{
+			"AZURE_IPV4_DYNAMIC": config.dynamicIPv4.String(),
+			"AZURE_IPV4_VIRTUAL": config.virtualIPv4.String(),
+		},
 	}, nil
 }
 
