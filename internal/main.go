@@ -22,8 +22,8 @@ import (
 	"path"
 	"strings"
 
-	"github.com/coreos/coreos-metadata/src/providers/azure"
-	"github.com/coreos/coreos-metadata/src/providers/ec2"
+	"github.com/coreos/coreos-metadata/internal/providers/azure"
+	"github.com/coreos/coreos-metadata/internal/providers/ec2"
 )
 
 var (

@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/coreos/coreos-metadata/src/retry"
+	"github.com/coreos/coreos-metadata/internal/retry"
 )
 
 const (

@@ -5,7 +5,7 @@ import (
 	"net"
 	"time"
 
-	"github.com/coreos/coreos-metadata/src/retry"
+	"github.com/coreos/coreos-metadata/internal/retry"
 )
 
 func FetchMetadata() (map[string]string, error) {
