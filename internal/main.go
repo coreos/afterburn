@@ -19,12 +19,15 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"os/user"
 	"path"
 	"strings"
 
 	"github.com/coreos/coreos-metadata/internal/providers"
 	"github.com/coreos/coreos-metadata/internal/providers/azure"
 	"github.com/coreos/coreos-metadata/internal/providers/ec2"
+
+	"github.com/coreos/update-ssh-keys/authorized_keys_d"
 )
 
 var (
@@ -39,15 +42,17 @@ const (
 
 func main() {
 	flags := struct {
-		cmdline  bool
-		provider string
-		output   string
-		version  bool
+		cmdline    bool
+		provider   string
+		attributes string
+		sshKeys    string
+		version    bool
 	}{}
 
 	flag.BoolVar(&flags.cmdline, "cmdline", false, "Read the cloud provider from the kernel cmdline")
 	flag.StringVar(&flags.provider, "provider", "", "The name of the cloud provider")
-	flag.StringVar(&flags.output, "output", "", "The file into which the metadata is written")
+	flag.StringVar(&flags.attributes, "attributes", "", "The file into which the metadata attributes are written")
+	flag.StringVar(&flags.sshKeys, "ssh-keys", "", "Update SSH keys for the given user")
 	flag.BoolVar(&flags.version, "version", false, "Print the version and exit")
 
 	flag.Parse()
@@ -74,26 +79,19 @@ func main() {
 		os.Exit(2)
 	}
 
-	if err := os.MkdirAll(path.Dir(flags.output), 0755); err != nil {
-		fmt.Fprintf(os.Stderr, "failed to create directory: %v\n", err)
-		os.Exit(1)
-	}
-
-	out, err := os.Create(flags.output)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to create file: %v\n", err)
-		os.Exit(1)
-	}
-	defer out.Close()
-
 	metadata, err := fetchMetadata(flags.provider)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to fetch metadata: %v\n", err)
 		os.Exit(1)
 	}
 
-	if err := writeMetadataAttributes(out, metadata); err != nil {
+	if err := writeMetadataAttributes(flags.attributes, metadata); err != nil {
 		fmt.Fprintf(os.Stderr, "failed to write metadata attributes: %v\n", err)
+		os.Exit(1)
+	}
+
+	if err := writeMetadataKeys(flags.sshKeys, metadata); err != nil {
+		fmt.Fprintf(os.Stderr, "failed to write metadata keys: %v\n", err)
 		os.Exit(1)
 	}
 }
@@ -133,11 +131,51 @@ func writeVariable(out *os.File, key string, value string) (err error) {
 	return
 }
 
-func writeMetadataAttributes(out *os.File, metadata providers.Metadata) error {
+func writeMetadataAttributes(attributes string, metadata providers.Metadata) error {
+	if attributes == "" {
+		return nil
+	}
+
+	if err := os.MkdirAll(path.Dir(attributes), 0755); err != nil {
+		fmt.Fprintf(os.Stderr, "failed to create directory: %v\n", err)
+		os.Exit(1)
+	}
+
+	out, err := os.Create(attributes)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "failed to create file: %v\n", err)
+		os.Exit(1)
+	}
+	defer out.Close()
+
 	for key, value := range metadata.Attributes {
 		if err := writeVariable(out, key, value); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+func writeMetadataKeys(username string, metadata providers.Metadata) error {
+	if username == "" || len(metadata.SshKeys) == 0 {
+		return nil
+	}
+
+	usr, err := user.Lookup(username)
+	if err != nil {
+		return fmt.Errorf("unable to lookup user %q: %v", username, err)
+	}
+
+	akd, err := authorized_keys_d.Open(usr, true)
+	if err != nil {
+		return err
+	}
+	defer akd.Close()
+
+	ks := strings.Join(metadata.SshKeys, "\n")
+	if err := akd.Add("coreos-metadata", []byte(ks), true, true); err != nil {
+		return err
+	}
+
+	return akd.Sync()
 }
