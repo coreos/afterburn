@@ -15,8 +15,10 @@
 package ec2
 
 import (
+	"bufio"
 	"fmt"
 	"net"
+	"strings"
 	"time"
 
 	"github.com/coreos/coreos-metadata/internal/providers"
@@ -37,12 +39,18 @@ func FetchMetadata() (providers.Metadata, error) {
 		return providers.Metadata{}, err
 	}
 
+	sshKeys, err := fetchSshKeys()
+	if err != nil {
+		return providers.Metadata{}, err
+	}
+
 	return providers.Metadata{
 		Attributes: map[string]string{
 			"EC2_IPV4_LOCAL":  local.String(),
 			"EC2_IPV4_PUBLIC": public.String(),
 			"EC2_HOSTNAME":    hostname,
 		},
+		SshKeys: sshKeys,
 	}, nil
 }
 
@@ -65,4 +73,40 @@ func fetchIP(key string) (net.IP, error) {
 	} else {
 		return nil, fmt.Errorf("couldn't parse %q as IP address", str)
 	}
+}
+
+func fetchSshKeys() ([]string, error) {
+	keydata, err := fetchString("public-keys")
+	if err != nil {
+		return nil, fmt.Errorf("error reading keys: %v", err)
+	}
+
+	scanner := bufio.NewScanner(strings.NewReader(keydata))
+	keynames := []string{}
+	for scanner.Scan() {
+		keynames = append(keynames, scanner.Text())
+	}
+	if err := scanner.Err(); err != nil {
+		return nil, fmt.Errorf("error parsing keys: %v", err)
+	}
+
+	keyIDs := make(map[string]string)
+	for _, keyname := range keynames {
+		tokens := strings.SplitN(keyname, "=", 2)
+		if len(tokens) != 2 {
+			return nil, fmt.Errorf("malformed public key: %q", keyname)
+		}
+		keyIDs[tokens[1]] = tokens[0]
+	}
+
+	keys := []string{}
+	for _, id := range keyIDs {
+		sshkey, err := fetchString(fmt.Sprintf("public-keys/%s/openssh-key", id))
+		if err != nil {
+			return nil, err
+		}
+		keys = append(keys, sshkey)
+	}
+
+	return keys, nil
 }
