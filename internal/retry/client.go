@@ -42,6 +42,8 @@ func (c Client) Get(url string) ([]byte, error) {
 
 		if response, err := (&http.Client{}).Do(request); err != nil {
 			fmt.Printf("failed to fetch: %v\n", err)
+		} else if response.StatusCode == http.StatusNotFound {
+			return nil, nil
 		} else if response.StatusCode != http.StatusOK {
 			fmt.Printf("failed to fetch: %s\n", http.StatusText(response.StatusCode))
 		} else {
