@@ -1,3 +1,15 @@
+29-Apr-2015 COREOS-METADATA v0.4.0
+
+  Features
+
+    - Add support for writing SSH keys
+    - Add support for GCE
+
+  Changes
+
+    - Move to Go 1.5 and 1.6 and the new vendor/internal packages
+    - Renamed `--output` to `--attributes`
+
 24-Nov-2015 COREOS-METADATA v0.3.0
 
   Changes
