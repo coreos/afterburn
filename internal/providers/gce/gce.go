@@ -17,6 +17,7 @@ package gce
 import (
 	"fmt"
 	"net"
+	"strconv"
 	"strings"
 	"time"
 
@@ -72,7 +73,7 @@ func fetchAllSshKeys() ([]string, error) {
 		return nil, err
 	}
 
-	if blockProjectKeys == "TRUE" {
+	if block, err := strconv.ParseBool(blockProjectKeys); err == nil && block {
 		return instanceSshKeys, nil
 	}
 
