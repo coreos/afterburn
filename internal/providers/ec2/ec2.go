@@ -26,6 +26,11 @@ import (
 )
 
 func FetchMetadata() (providers.Metadata, error) {
+	instanceId, err := fetchString("instance-id")
+	if err != nil {
+		return providers.Metadata{}, err
+	}
+
 	public, err := fetchIP("public-ipv4")
 	if err != nil {
 		return providers.Metadata{}, err
@@ -46,6 +51,7 @@ func FetchMetadata() (providers.Metadata, error) {
 
 	return providers.Metadata{
 		Attributes: map[string]string{
+			"EC2_INSTANCE_ID": instanceId,
 			"EC2_IPV4_LOCAL":  local.String(),
 			"EC2_IPV4_PUBLIC": public.String(),
 			"EC2_HOSTNAME":    hostname,
