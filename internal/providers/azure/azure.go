@@ -15,17 +15,17 @@
 package azure
 
 import (
-	"bufio"
 	"encoding/xml"
 	"fmt"
 	"net"
-	"os"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/coreos/coreos-metadata/internal/providers"
 	"github.com/coreos/coreos-metadata/internal/retry"
+
+	"github.com/godbus/dbus"
+	"github.com/godbus/dbus/introspect"
 )
 
 const (
@@ -76,57 +76,68 @@ func getClient() retry.Client {
 	return client
 }
 
-func findLease() (*os.File, error) {
+/* godbus doesn't have a way to escape things. This will escape leading numbers, which is all we need */
+func escapeNumber(num int) string {
+	return "_3" + strconv.FormatUint(uint64(num), 10)
+}
+
+func getFabricAddress() (net.IP, error) {
+	conn, err := dbus.SystemBus()
+	if err != nil {
+		return nil, err
+	}
+
 	ifaces, err := net.Interfaces()
 	if err != nil {
 		return nil, fmt.Errorf("could not list interfaces: %v", err)
 	}
 
-	for _, iface := range ifaces {
-		lease, err := os.Open(fmt.Sprintf("/run/systemd/netif/leases/%d", iface.Index))
-		if os.IsNotExist(err) {
-			continue
-		} else if err != nil {
-			return nil, err
-		} else {
-			return lease, nil
-		}
-	}
+	var data []byte
 
-	return nil, fmt.Errorf("could not find any leases")
-}
+	for _, link := range ifaces {
+		//first introspect the link to ensure it has a lease child
+		linkObjPath := dbus.ObjectPath("/org/freedesktop/network1/link/" + escapeNumber(link.Index))
+		node, err := introspect.Call(conn.Object("org.freedesktop.network1", linkObjPath))
 
-func getFabricAddress() (net.IP, error) {
-	lease, err := findLease()
-	if err != nil {
-		return nil, err
-	}
-	defer lease.Close()
-
-	var rawEndpoint string
-	line := bufio.NewScanner(lease)
-	for line.Scan() {
-		parts := strings.Split(line.Text(), "=")
-		if parts[0] == "OPTION_245" && len(parts) == 2 {
-			rawEndpoint = parts[1]
-			break
-		}
-	}
-
-	if len(rawEndpoint) == 0 || len(rawEndpoint) != 8 {
-		return nil, fmt.Errorf("fabric endpoint not found in leases")
-	}
-
-	octets := make([]byte, 4)
-	for i := 0; i < 4; i++ {
-		octet, err := strconv.ParseUint(rawEndpoint[2*i:2*i+2], 16, 8)
 		if err != nil {
 			return nil, err
 		}
-		octets[i] = byte(octet)
+
+		hasLease := false
+		for _, child := range node.Children {
+			if child.Name == "lease" {
+				hasLease = true
+				break
+			}
+		}
+
+		if !hasLease {
+			continue
+		}
+
+		//then get the data from the lease, if we found it
+		linkObjPath = dbus.ObjectPath(string(linkObjPath) + "/lease")
+		dbusLeaseObj := conn.Object("org.freedesktop.network1", linkObjPath)
+		rawopts, err := dbusLeaseObj.GetProperty("org.freedesktop.network1.Link.Lease.PrivateOptions")
+
+		if err != nil {
+			return nil, err
+		}
+
+		if rawopts.Signature().String() == "a{yay}" {
+			options := rawopts.Value().(map[byte][]byte)
+			if options[245] != nil {
+				data = options[245]
+				break
+			}
+		}
 	}
 
-	return net.IPv4(octets[0], octets[1], octets[2], octets[3]), nil
+	if data == nil {
+		return nil, fmt.Errorf("Did not find an lease with option 245")
+	}
+
+	return net.IPv4(data[0], data[1], data[2], data[3]), nil
 }
 
 func assertFabricCompatible(endpoint net.IP, desiredVersion string) error {
