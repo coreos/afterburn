@@ -14,7 +14,20 @@
 
 package providers
 
+import (
+	"fmt"
+	"reflect"
+)
+
 type Metadata struct {
 	Attributes map[string]string
 	SshKeys    []string
+}
+
+func String(s fmt.Stringer) string {
+	if reflect.ValueOf(s).IsNil() {
+		return ""
+	}
+
+	return s.String()
 }

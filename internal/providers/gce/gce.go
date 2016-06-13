@@ -45,8 +45,8 @@ func FetchMetadata() (providers.Metadata, error) {
 
 	return providers.Metadata{
 		Attributes: map[string]string{
-			"GCE_IP_LOCAL_0":    local.String(),
-			"GCE_IP_EXTERNAL_0": public.String(),
+			"GCE_IP_LOCAL_0":    providers.String(local),
+			"GCE_IP_EXTERNAL_0": providers.String(public),
 			"GCE_HOSTNAME":      hostname,
 		},
 		SshKeys: sshKeys,

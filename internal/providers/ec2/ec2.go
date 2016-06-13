@@ -52,8 +52,8 @@ func FetchMetadata() (providers.Metadata, error) {
 	return providers.Metadata{
 		Attributes: map[string]string{
 			"EC2_INSTANCE_ID": instanceId,
-			"EC2_IPV4_LOCAL":  local.String(),
-			"EC2_IPV4_PUBLIC": public.String(),
+			"EC2_IPV4_LOCAL":  providers.String(local),
+			"EC2_IPV4_PUBLIC": providers.String(public),
 			"EC2_HOSTNAME":    hostname,
 		},
 		SshKeys: sshKeys,

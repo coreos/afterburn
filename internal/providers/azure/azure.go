@@ -55,8 +55,8 @@ func FetchMetadata() (providers.Metadata, error) {
 
 	return providers.Metadata{
 		Attributes: map[string]string{
-			"AZURE_IPV4_DYNAMIC": config.dynamicIPv4.String(),
-			"AZURE_IPV4_VIRTUAL": config.virtualIPv4.String(),
+			"AZURE_IPV4_DYNAMIC": providers.String(config.dynamicIPv4),
+			"AZURE_IPV4_VIRTUAL": providers.String(config.virtualIPv4),
 		},
 	}, nil
 }
