@@ -99,10 +99,15 @@ func fetchString(key string) (string, bool, error) {
 }
 
 func fetchIP(key string) (net.IP, error) {
-	str, _, err := fetchString(key)
+	str, present, err := fetchString(key)
 	if err != nil {
 		return nil, err
 	}
+
+	if !present {
+		return nil, nil
+	}
+
 	if ip := net.ParseIP(str); ip != nil {
 		return ip, nil
 	} else {
