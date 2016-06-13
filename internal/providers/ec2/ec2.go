@@ -26,7 +26,7 @@ import (
 )
 
 func FetchMetadata() (providers.Metadata, error) {
-	instanceId, err := fetchString("instance-id")
+	instanceId, _, err := fetchString("instance-id")
 	if err != nil {
 		return providers.Metadata{}, err
 	}
@@ -39,7 +39,7 @@ func FetchMetadata() (providers.Metadata, error) {
 	if err != nil {
 		return providers.Metadata{}, err
 	}
-	hostname, err := fetchString("hostname")
+	hostname, _, err := fetchString("hostname")
 	if err != nil {
 		return providers.Metadata{}, err
 	}
@@ -52,28 +52,33 @@ func FetchMetadata() (providers.Metadata, error) {
 	return providers.Metadata{
 		Attributes: map[string]string{
 			"EC2_INSTANCE_ID": instanceId,
-			"EC2_IPV4_LOCAL":  local.String(),
-			"EC2_IPV4_PUBLIC": public.String(),
+			"EC2_IPV4_LOCAL":  providers.String(local),
+			"EC2_IPV4_PUBLIC": providers.String(public),
 			"EC2_HOSTNAME":    hostname,
 		},
 		SshKeys: sshKeys,
 	}, nil
 }
 
-func fetchString(key string) (string, error) {
+func fetchString(key string) (string, bool, error) {
 	body, err := retry.Client{
 		InitialBackoff: time.Second,
 		MaxBackoff:     time.Second * 5,
 		MaxAttempts:    10,
 	}.Get("http://169.254.169.254/2009-04-04/meta-data/" + key)
-	return string(body), err
+	return string(body), (body != nil), err
 }
 
 func fetchIP(key string) (net.IP, error) {
-	str, err := fetchString(key)
+	str, present, err := fetchString(key)
 	if err != nil {
 		return nil, err
 	}
+
+	if !present {
+		return nil, nil
+	}
+
 	if ip := net.ParseIP(str); ip != nil {
 		return ip, nil
 	} else {
@@ -82,9 +87,13 @@ func fetchIP(key string) (net.IP, error) {
 }
 
 func fetchSshKeys() ([]string, error) {
-	keydata, err := fetchString("public-keys")
+	keydata, present, err := fetchString("public-keys")
 	if err != nil {
 		return nil, fmt.Errorf("error reading keys: %v", err)
+	}
+
+	if !present {
+		return nil, nil
 	}
 
 	scanner := bufio.NewScanner(strings.NewReader(keydata))
@@ -107,7 +116,7 @@ func fetchSshKeys() ([]string, error) {
 
 	keys := []string{}
 	for _, id := range keyIDs {
-		sshkey, err := fetchString(fmt.Sprintf("public-keys/%s/openssh-key", id))
+		sshkey, _, err := fetchString(fmt.Sprintf("public-keys/%s/openssh-key", id))
 		if err != nil {
 			return nil, err
 		}

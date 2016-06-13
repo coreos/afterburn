@@ -45,8 +45,8 @@ func FetchMetadata() (providers.Metadata, error) {
 
 	return providers.Metadata{
 		Attributes: map[string]string{
-			"GCE_IP_LOCAL_0":    local.String(),
-			"GCE_IP_EXTERNAL_0": public.String(),
+			"GCE_IP_LOCAL_0":    providers.String(local),
+			"GCE_IP_EXTERNAL_0": providers.String(public),
 			"GCE_HOSTNAME":      hostname,
 		},
 		SshKeys: sshKeys,
@@ -99,10 +99,15 @@ func fetchString(key string) (string, bool, error) {
 }
 
 func fetchIP(key string) (net.IP, error) {
-	str, _, err := fetchString(key)
+	str, present, err := fetchString(key)
 	if err != nil {
 		return nil, err
 	}
+
+	if !present {
+		return nil, nil
+	}
+
 	if ip := net.ParseIP(str); ip != nil {
 		return ip, nil
 	} else {
