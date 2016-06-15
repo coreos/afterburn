@@ -1,4 +1,15 @@
-29-Apr-2015 COREOS-METADATA v0.4.0
+15-Jun-2016 COREOS-METADATA v0.4.1
+
+  Bug Fixes
+
+    - Properly handle missing metadata fields
+    - Do not output attribute when its value is nil
+
+  Features
+
+    - Include the EC2 instance ID in the list of attributes
+
+29-Apr-2016 COREOS-METADATA v0.4.0
 
   Features
 
