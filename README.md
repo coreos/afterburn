@@ -22,5 +22,11 @@ The supported cloud providers and their respective metadata are as follows:
       - COREOS_GCE_HOSTNAME
       - COREOS_GCE_IP_EXTERNAL_0
       - COREOS_GCE_IP_LOCAL_0
+  - openstack (EC2 configdrive compatibility)
+    - SSH Keys
+    - Attributes
+      - COREOS_EC2_HOSTNAME
+      - COREOS_EC2_IPV4_LOCAL
+      - COREOS_EC2_IPV4_PUBLIC
 
 [ignition]: https://github.com/coreos/ignition

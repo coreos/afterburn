@@ -25,6 +25,7 @@ import (
 
 	"github.com/coreos/coreos-metadata/internal/providers"
 	"github.com/coreos/coreos-metadata/internal/providers/azure"
+	"github.com/coreos/coreos-metadata/internal/providers/configdrive"
 	"github.com/coreos/coreos-metadata/internal/providers/ec2"
 	"github.com/coreos/coreos-metadata/internal/providers/gce"
 
@@ -74,7 +75,7 @@ func main() {
 	}
 
 	switch flags.provider {
-	case "azure", "ec2", "gce":
+	case "azure", "ec2", "gce", "openstack":
 	default:
 		fmt.Fprintf(os.Stderr, "invalid provider %q\n", flags.provider)
 		os.Exit(2)
@@ -122,6 +123,8 @@ func fetchMetadata(provider string) (providers.Metadata, error) {
 		return ec2.FetchMetadata()
 	case "gce":
 		return gce.FetchMetadata()
+	case "openstack":
+		return configdrive.FetchMetadata()
 	default:
 		panic("bad provider")
 	}
