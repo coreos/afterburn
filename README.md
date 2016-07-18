@@ -23,4 +23,12 @@ The supported cloud providers and their respective metadata are as follows:
       - COREOS_GCE_IP_EXTERNAL_0
       - COREOS_GCE_IP_LOCAL_0
 
+  - packet
+    - SSH Keys
+    - Attributes
+      - COREOS_PACKET_HOSTNAME
+      - COREOS_PACKET_IPV4_PUBLIC_0
+      - COREOS_PACKET_IPV4_PRIVATE_0
+      - COREOS_PACKET_IPV6_PUBLIC_0
+
 [ignition]: https://github.com/coreos/ignition
