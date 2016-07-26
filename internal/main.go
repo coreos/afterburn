@@ -27,6 +27,7 @@ import (
 	"github.com/coreos/coreos-metadata/internal/providers/azure"
 	"github.com/coreos/coreos-metadata/internal/providers/ec2"
 	"github.com/coreos/coreos-metadata/internal/providers/gce"
+	"github.com/coreos/coreos-metadata/internal/providers/packet"
 
 	"github.com/coreos/update-ssh-keys/authorized_keys_d"
 )
@@ -74,7 +75,7 @@ func main() {
 	}
 
 	switch flags.provider {
-	case "azure", "ec2", "gce":
+	case "azure", "ec2", "gce", "packet":
 	default:
 		fmt.Fprintf(os.Stderr, "invalid provider %q\n", flags.provider)
 		os.Exit(2)
@@ -122,6 +123,8 @@ func fetchMetadata(provider string) (providers.Metadata, error) {
 		return ec2.FetchMetadata()
 	case "gce":
 		return gce.FetchMetadata()
+	case "packet":
+		return packet.FetchMetadata()
 	default:
 		panic("bad provider")
 	}
