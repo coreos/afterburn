@@ -25,6 +25,7 @@ import (
 
 	"github.com/coreos/coreos-metadata/internal/providers"
 	"github.com/coreos/coreos-metadata/internal/providers/azure"
+	"github.com/coreos/coreos-metadata/internal/providers/digitalocean"
 	"github.com/coreos/coreos-metadata/internal/providers/ec2"
 	"github.com/coreos/coreos-metadata/internal/providers/gce"
 	"github.com/coreos/coreos-metadata/internal/providers/packet"
@@ -79,7 +80,7 @@ func main() {
 	}
 
 	switch flags.provider {
-	case "azure", "ec2", "gce", "packet":
+	case "azure", "digitalocean", "ec2", "gce", "packet":
 	default:
 		fmt.Fprintf(os.Stderr, "invalid provider %q\n", flags.provider)
 		os.Exit(2)
@@ -133,6 +134,8 @@ func fetchMetadata(provider string) (providers.Metadata, error) {
 	switch provider {
 	case "azure":
 		return azure.FetchMetadata()
+	case "digitalocean":
+		return digitalocean.FetchMetadata()
 	case "ec2":
 		return ec2.FetchMetadata()
 	case "gce":
