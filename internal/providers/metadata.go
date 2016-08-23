@@ -16,6 +16,7 @@ package providers
 
 import (
 	"fmt"
+	"net"
 	"reflect"
 )
 
@@ -23,6 +24,35 @@ type Metadata struct {
 	Attributes map[string]string
 	Hostname   string
 	SshKeys    []string
+	Network    []NetworkInterface
+}
+
+type NetworkInterface struct {
+	HardwareAddress net.HardwareAddr
+	Nameservers     []net.IP
+	IPAddresses     []net.IPNet
+	Routes          []NetworkRoute
+}
+
+type NetworkRoute struct {
+	Destination net.IPNet
+	Gateway     net.IP
+}
+
+func (i NetworkInterface) NetworkConfig() string {
+	config := fmt.Sprintf("[Match]\nMACAddress=%s\n\n[Network]\n", i.HardwareAddress)
+
+	for _, nameserver := range i.Nameservers {
+		config += fmt.Sprintf("DNS=%s\n", nameserver)
+	}
+	for _, addr := range i.IPAddresses {
+		config += fmt.Sprintf("\n[Address]\nAddress=%s\n", addr.String())
+	}
+	for _, route := range i.Routes {
+		config += fmt.Sprintf("\n[Route]\nDestination=%s\nGateway=%s\n", route.Destination.String(), route.Gateway)
+	}
+
+	return config
 }
 
 func String(s fmt.Stringer) string {

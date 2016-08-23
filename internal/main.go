@@ -44,17 +44,19 @@ const (
 
 func main() {
 	flags := struct {
-		attributes string
-		cmdline    bool
-		hostname   string
-		provider   string
-		sshKeys    string
-		version    bool
+		attributes   string
+		cmdline      bool
+		hostname     string
+		networkUnits string
+		provider     string
+		sshKeys      string
+		version      bool
 	}{}
 
 	flag.StringVar(&flags.attributes, "attributes", "", "The file into which the metadata attributes are written")
 	flag.BoolVar(&flags.cmdline, "cmdline", false, "Read the cloud provider from the kernel cmdline")
 	flag.StringVar(&flags.hostname, "hostname", "", "The file into which the hostname should be written")
+	flag.StringVar(&flags.networkUnits, "network-units", "", "The directory into which network units are written")
 	flag.StringVar(&flags.provider, "provider", "", "The name of the cloud provider")
 	flag.StringVar(&flags.sshKeys, "ssh-keys", "", "Update SSH keys for the given user")
 	flag.BoolVar(&flags.version, "version", false, "Print the version and exit")
@@ -101,6 +103,11 @@ func main() {
 
 	if err := writeHostname(flags.hostname, metadata); err != nil {
 		fmt.Fprintf(os.Stderr, "failed to write hostname: %v\n", err)
+		os.Exit(1)
+	}
+
+	if err := writeNetworkUnits(flags.networkUnits, metadata); err != nil {
+		fmt.Fprintf(os.Stderr, "failed to write network units: %v\n", err)
 		os.Exit(1)
 	}
 }
@@ -204,4 +211,25 @@ func writeHostname(path string, metadata providers.Metadata) error {
 	}
 
 	return ioutil.WriteFile(path, []byte(metadata.Hostname), 0644)
+}
+
+func writeNetworkUnits(root string, metadata providers.Metadata) error {
+	if root == "" || metadata.Network == nil {
+		return nil
+	}
+
+	err := os.MkdirAll(root, 0755)
+	if err != nil {
+		return err
+	}
+
+	for _, iface := range metadata.Network {
+		name := filepath.Join(root, fmt.Sprintf("00-%s.network", iface.HardwareAddress))
+		err := ioutil.WriteFile(name, []byte(iface.NetworkConfig()), 0644)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
