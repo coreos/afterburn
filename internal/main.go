@@ -20,7 +20,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/user"
-	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/coreos/coreos-metadata/internal/providers"
@@ -142,7 +142,7 @@ func writeMetadataAttributes(attributes string, metadata providers.Metadata) err
 		return nil
 	}
 
-	if err := os.MkdirAll(path.Dir(attributes), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(attributes), 0755); err != nil {
 		fmt.Fprintf(os.Stderr, "failed to create directory: %v\n", err)
 		os.Exit(1)
 	}
