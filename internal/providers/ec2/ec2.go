@@ -56,7 +56,8 @@ func FetchMetadata() (providers.Metadata, error) {
 			"EC2_IPV4_PUBLIC": providers.String(public),
 			"EC2_HOSTNAME":    hostname,
 		},
-		SshKeys: sshKeys,
+		Hostname: hostname,
+		SshKeys:  sshKeys,
 	}, nil
 }
 

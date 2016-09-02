@@ -44,16 +44,18 @@ const (
 
 func main() {
 	flags := struct {
-		cmdline    bool
-		provider   string
 		attributes string
+		cmdline    bool
+		hostname   string
+		provider   string
 		sshKeys    string
 		version    bool
 	}{}
 
-	flag.BoolVar(&flags.cmdline, "cmdline", false, "Read the cloud provider from the kernel cmdline")
-	flag.StringVar(&flags.provider, "provider", "", "The name of the cloud provider")
 	flag.StringVar(&flags.attributes, "attributes", "", "The file into which the metadata attributes are written")
+	flag.BoolVar(&flags.cmdline, "cmdline", false, "Read the cloud provider from the kernel cmdline")
+	flag.StringVar(&flags.hostname, "hostname", "", "The file into which the hostname should be written")
+	flag.StringVar(&flags.provider, "provider", "", "The name of the cloud provider")
 	flag.StringVar(&flags.sshKeys, "ssh-keys", "", "Update SSH keys for the given user")
 	flag.BoolVar(&flags.version, "version", false, "Print the version and exit")
 
@@ -94,6 +96,11 @@ func main() {
 
 	if err := writeMetadataKeys(flags.sshKeys, metadata); err != nil {
 		fmt.Fprintf(os.Stderr, "failed to write metadata keys: %v\n", err)
+		os.Exit(1)
+	}
+
+	if err := writeHostname(flags.hostname, metadata); err != nil {
+		fmt.Fprintf(os.Stderr, "failed to write hostname: %v\n", err)
 		os.Exit(1)
 	}
 }
@@ -184,4 +191,17 @@ func writeMetadataKeys(username string, metadata providers.Metadata) error {
 	}
 
 	return akd.Sync()
+}
+
+func writeHostname(path string, metadata providers.Metadata) error {
+	if path == "" || metadata.Hostname == "" {
+		return nil
+	}
+
+	err := os.MkdirAll(filepath.Dir(path), 0755)
+	if err != nil {
+		return err
+	}
+
+	return ioutil.WriteFile(path, []byte(metadata.Hostname), 0644)
 }

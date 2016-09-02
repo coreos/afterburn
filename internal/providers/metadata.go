@@ -21,6 +21,7 @@ import (
 
 type Metadata struct {
 	Attributes map[string]string
+	Hostname   string
 	SshKeys    []string
 }
 
