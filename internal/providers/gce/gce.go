@@ -49,7 +49,8 @@ func FetchMetadata() (providers.Metadata, error) {
 			"GCE_IP_EXTERNAL_0": providers.String(public),
 			"GCE_HOSTNAME":      hostname,
 		},
-		SshKeys: sshKeys,
+		Hostname: hostname,
+		SshKeys:  sshKeys,
 	}, nil
 }
 

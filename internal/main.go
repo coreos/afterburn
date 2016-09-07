@@ -20,11 +20,12 @@ import (
 	"io/ioutil"
 	"os"
 	"os/user"
-	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/coreos/coreos-metadata/internal/providers"
 	"github.com/coreos/coreos-metadata/internal/providers/azure"
+	"github.com/coreos/coreos-metadata/internal/providers/digitalocean"
 	"github.com/coreos/coreos-metadata/internal/providers/ec2"
 	"github.com/coreos/coreos-metadata/internal/providers/gce"
 	"github.com/coreos/coreos-metadata/internal/providers/packet"
@@ -44,16 +45,20 @@ const (
 
 func main() {
 	flags := struct {
-		cmdline    bool
-		provider   string
-		attributes string
-		sshKeys    string
-		version    bool
+		attributes   string
+		cmdline      bool
+		hostname     string
+		networkUnits string
+		provider     string
+		sshKeys      string
+		version      bool
 	}{}
 
-	flag.BoolVar(&flags.cmdline, "cmdline", false, "Read the cloud provider from the kernel cmdline")
-	flag.StringVar(&flags.provider, "provider", "", "The name of the cloud provider")
 	flag.StringVar(&flags.attributes, "attributes", "", "The file into which the metadata attributes are written")
+	flag.BoolVar(&flags.cmdline, "cmdline", false, "Read the cloud provider from the kernel cmdline")
+	flag.StringVar(&flags.hostname, "hostname", "", "The file into which the hostname should be written")
+	flag.StringVar(&flags.networkUnits, "network-units", "", "The directory into which network units are written")
+	flag.StringVar(&flags.provider, "provider", "", "The name of the cloud provider")
 	flag.StringVar(&flags.sshKeys, "ssh-keys", "", "Update SSH keys for the given user")
 	flag.BoolVar(&flags.version, "version", false, "Print the version and exit")
 
@@ -75,7 +80,7 @@ func main() {
 	}
 
 	switch flags.provider {
-	case "azure", "ec2", "gce", "packet":
+	case "azure", "digitalocean", "ec2", "gce", "packet":
 	default:
 		fmt.Fprintf(os.Stderr, "invalid provider %q\n", flags.provider)
 		os.Exit(2)
@@ -94,6 +99,16 @@ func main() {
 
 	if err := writeMetadataKeys(flags.sshKeys, metadata); err != nil {
 		fmt.Fprintf(os.Stderr, "failed to write metadata keys: %v\n", err)
+		os.Exit(1)
+	}
+
+	if err := writeHostname(flags.hostname, metadata); err != nil {
+		fmt.Fprintf(os.Stderr, "failed to write hostname: %v\n", err)
+		os.Exit(1)
+	}
+
+	if err := writeNetworkUnits(flags.networkUnits, metadata); err != nil {
+		fmt.Fprintf(os.Stderr, "failed to write network units: %v\n", err)
 		os.Exit(1)
 	}
 }
@@ -119,6 +134,8 @@ func fetchMetadata(provider string) (providers.Metadata, error) {
 	switch provider {
 	case "azure":
 		return azure.FetchMetadata()
+	case "digitalocean":
+		return digitalocean.FetchMetadata()
 	case "ec2":
 		return ec2.FetchMetadata()
 	case "gce":
@@ -142,7 +159,7 @@ func writeMetadataAttributes(attributes string, metadata providers.Metadata) err
 		return nil
 	}
 
-	if err := os.MkdirAll(path.Dir(attributes), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(attributes), 0755); err != nil {
 		fmt.Fprintf(os.Stderr, "failed to create directory: %v\n", err)
 		os.Exit(1)
 	}
@@ -184,4 +201,38 @@ func writeMetadataKeys(username string, metadata providers.Metadata) error {
 	}
 
 	return akd.Sync()
+}
+
+func writeHostname(path string, metadata providers.Metadata) error {
+	if path == "" || metadata.Hostname == "" {
+		return nil
+	}
+
+	err := os.MkdirAll(filepath.Dir(path), 0755)
+	if err != nil {
+		return err
+	}
+
+	return ioutil.WriteFile(path, []byte(metadata.Hostname), 0644)
+}
+
+func writeNetworkUnits(root string, metadata providers.Metadata) error {
+	if root == "" || metadata.Network == nil {
+		return nil
+	}
+
+	err := os.MkdirAll(root, 0755)
+	if err != nil {
+		return err
+	}
+
+	for _, iface := range metadata.Network {
+		name := filepath.Join(root, fmt.Sprintf("00-%s.network", iface.HardwareAddress))
+		err := ioutil.WriteFile(name, []byte(iface.NetworkConfig()), 0644)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

@@ -10,6 +10,16 @@ The supported cloud providers and their respective metadata are as follows:
     - Attributes
       - COREOS_AZURE_IPV4_DYNAMIC
       - COREOS_AZURE_IPV4_VIRTUAL
+  - digitalocean
+    - SSH Keys
+    - Network Configs
+    - Attributes
+      - COREOS_DIGITALOCEAN_HOSTNAME
+      - COREOS_DIGITALOCEAN_IPV4_ANCHOR_0
+      - COREOS_DIGITALOCEAN_IPV4_PUBLIC_0
+      - COREOS_DIGITALOCEAN_IPV4_PRIVATE_0
+      - COREOS_DIGITALOCEAN_IPV6_PUBLIC_0
+      - COREOS_DIGITALOCEAN_IPV6_PRIVATE_0
   - ec2
     - SSH Keys
     - Attributes
@@ -22,7 +32,6 @@ The supported cloud providers and their respective metadata are as follows:
       - COREOS_GCE_HOSTNAME
       - COREOS_GCE_IP_EXTERNAL_0
       - COREOS_GCE_IP_LOCAL_0
-
   - packet
     - SSH Keys
     - Attributes

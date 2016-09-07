@@ -54,6 +54,7 @@ func FetchMetadata() (providers.Metadata, error) {
 
 	return providers.Metadata{
 		Attributes: attrs,
+		Hostname:   data.Hostname,
 		SshKeys:    data.SSHKeys,
 	}, nil
 }
