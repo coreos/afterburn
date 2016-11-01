@@ -18,6 +18,7 @@ import (
 	"bufio"
 	"encoding/xml"
 	"fmt"
+	"log"
 	"net"
 	"os"
 	"strconv"
@@ -31,6 +32,7 @@ import (
 const (
 	AgentName             = "com.coreos.metadata"
 	FabricProtocolVersion = "2012-11-30"
+	LeaseRetryInterval    = 500 * time.Millisecond
 )
 
 type metadata struct {
@@ -82,18 +84,21 @@ func findLease() (*os.File, error) {
 		return nil, fmt.Errorf("could not list interfaces: %v", err)
 	}
 
-	for _, iface := range ifaces {
-		lease, err := os.Open(fmt.Sprintf("/run/systemd/netif/leases/%d", iface.Index))
-		if os.IsNotExist(err) {
-			continue
-		} else if err != nil {
-			return nil, err
-		} else {
-			return lease, nil
+	for {
+		for _, iface := range ifaces {
+			lease, err := os.Open(fmt.Sprintf("/run/systemd/netif/leases/%d", iface.Index))
+			if os.IsNotExist(err) {
+				continue
+			} else if err != nil {
+				return nil, err
+			} else {
+				return lease, nil
+			}
 		}
-	}
 
-	return nil, fmt.Errorf("could not find any leases")
+		log.Print("no leases found. waiting...")
+		time.Sleep(LeaseRetryInterval)
+	}
 }
 
 func getFabricAddress() (net.IP, error) {
