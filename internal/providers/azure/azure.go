@@ -18,7 +18,6 @@ import (
 	"bufio"
 	"encoding/xml"
 	"fmt"
-	"log"
 	"net"
 	"os"
 	"strconv"
@@ -96,7 +95,7 @@ func findLease() (*os.File, error) {
 			}
 		}
 
-		log.Print("no leases found. waiting...")
+		fmt.Printf("No leases found. Waiting...")
 		time.Sleep(LeaseRetryInterval)
 	}
 }
