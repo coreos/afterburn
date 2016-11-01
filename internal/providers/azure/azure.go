@@ -95,7 +95,7 @@ func findLease() (*os.File, error) {
 			}
 		}
 
-		fmt.Printf("no leases found. waiting...")
+		fmt.Printf("No leases found. Waiting...")
 		time.Sleep(LeaseRetryInterval)
 	}
 }

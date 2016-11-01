@@ -31,7 +31,7 @@ type Client struct {
 func (c Client) Get(url string) ([]byte, error) {
 	delay := c.InitialBackoff
 	for attempt := 1; attempt <= c.MaxAttempts; attempt++ {
-		fmt.Printf("fetching %q: attempt #%d\n", url, attempt)
+		fmt.Printf("Fetching %q: Attempt #%d\n", url, attempt)
 
 		request, err := http.NewRequest("GET", url, nil)
 		if err != nil {
@@ -41,11 +41,11 @@ func (c Client) Get(url string) ([]byte, error) {
 		request.Header = c.Header
 
 		if response, err := (&http.Client{}).Do(request); err != nil {
-			fmt.Printf("failed to fetch: %v\n", err)
+			fmt.Printf("Failed to fetch: %v\n", err)
 		} else if response.StatusCode == http.StatusNotFound {
 			return nil, nil
 		} else if response.StatusCode != http.StatusOK {
-			fmt.Printf("failed to fetch: %s\n", http.StatusText(response.StatusCode))
+			fmt.Printf("Failed to fetch: %s\n", http.StatusText(response.StatusCode))
 		} else {
 			defer response.Body.Close()
 			return ioutil.ReadAll(response.Body)
