@@ -96,7 +96,10 @@ func fetchString(key string) (string, bool, error) {
 		},
 	}.Get("http://metadata.google.internal/computeMetadata/v1/" + key)
 
-	return string(body), (body != nil), err
+	// Google's metadata service returns a 200 success even if there is no
+	// resource. Instead of checking to see if there is a body, check to see
+	// if the body is empty.
+	return string(body), len(body) > 0, err
 }
 
 func fetchIP(key string) (net.IP, error) {
