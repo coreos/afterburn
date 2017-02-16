@@ -46,5 +46,12 @@ The supported cloud providers and their respective metadata are as follows:
       - COREOS_OPENSTACK_IPV4_LOCAL
       - COREOS_OPENSTACK_IPV4_PUBLIC
       - COREOS_OPENSTACK_INSTANCE_ID
+  - sakuracloud
+    - SSH Keys
+    - Network Configs
+    - Attributes
+      - COREOS_SAKURACLOUD_HOSTNAME
+      - COREOS_SAKURACLOUD_IPV4_0
+      - COREOS_SAKURACLOUD_IPV6_0
 
 [ignition]: https://github.com/coreos/ignition
