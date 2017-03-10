@@ -28,6 +28,7 @@ import (
 	"github.com/coreos/coreos-metadata/internal/providers/digitalocean"
 	"github.com/coreos/coreos-metadata/internal/providers/ec2"
 	"github.com/coreos/coreos-metadata/internal/providers/gce"
+	"github.com/coreos/coreos-metadata/internal/providers/openstackMetadata"
 	"github.com/coreos/coreos-metadata/internal/providers/packet"
 
 	"github.com/coreos/update-ssh-keys/authorized_keys_d"
@@ -80,7 +81,7 @@ func main() {
 	}
 
 	switch flags.provider {
-	case "azure", "digitalocean", "ec2", "gce", "packet":
+	case "azure", "digitalocean", "ec2", "gce", "packet", "openstack-metadata":
 	default:
 		fmt.Fprintf(os.Stderr, "invalid provider %q\n", flags.provider)
 		os.Exit(2)
@@ -142,6 +143,8 @@ func fetchMetadata(provider string) (providers.Metadata, error) {
 		return gce.FetchMetadata()
 	case "packet":
 		return packet.FetchMetadata()
+	case "openstack-metadata":
+		return openstackMetadata.FetchMetadata()
 	default:
 		panic("bad provider")
 	}
