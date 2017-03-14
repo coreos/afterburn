@@ -37,7 +37,8 @@ func FetchMetadata() (providers.Metadata, error) {
 	}
 
 	var data struct {
-		Error string `json:"error"`
+		Error        string `json:"error"`
+		PhoneHomeURL string `json:"phone_home_url"`
 		*metadata.CurrentDevice
 	}
 
@@ -51,6 +52,7 @@ func FetchMetadata() (providers.Metadata, error) {
 
 	attrs := ipAddresses(data.Network)
 	attrs["PACKET_HOSTNAME"] = data.Hostname
+	attrs["PACKET_PHONE_HOME_URL"] = data.PhoneHomeURL
 
 	return providers.Metadata{
 		Attributes: attrs,
