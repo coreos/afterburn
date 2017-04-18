@@ -40,8 +40,9 @@ var (
 )
 
 const (
-	cmdlinePath    = "/proc/cmdline"
-	cmdlineOEMFlag = "coreos.oem.id"
+	cmdlinePath        = "/proc/cmdline"
+	cmdlineOEMFlag     = "coreos.oem.id"
+	envVarNameProvider = "COREOS_METADATA_PROVIDER_OVERRIDE"
 )
 
 func main() {
@@ -78,6 +79,10 @@ func main() {
 		}
 
 		flags.provider = parseCmdline(args)
+	}
+
+	if envVarProvider := os.Getenv(envVarNameProvider); envVarProvider != "" {
+		flags.provider = envVarProvider
 	}
 
 	switch flags.provider {
