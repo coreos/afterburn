@@ -43,6 +43,10 @@ func FetchMetadata() (providers.Metadata, error) {
 	if err != nil {
 		return providers.Metadata{}, err
 	}
+	availabilityZone, _, err := fetchString("placement/availability-zone")
+	if err != nil {
+		return providers.Metadata{}, err
+	}
 
 	sshKeys, err := fetchSshKeys()
 	if err != nil {
@@ -51,10 +55,11 @@ func FetchMetadata() (providers.Metadata, error) {
 
 	return providers.Metadata{
 		Attributes: map[string]string{
-			"EC2_INSTANCE_ID": instanceId,
-			"EC2_IPV4_LOCAL":  providers.String(local),
-			"EC2_IPV4_PUBLIC": providers.String(public),
-			"EC2_HOSTNAME":    hostname,
+			"EC2_INSTANCE_ID":       instanceId,
+			"EC2_IPV4_LOCAL":        providers.String(local),
+			"EC2_IPV4_PUBLIC":       providers.String(public),
+			"EC2_HOSTNAME":          hostname,
+			"EC2_AVAILABILITY_ZONE": availabilityZone,
 		},
 		Hostname: hostname,
 		SshKeys:  sshKeys,
