@@ -16,6 +16,7 @@ package ec2
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"net"
 	"strings"
@@ -25,25 +26,52 @@ import (
 	"github.com/coreos/coreos-metadata/internal/retry"
 )
 
+type instanceIdDoc struct {
+	PrivateIp          string `json:"privateIp"`
+	DevpayProductCodes string `json:"devpayProductCodes"`
+	AvailabilityZone   string `json:"availabilityZone"`
+	Version            string `json:"version"`
+	Region             string `json:"region"`
+	PendingTime        string `json:"pendingTime"`
+	InstanceId         string `json:"instanceId"`
+	BillingProducts    string `json:"billingProducts"`
+	InstanceType       string `json:"instanceType"`
+	AccountId          string `json:"accountId"`
+	Architecture       string `json:"architecture"`
+	KernelId           string `json:"kernelId"`
+	RamdiskId          string `json:"ramdiskId"`
+	ImageId            string `json:"imageId"`
+}
+
 func FetchMetadata() (providers.Metadata, error) {
-	instanceId, _, err := fetchString("instance-id")
+	instanceId, _, err := fetchString("meta-data/instance-id")
 	if err != nil {
 		return providers.Metadata{}, err
 	}
 
-	public, err := fetchIP("public-ipv4")
+	public, err := fetchIP("meta-data/public-ipv4")
 	if err != nil {
 		return providers.Metadata{}, err
 	}
-	local, err := fetchIP("local-ipv4")
+	local, err := fetchIP("meta-data/local-ipv4")
 	if err != nil {
 		return providers.Metadata{}, err
 	}
-	hostname, _, err := fetchString("hostname")
+	hostname, _, err := fetchString("meta-data/hostname")
 	if err != nil {
 		return providers.Metadata{}, err
 	}
-	availabilityZone, _, err := fetchString("placement/availability-zone")
+	availabilityZone, _, err := fetchString("meta-data/placement/availability-zone")
+	if err != nil {
+		return providers.Metadata{}, err
+	}
+
+	instanceIdDocBlob, _, err := fetchString("dynamic/instance-identity/document")
+	if err != nil {
+		return providers.Metadata{}, err
+	}
+	var instanceIdDoc instanceIdDoc
+	err = json.Unmarshal([]byte(instanceIdDocBlob), &instanceIdDoc)
 	if err != nil {
 		return providers.Metadata{}, err
 	}
@@ -60,6 +88,7 @@ func FetchMetadata() (providers.Metadata, error) {
 			"EC2_IPV4_PUBLIC":       providers.String(public),
 			"EC2_HOSTNAME":          hostname,
 			"EC2_AVAILABILITY_ZONE": availabilityZone,
+			"EC2_REGION":            instanceIdDoc.Region,
 		},
 		Hostname: hostname,
 		SshKeys:  sshKeys,
@@ -71,7 +100,7 @@ func fetchString(key string) (string, bool, error) {
 		InitialBackoff: time.Second,
 		MaxBackoff:     time.Second * 5,
 		MaxAttempts:    10,
-	}.Get("http://169.254.169.254/2009-04-04/meta-data/" + key)
+	}.Get("http://169.254.169.254/2009-04-04/" + key)
 	return string(body), (body != nil), err
 }
 
