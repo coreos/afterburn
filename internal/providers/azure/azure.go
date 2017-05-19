@@ -39,6 +39,30 @@ type metadata struct {
 	dynamicIPv4 net.IP
 }
 
+type GoalState struct {
+	XMLName               xml.Name                `xml:"GoalState"`
+	Version               string                  `xml:"Version"`
+	Incarnation           string                  `xml:"Incarnation"`
+	ExpectedState         string                  `xml:"Machine>ExpectedState"`
+	StopRolesDeadlineHint string                  `xml:"Machine>StopRolesDeadlineHint"`
+	LBProbePorts          []int                   `xml:"Machine>LBProbePorts>Port"`
+	ExpectHealthReport    string                  `xml:"Machine>ExpectHealthReport"`
+	ContainerId           string                  `xml:"Container>ContainerId"`
+	RoleInstanceList      []GoalStateRoleInstance `xml:"Container>RoleInstanceList>RoleInstance"`
+}
+
+type GoalStateRoleInstance struct {
+	XMLName                  xml.Name `xml:"RoleInstance"`
+	InstanceId               string   `xml:"InstanceId"`
+	State                    string   `xml:"State"`
+	HostingEnvironmentConfig string   `xml:"Configuration>HostingEnvironmentConfig"`
+	SharedConfig             string   `xml:"Configuration>SharedConfig"`
+	ExtensionsConfig         string   `xml:"Configuration>ExtensionsConfig"`
+	FullConfig               string   `xml:"Configuration>FullConfig"`
+	Certificates             string   `xml:"Configuration>Certificates"`
+	ConfigName               string   `xml:"Configuration>ConfigName"`
+}
+
 func FetchMetadata() (providers.Metadata, error) {
 	addr, err := getFabricAddress()
 	if err != nil {
@@ -49,7 +73,12 @@ func FetchMetadata() (providers.Metadata, error) {
 		return providers.Metadata{}, err
 	}
 
-	config, err := fetchSharedConfig(addr)
+	goal, err := fetchGoalState(addr)
+	if err != nil {
+		return providers.Metadata{}, err
+	}
+
+	config, err := fetchSharedConfig(goal)
 	if err != nil {
 		return providers.Metadata{}, err
 	}
@@ -161,31 +190,32 @@ func assertFabricCompatible(endpoint net.IP, desiredVersion string) error {
 	return fmt.Errorf("fabric version %s is not compatible", desiredVersion)
 }
 
-func fetchSharedConfig(endpoint net.IP) (metadata, error) {
+func fetchGoalState(endpoint net.IP) (GoalState, error) {
 	client := getClient()
 
 	body, err := client.Getf("http://%s/machine/?comp=goalstate", endpoint)
 	if err != nil {
-		return metadata{}, fmt.Errorf("failed to fetch goal state: %v", err)
+		return GoalState{}, fmt.Errorf("failed to fetch goal state: %v", err)
 	}
 
-	goal := struct {
-		Container struct {
-			RoleInstanceList struct {
-				RoleInstance struct {
-					Configuration struct {
-						SharedConfig string
-					}
-				}
-			}
-		}
-	}{}
+	goal := GoalState{}
 
 	if err := xml.Unmarshal(body, &goal); err != nil {
-		return metadata{}, fmt.Errorf("failed to unmarshal response: %v", err)
+		return GoalState{}, fmt.Errorf("failed to unmarshal response: %v", err)
+	}
+	return goal, nil
+}
+
+func fetchSharedConfig(goal GoalState) (metadata, error) {
+	client := getClient()
+
+	if len(goal.RoleInstanceList) == 0 {
+		return metadata{}, fmt.Errorf("role instance list empty in goal state")
 	}
 
-	body, err = client.Get(goal.Container.RoleInstanceList.RoleInstance.Configuration.SharedConfig)
+	fmt.Printf("shared config url: %s\n", goal.RoleInstanceList[0].SharedConfig)
+
+	body, err := client.Get(goal.RoleInstanceList[0].SharedConfig)
 	if err != nil {
 		return metadata{}, fmt.Errorf("failed to fetch shared config: %v", err)
 	}
