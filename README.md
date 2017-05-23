@@ -27,6 +27,8 @@ The supported cloud providers and their respective metadata are as follows:
       - COREOS_EC2_IPV4_LOCAL
       - COREOS_EC2_IPV4_PUBLIC
       - COREOS_EC2_AVAILABILITY_ZONE
+      - COREOS_EC2_INSTANCE_ID
+      - COREOS_EC2_REGION
   - gce
     - SSH Keys
     - Attributes
