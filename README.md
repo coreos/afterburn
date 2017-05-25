@@ -20,6 +20,7 @@ The supported cloud providers and their respective metadata are as follows:
       - COREOS_DIGITALOCEAN_IPV4_PRIVATE_0
       - COREOS_DIGITALOCEAN_IPV6_PUBLIC_0
       - COREOS_DIGITALOCEAN_IPV6_PRIVATE_0
+      - COREOS_DIGITALOCEAN_REGION
   - ec2
     - SSH Keys
     - Attributes
