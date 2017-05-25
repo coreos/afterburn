@@ -52,6 +52,7 @@ type Metadata struct {
 	Hostname   string     `json:"hostname"`
 	Interfaces Interfaces `json:"interfaces"`
 	PublicKeys []string   `json:"public_keys"`
+	Region     string     `json:"region"`
 	DNS        DNS        `json:"dns"`
 }
 
@@ -87,6 +88,7 @@ func FetchMetadata() (providers.Metadata, error) {
 func parseAttributes(metadata Metadata) map[string]string {
 	attrs := map[string]string{
 		"DIGITALOCEAN_HOSTNAME": metadata.Hostname,
+		"DIGITALOCEAN_REGION":   metadata.Region,
 	}
 
 	for i, iface := range metadata.Interfaces.Public {
