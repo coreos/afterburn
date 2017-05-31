@@ -15,6 +15,7 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -37,6 +38,8 @@ import (
 var (
 	version       = "was not built properly"
 	versionString = fmt.Sprintf("coreos-metadata %s", version)
+
+	ErrUnknownProvider = errors.New("unknown provider")
 )
 
 const (
@@ -80,14 +83,13 @@ func main() {
 		flags.provider = parseCmdline(args)
 	}
 
-	switch flags.provider {
-	case "azure", "digitalocean", "ec2", "gce", "packet", "openstack-metadata":
-	default:
+	metadataFn, err := getMetadataProvider(flags.provider)
+	if err != nil {
 		fmt.Fprintf(os.Stderr, "invalid provider %q\n", flags.provider)
 		os.Exit(2)
 	}
 
-	metadata, err := fetchMetadata(flags.provider)
+	metadata, err := metadataFn()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to fetch metadata: %v\n", err)
 		os.Exit(1)
@@ -131,22 +133,22 @@ func parseCmdline(cmdline []byte) (oem string) {
 	return
 }
 
-func fetchMetadata(provider string) (providers.Metadata, error) {
-	switch provider {
+func getMetadataProvider(providerName string) (func() (providers.Metadata, error), error) {
+	switch providerName {
 	case "azure":
-		return azure.FetchMetadata()
+		return azure.FetchMetadata, nil
 	case "digitalocean":
-		return digitalocean.FetchMetadata()
+		return digitalocean.FetchMetadata, nil
 	case "ec2":
-		return ec2.FetchMetadata()
+		return ec2.FetchMetadata, nil
 	case "gce":
-		return gce.FetchMetadata()
+		return gce.FetchMetadata, nil
 	case "packet":
-		return packet.FetchMetadata()
+		return packet.FetchMetadata, nil
 	case "openstack-metadata":
-		return openstackMetadata.FetchMetadata()
+		return openstackMetadata.FetchMetadata, nil
 	default:
-		panic("bad provider")
+		return nil, ErrUnknownProvider
 	}
 }
 
