@@ -122,7 +122,7 @@ func fetchIP(key string) (net.IP, error) {
 }
 
 func fetchSshKeys() ([]string, error) {
-	keydata, present, err := fetchString("public-keys")
+	keydata, present, err := fetchString("meta-data/public-keys")
 	if err != nil {
 		return nil, fmt.Errorf("error reading keys: %v", err)
 	}
@@ -151,7 +151,7 @@ func fetchSshKeys() ([]string, error) {
 
 	keys := []string{}
 	for _, id := range keyIDs {
-		sshkey, _, err := fetchString(fmt.Sprintf("public-keys/%s/openssh-key", id))
+		sshkey, _, err := fetchString(fmt.Sprintf("meta-data/public-keys/%s/openssh-key", id))
 		if err != nil {
 			return nil, err
 		}
