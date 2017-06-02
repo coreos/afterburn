@@ -30,6 +30,7 @@ import (
 	"github.com/coreos/coreos-metadata/internal/providers/gce"
 	"github.com/coreos/coreos-metadata/internal/providers/openstackMetadata"
 	"github.com/coreos/coreos-metadata/internal/providers/packet"
+	"github.com/coreos/coreos-metadata/internal/providers/sakuracloud"
 
 	"github.com/coreos/update-ssh-keys/authorized_keys_d"
 )
@@ -81,7 +82,7 @@ func main() {
 	}
 
 	switch flags.provider {
-	case "azure", "digitalocean", "ec2", "gce", "packet", "openstack-metadata":
+	case "azure", "digitalocean", "ec2", "gce", "packet", "openstack-metadata", "sakuracloud":
 	default:
 		fmt.Fprintf(os.Stderr, "invalid provider %q\n", flags.provider)
 		os.Exit(2)
@@ -145,6 +146,8 @@ func fetchMetadata(provider string) (providers.Metadata, error) {
 		return packet.FetchMetadata()
 	case "openstack-metadata":
 		return openstackMetadata.FetchMetadata()
+	case "sakuracloud":
+		return sakuracloud.FetchMetadata()
 	default:
 		panic("bad provider")
 	}
