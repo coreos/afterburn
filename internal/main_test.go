@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"reflect"
 	"testing"
 )
@@ -20,12 +19,12 @@ func TestGetMetadataProvider(t *testing.T) {
 		{
 			desc: "unknown provider",
 			name: "not-supported",
-			err:  errors.New("unknown provider"),
+			err:  ErrUnknownProvider,
 		},
 		{
 			desc: "empty provider",
 			name: "",
-			err:  errors.New("unknown provider"),
+			err:  ErrUnknownProvider,
 		},
 	}
 
