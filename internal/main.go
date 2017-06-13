@@ -200,7 +200,7 @@ func writeMetadataKeys(username string, metadata providers.Metadata) error {
 	}
 	defer akd.Close()
 
-	ks := strings.Join(metadata.SshKeys, "\n")
+	ks := strings.Join(metadata.SshKeys, "\n") + "\n"
 	if err := akd.Add("coreos-metadata", []byte(ks), true, true); err != nil {
 		return err
 	}
@@ -218,7 +218,7 @@ func writeHostname(path string, metadata providers.Metadata) error {
 		return err
 	}
 
-	return ioutil.WriteFile(path, []byte(metadata.Hostname), 0644)
+	return ioutil.WriteFile(path, []byte(metadata.Hostname+"\n"), 0644)
 }
 
 func writeNetworkUnits(root string, metadata providers.Metadata) error {
