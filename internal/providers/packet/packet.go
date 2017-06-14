@@ -50,7 +50,12 @@ func FetchMetadata() (providers.Metadata, error) {
 		return providers.Metadata{}, errors.New(data.Error)
 	}
 
-	attrs := ipAddresses(data.Network)
+	network, err := parseNetwork(data.Network)
+	if err != nil {
+		return providers.Metadata{}, fmt.Errorf("failed to parse network config from metadata: %v", err)
+	}
+
+	attrs := getNetworkAttrs(data.Network)
 	attrs["PACKET_HOSTNAME"] = data.Hostname
 	attrs["PACKET_PHONE_HOME_URL"] = data.PhoneHomeURL
 
@@ -58,10 +63,60 @@ func FetchMetadata() (providers.Metadata, error) {
 		Attributes: attrs,
 		Hostname:   data.Hostname,
 		SshKeys:    data.SSHKeys,
+		Network:    network,
 	}, nil
 }
 
-func ipAddresses(network metadata.NetworkInfo) map[string]string {
+func parseNetwork(network metadata.NetworkInfo) ([]providers.NetworkInterface, error) {
+	ifaces := []providers.NetworkInterface{}
+
+	for _, iface := range network.Interfaces {
+		mac, err := net.ParseMAC(iface.MAC)
+		if err != nil {
+			return nil, fmt.Errorf("parsing MAC address %q: %v", iface.MAC, err)
+		}
+
+		ifaces = append(ifaces, providers.NetworkInterface{
+			HardwareAddress: mac,
+		})
+	}
+
+	iface := providers.NetworkInterface{}
+	for _, addr := range network.Addresses {
+		addrlen := 16
+		if addr.Address.To4() != nil {
+			addrlen = 4
+		}
+		dest := net.IPNet{
+			IP:   make([]byte, addrlen),
+			Mask: make([]byte, addrlen),
+		}
+		if !addr.Public {
+			if addrlen == 16 {
+				// private IPv6 address??
+				continue
+			}
+			dest = net.IPNet{
+				IP:   net.IPv4(10, 0, 0, 0),
+				Mask: net.IPMask(net.IPv4(255, 0, 0, 0)),
+			}
+		}
+
+		iface.IPAddresses = append(iface.IPAddresses, net.IPNet{
+			IP:   addr.Address,
+			Mask: []byte(addr.NetworkMask),
+		})
+		iface.Routes = append(iface.Routes, providers.NetworkRoute{
+			Destination: dest,
+			Gateway:     addr.Gateway,
+		})
+	}
+	ifaces = append(ifaces, iface)
+
+	return ifaces, nil
+}
+
+func getNetworkAttrs(network metadata.NetworkInfo) map[string]string {
 	var publicIPv4, privateIPv4, publicIPv6, privateIPv6 []net.IP
 
 	for _, addr := range network.Addresses {
