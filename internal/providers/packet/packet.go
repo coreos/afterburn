@@ -79,6 +79,7 @@ func parseNetwork(network metadata.NetworkInfo) ([]providers.NetworkInterface, e
 
 		ifaces = append(ifaces, providers.NetworkInterface{
 			HardwareAddress: mac,
+			Bond:            bondDev,
 		})
 	}
 

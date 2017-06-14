@@ -34,6 +34,7 @@ type NetworkInterface struct {
 	Nameservers     []net.IP
 	IPAddresses     []net.IPNet
 	Routes          []NetworkRoute
+	Bond            string
 }
 
 type NetworkRoute struct {
@@ -65,6 +66,9 @@ func (i NetworkInterface) NetworkConfig() string {
 	config += "\n[Network]\n"
 	for _, nameserver := range i.Nameservers {
 		config += fmt.Sprintf("DNS=%s\n", nameserver)
+	}
+	if i.Bond != "" {
+		config += fmt.Sprintf("Bond=%s\n", i.Bond)
 	}
 
 	for _, addr := range i.IPAddresses {
