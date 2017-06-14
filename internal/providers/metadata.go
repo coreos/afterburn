@@ -25,6 +25,7 @@ type Metadata struct {
 	Hostname   string
 	SshKeys    []string
 	Network    []NetworkInterface
+	NetDev     []NetworkDevice
 }
 
 type NetworkInterface struct {
@@ -40,6 +41,19 @@ type NetworkInterface struct {
 type NetworkRoute struct {
 	Destination net.IPNet
 	Gateway     net.IP
+}
+
+type NetworkDevice struct {
+	Name            string
+	Kind            string
+	HardwareAddress net.HardwareAddr
+	Priority        int
+	Sections        []Section
+}
+
+type Section struct {
+	Name       string
+	Attributes [][2]string
 }
 
 func (i NetworkInterface) UnitName() string {
@@ -76,6 +90,27 @@ func (i NetworkInterface) NetworkConfig() string {
 	}
 	for _, route := range i.Routes {
 		config += fmt.Sprintf("\n[Route]\nDestination=%s\nGateway=%s\n", route.Destination.String(), route.Gateway)
+	}
+
+	return config
+}
+
+func (d NetworkDevice) UnitName() string {
+	priority := d.Priority
+	if priority == 0 {
+		priority = 10
+	}
+	return fmt.Sprintf("%02d-%s.netdev", priority, d.Name)
+}
+
+func (d NetworkDevice) NetdevConfig() string {
+	config := fmt.Sprintf("[NetDev]\nName=%s\nKind=%s\nMACAddress=%s\n", d.Name, d.Kind, d.HardwareAddress)
+
+	for _, section := range d.Sections {
+		config += fmt.Sprintf("\n[%s]\n", section.Name)
+		for _, attr := range section.Attributes {
+			config += fmt.Sprintf("%s=%s\n", attr[0], attr[1])
+		}
 	}
 
 	return config

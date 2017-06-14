@@ -242,5 +242,13 @@ func writeNetworkUnits(root string, metadata providers.Metadata) error {
 		}
 	}
 
+	for _, device := range metadata.NetDev {
+		name := filepath.Join(root, device.UnitName())
+		err := ioutil.WriteFile(name, []byte(device.NetdevConfig()), 0644)
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }

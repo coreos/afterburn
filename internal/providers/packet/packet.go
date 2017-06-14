@@ -50,7 +50,7 @@ func FetchMetadata() (providers.Metadata, error) {
 		return providers.Metadata{}, errors.New(data.Error)
 	}
 
-	network, err := parseNetwork(data.Network)
+	network, netdev, err := parseNetwork(data.Network)
 	if err != nil {
 		return providers.Metadata{}, fmt.Errorf("failed to parse network config from metadata: %v", err)
 	}
@@ -64,17 +64,18 @@ func FetchMetadata() (providers.Metadata, error) {
 		Hostname:   data.Hostname,
 		SshKeys:    data.SSHKeys,
 		Network:    network,
+		NetDev:     netdev,
 	}, nil
 }
 
-func parseNetwork(network metadata.NetworkInfo) ([]providers.NetworkInterface, error) {
+func parseNetwork(network metadata.NetworkInfo) ([]providers.NetworkInterface, []providers.NetworkDevice, error) {
 	ifaces := []providers.NetworkInterface{}
 	bondDev := "bond0"
 
 	for _, iface := range network.Interfaces {
 		mac, err := net.ParseMAC(iface.MAC)
 		if err != nil {
-			return nil, fmt.Errorf("parsing MAC address %q: %v", iface.MAC, err)
+			return nil, nil, fmt.Errorf("parsing MAC address %q: %v", iface.MAC, err)
 		}
 
 		ifaces = append(ifaces, providers.NetworkInterface{
@@ -118,7 +119,33 @@ func parseNetwork(network metadata.NetworkInfo) ([]providers.NetworkInterface, e
 	}
 	ifaces = append(ifaces, iface)
 
-	return ifaces, nil
+	attrs := [][2]string{
+		// yay hardcoded stuff
+		{"TransmitHashPolicy", "layer3+4"},
+		{"MIIMonitorSec", ".1"},
+		{"UpDelaySec", ".2"},
+		{"DownDelaySec", ".2"},
+		{"Mode", network.BondingMode().String()},
+	}
+	if network.BondingMode() == metadata.BondingLACP {
+		attrs = append(attrs, [2]string{"LACPTransmitRate", "fast"})
+	}
+	netdevs := []providers.NetworkDevice{
+		{
+			Name:            bondDev,
+			Kind:            "bond",
+			HardwareAddress: ifaces[0].HardwareAddress,
+			Priority:        5,
+			Sections: []providers.Section{
+				{
+					Name:       "Bond",
+					Attributes: attrs,
+				},
+			},
+		},
+	}
+
+	return ifaces, netdevs, nil
 }
 
 func getNetworkAttrs(network metadata.NetworkInfo) map[string]string {
