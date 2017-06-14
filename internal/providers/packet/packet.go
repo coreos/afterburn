@@ -69,6 +69,7 @@ func FetchMetadata() (providers.Metadata, error) {
 
 func parseNetwork(network metadata.NetworkInfo) ([]providers.NetworkInterface, error) {
 	ifaces := []providers.NetworkInterface{}
+	bondDev := "bond0"
 
 	for _, iface := range network.Interfaces {
 		mac, err := net.ParseMAC(iface.MAC)
@@ -82,6 +83,7 @@ func parseNetwork(network metadata.NetworkInfo) ([]providers.NetworkInterface, e
 	}
 
 	iface := providers.NetworkInterface{
+		Name:     bondDev,
 		Priority: 5,
 	}
 	for _, addr := range network.Addresses {

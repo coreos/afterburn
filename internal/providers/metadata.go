@@ -28,6 +28,7 @@ type Metadata struct {
 }
 
 type NetworkInterface struct {
+	Name            string
 	HardwareAddress net.HardwareAddr
 	Priority        int
 	Nameservers     []net.IP
@@ -45,15 +46,27 @@ func (i NetworkInterface) UnitName() string {
 	if priority == 0 {
 		priority = 10
 	}
-	return fmt.Sprintf("%02d-%s.network", priority, i.HardwareAddress)
+	name := i.Name
+	if name == "" {
+		name = i.HardwareAddress.String()
+	}
+	return fmt.Sprintf("%02d-%s.network", priority, name)
 }
 
 func (i NetworkInterface) NetworkConfig() string {
-	config := fmt.Sprintf("[Match]\nMACAddress=%s\n\n[Network]\n", i.HardwareAddress)
+	config := "[Match]\n"
+	if i.Name != "" {
+		config += fmt.Sprintf("Name=%s\n", i.Name)
+	}
+	if i.HardwareAddress != nil {
+		config += fmt.Sprintf("MACAddress=%s\n", i.HardwareAddress)
+	}
 
+	config += "\n[Network]\n"
 	for _, nameserver := range i.Nameservers {
 		config += fmt.Sprintf("DNS=%s\n", nameserver)
 	}
+
 	for _, addr := range i.IPAddresses {
 		config += fmt.Sprintf("\n[Address]\nAddress=%s\n", addr.String())
 	}
