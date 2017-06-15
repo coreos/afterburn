@@ -15,10 +15,13 @@
 package packet
 
 import (
+	"bufio"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"net"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/coreos/coreos-metadata/internal/providers"
@@ -69,6 +72,11 @@ func FetchMetadata() (providers.Metadata, error) {
 }
 
 func parseNetwork(network metadata.NetworkInfo) ([]providers.NetworkInterface, []providers.NetworkDevice, error) {
+	nameservers, err := getDNSServers()
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to obtain DNS servers: %v", err)
+	}
+
 	ifaces := []providers.NetworkInterface{}
 	bondDev := "bond0"
 
@@ -85,8 +93,9 @@ func parseNetwork(network metadata.NetworkInfo) ([]providers.NetworkInterface, [
 	}
 
 	iface := providers.NetworkInterface{
-		Name:     bondDev,
-		Priority: 5,
+		Name:        bondDev,
+		Priority:    5,
+		Nameservers: nameservers,
 	}
 	for _, addr := range network.Addresses {
 		addrlen := 16
@@ -146,6 +155,32 @@ func parseNetwork(network metadata.NetworkInfo) ([]providers.NetworkInterface, [
 	}
 
 	return ifaces, netdevs, nil
+}
+
+func getDNSServers() ([]net.IP, error) {
+	state, err := os.Open("/run/systemd/netif/state")
+	if err != nil {
+		return nil, err
+	}
+	defer state.Close()
+
+	var addrs []net.IP
+	line := bufio.NewScanner(state)
+	for line.Scan() {
+		parts := strings.Split(line.Text(), "=")
+		if len(parts) == 2 && parts[0] == "DNS" {
+			for _, addr := range strings.Split(parts[1], " ") {
+				ip := net.ParseIP(addr)
+				if ip != nil {
+					addrs = append(addrs, ip)
+				}
+			}
+		}
+	}
+	if len(addrs) == 0 {
+		return nil, fmt.Errorf("no DNS servers in %v", state.Name())
+	}
+	return addrs, nil
 }
 
 func getNetworkAttrs(network metadata.NetworkInfo) map[string]string {
