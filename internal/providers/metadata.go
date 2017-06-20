@@ -29,6 +29,7 @@ type Metadata struct {
 
 type NetworkInterface struct {
 	HardwareAddress net.HardwareAddr
+	Priority        int
 	Nameservers     []net.IP
 	IPAddresses     []net.IPNet
 	Routes          []NetworkRoute
@@ -37,6 +38,14 @@ type NetworkInterface struct {
 type NetworkRoute struct {
 	Destination net.IPNet
 	Gateway     net.IP
+}
+
+func (i NetworkInterface) UnitName() string {
+	priority := i.Priority
+	if priority == 0 {
+		priority = 10
+	}
+	return fmt.Sprintf("%02d-%s.network", priority, i.HardwareAddress)
 }
 
 func (i NetworkInterface) NetworkConfig() string {
