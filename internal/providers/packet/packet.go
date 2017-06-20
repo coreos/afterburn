@@ -81,7 +81,9 @@ func parseNetwork(network metadata.NetworkInfo) ([]providers.NetworkInterface, e
 		})
 	}
 
-	iface := providers.NetworkInterface{}
+	iface := providers.NetworkInterface{
+		Priority: 5,
+	}
 	for _, addr := range network.Addresses {
 		addrlen := 16
 		if addr.Address.To4() != nil {
