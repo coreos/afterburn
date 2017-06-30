@@ -31,6 +31,7 @@ import (
 	"github.com/coreos/coreos-metadata/internal/providers/gce"
 	"github.com/coreos/coreos-metadata/internal/providers/openstackMetadata"
 	"github.com/coreos/coreos-metadata/internal/providers/packet"
+	"github.com/coreos/coreos-metadata/internal/providers/vagrant_virtualbox"
 
 	"github.com/coreos/update-ssh-keys/authorized_keys_d"
 )
@@ -147,6 +148,8 @@ func getMetadataProvider(providerName string) (func() (providers.Metadata, error
 		return packet.FetchMetadata, nil
 	case "openstack-metadata":
 		return openstackMetadata.FetchMetadata, nil
+	case "vagrant-virtualbox":
+		return vagrant_virtualbox.FetchMetadata, nil
 	default:
 		return nil, ErrUnknownProvider
 	}
