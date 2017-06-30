@@ -1,3 +1,15 @@
+30-Jun-2017 COREOS-METADATA v0.11.0
+
+  Features
+
+    - Add COREOS_DIGITALOCEAN_REGION
+    - Add vagrant_virtualbox provider
+
+  Bug Fixes
+
+    - Properly fetch SSH keys on EC2
+    - Add trailing newlines to hostname and SSH key files
+
 23-May-2017 COREOS-METADATA v0.10.0
 
   Features
