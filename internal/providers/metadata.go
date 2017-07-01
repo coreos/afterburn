@@ -25,13 +25,17 @@ type Metadata struct {
 	Hostname   string
 	SshKeys    []string
 	Network    []NetworkInterface
+	NetDev     []NetworkDevice
 }
 
 type NetworkInterface struct {
+	Name            string
 	HardwareAddress net.HardwareAddr
+	Priority        int
 	Nameservers     []net.IP
 	IPAddresses     []net.IPNet
 	Routes          []NetworkRoute
+	Bond            string
 }
 
 type NetworkRoute struct {
@@ -39,17 +43,74 @@ type NetworkRoute struct {
 	Gateway     net.IP
 }
 
-func (i NetworkInterface) NetworkConfig() string {
-	config := fmt.Sprintf("[Match]\nMACAddress=%s\n\n[Network]\n", i.HardwareAddress)
+type NetworkDevice struct {
+	Name            string
+	Kind            string
+	HardwareAddress net.HardwareAddr
+	Priority        int
+	Sections        []Section
+}
 
+type Section struct {
+	Name       string
+	Attributes [][2]string
+}
+
+func (i NetworkInterface) UnitName() string {
+	priority := i.Priority
+	if priority == 0 {
+		priority = 10
+	}
+	name := i.Name
+	if name == "" {
+		name = i.HardwareAddress.String()
+	}
+	return fmt.Sprintf("%02d-%s.network", priority, name)
+}
+
+func (i NetworkInterface) NetworkConfig() string {
+	config := "[Match]\n"
+	if i.Name != "" {
+		config += fmt.Sprintf("Name=%s\n", i.Name)
+	}
+	if i.HardwareAddress != nil {
+		config += fmt.Sprintf("MACAddress=%s\n", i.HardwareAddress)
+	}
+
+	config += "\n[Network]\n"
 	for _, nameserver := range i.Nameservers {
 		config += fmt.Sprintf("DNS=%s\n", nameserver)
 	}
+	if i.Bond != "" {
+		config += fmt.Sprintf("Bond=%s\n", i.Bond)
+	}
+
 	for _, addr := range i.IPAddresses {
 		config += fmt.Sprintf("\n[Address]\nAddress=%s\n", addr.String())
 	}
 	for _, route := range i.Routes {
 		config += fmt.Sprintf("\n[Route]\nDestination=%s\nGateway=%s\n", route.Destination.String(), route.Gateway)
+	}
+
+	return config
+}
+
+func (d NetworkDevice) UnitName() string {
+	priority := d.Priority
+	if priority == 0 {
+		priority = 10
+	}
+	return fmt.Sprintf("%02d-%s.netdev", priority, d.Name)
+}
+
+func (d NetworkDevice) NetdevConfig() string {
+	config := fmt.Sprintf("[NetDev]\nName=%s\nKind=%s\nMACAddress=%s\n", d.Name, d.Kind, d.HardwareAddress)
+
+	for _, section := range d.Sections {
+		config += fmt.Sprintf("\n[%s]\n", section.Name)
+		for _, attr := range section.Attributes {
+			config += fmt.Sprintf("%s=%s\n", attr[0], attr[1])
+		}
 	}
 
 	return config

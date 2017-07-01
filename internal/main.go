@@ -235,8 +235,16 @@ func writeNetworkUnits(root string, metadata providers.Metadata) error {
 	}
 
 	for _, iface := range metadata.Network {
-		name := filepath.Join(root, fmt.Sprintf("00-%s.network", iface.HardwareAddress))
+		name := filepath.Join(root, iface.UnitName())
 		err := ioutil.WriteFile(name, []byte(iface.NetworkConfig()), 0644)
+		if err != nil {
+			return err
+		}
+	}
+
+	for _, device := range metadata.NetDev {
+		name := filepath.Join(root, device.UnitName())
+		err := ioutil.WriteFile(name, []byte(device.NetdevConfig()), 0644)
 		if err != nil {
 			return err
 		}
