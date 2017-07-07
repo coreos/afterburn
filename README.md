@@ -50,5 +50,14 @@ The supported cloud providers and their respective metadata are as follows:
       - COREOS_OPENSTACK_IPV4_LOCAL
       - COREOS_OPENSTACK_IPV4_PUBLIC
       - COREOS_OPENSTACK_INSTANCE_ID
+  - cloudstack-configdrive
+    - SSH Keys
+    - Attributes
+      - CLOUDSTACK_AVAILABILITY_ZONE
+      - CLOUDSTACK_INSTANCE_ID
+      - CLOUDSTACK_SERVICE_OFFERING
+      - CLOUDSTACK_CLOUD_IDENTIFIER
+      - CLOUDSTACK_LOCAL_HOSTNAME
+      - CLOUDSTACK_VM_ID
 
 [ignition]: https://github.com/coreos/ignition
