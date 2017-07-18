@@ -1,0 +1,4 @@
+[root]
+name = "coreos-metadata"
+version = "0.1.0"
+
