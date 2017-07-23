@@ -48,8 +48,15 @@ fn main() {
 
     debug!("Logging initialized");
 
-    let config = init().unwrap();
-    info!("{:?}", config)
+    let config = match init() {
+        Ok(config) => config,
+        Err(err) => {
+            error!("initialization"; "error" => err);
+            panic!()
+        }
+    };
+
+    trace!("cli configuration - {:?}", config);
 }
 
 fn init() -> Result<Config, String> {
@@ -120,7 +127,5 @@ fn get_oem() -> Result<String, String> {
         }
     }
 
-    // if we didn't find the oem flag then explode
-    // panic!("Couldn't find '{}' flag in cmdline file ({})", CMDLINE_OEM_FLAG, CMDLINE_PATH)
     Err(format!("Couldn't find '{}' flag in cmdline file ({})", CMDLINE_OEM_FLAG, CMDLINE_PATH))
 }

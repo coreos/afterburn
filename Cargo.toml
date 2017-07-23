@@ -5,7 +5,10 @@ authors = ["Stephen Demos <stephen.demos@coreos.com>"]
 
 [dependencies]
 clap = "*"
-slog = "*"
 slog-term = "*"
 slog-async = "*"
 slog-scope = "*"
+
+[dependencies.slog]
+version = "*"
+features = ["max_level_trace"]
