@@ -44,6 +44,30 @@ type Provider = fn() -> Result<Metadata, String>;
 struct Metadata {
 }
 
+impl Metadata {
+    pub fn write_attributes(&self, _attributes_file: String) -> Result<(), String> {
+        Err("not implemented".to_string())
+    }
+    pub fn write_ssh_keys(&self, _ssh_keys_user: String) -> Result<(), String> {
+        Err("not implemented".to_string())
+    }
+    pub fn write_hostname(&self, _hostname_file: String) -> Result<(), String> {
+        Err("not implemented".to_string())
+    }
+    pub fn write_network_units(&self, _network_units_dir: String) -> Result<(), String> {
+        Err("not implemented".to_string())
+    }
+}
+
+macro_rules! log_and_die {
+    ($x:expr) => {
+        |err| {
+            error!($x; "error" => err);
+            panic!()
+        }
+    };
+}
+
 fn main() {
     // setup logging
     let decorator = slog_term::TermDecorator::new().build();
@@ -54,33 +78,41 @@ fn main() {
 
     debug!("Logging initialized");
 
-    let config = match init() {
-        Ok(config) => config,
-        Err(err) => {
-            error!("initialization"; "error" => err);
-            panic!()
-        }
-    };
+    // initialize program
+    let config = init()
+        .unwrap_or_else(log_and_die!("initialization"));
 
     trace!("cli configuration - {:?}", config);
 
     // get the concrete provider from the configured value
-    let fetch = match get_metadata_fetch(config.provider) {
-        Ok(provider) => provider,
-        Err(err) => {
-            error!("getting provider"; "error" => err);
-            panic!()
-        }
-    };
+    let fetch = get_metadata_fetch(config.provider)
+        .unwrap_or_else(log_and_die!("getting provider"));
 
     // fetch the metadata from that provider
-    let _metadata = match fetch() {
-        Ok(metadata) => metadata,
-        Err(err) => {
-            error!("fetching metadata from provider"; "error" => err);
-            panic!()
-        }
-    };
+    let metadata = fetch()
+        .unwrap_or_else(log_and_die!("fetching metadata from provider"));
+
+    // write attributes if configured to do so
+    config.attributes_file
+        .map_or(Ok(()), |x| metadata.write_attributes(x))
+        .unwrap_or_else(log_and_die!("writing metadata attributes"));
+
+    // write ssh keys if configured to do so
+    config.ssh_keys_user
+        .map_or(Ok(()), |x| metadata.write_ssh_keys(x))
+        .unwrap_or_else(log_and_die!("writing metadata attributes"));
+
+    // write hostname if configured to do so
+    config.hostname_file
+        .map_or(Ok(()), |x| metadata.write_hostname(x))
+        .unwrap_or_else(log_and_die!("writing metadata attributes"));
+
+    // write network units if configured to do so
+    config.network_units_dir
+        .map_or(Ok(()), |x| metadata.write_network_units(x))
+        .unwrap_or_else(log_and_die!("writing metadata attributes"));
+
+    debug!("Done!")
 }
 
 fn init() -> Result<Config, String> {
