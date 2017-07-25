@@ -25,6 +25,7 @@ use std::fs::File;
 use std::io::prelude::*;
 use clap::{Arg, App};
 use slog::Drain;
+use std::ops::Deref;
 
 const CMDLINE_PATH: &'static str = "/proc/cmdline";
 const CMDLINE_OEM_FLAG:&'static str = "coreos.oem.id";
@@ -36,6 +37,11 @@ struct Config {
     ssh_keys_user: Option<String>,
     hostname_file: Option<String>,
     network_units_dir: Option<String>,
+}
+
+type Provider = fn() -> Result<Metadata, String>;
+
+struct Metadata {
 }
 
 fn main() {
@@ -57,6 +63,24 @@ fn main() {
     };
 
     trace!("cli configuration - {:?}", config);
+
+    // get the concrete provider from the configured value
+    let fetch = match get_metadata_fetch(config.provider) {
+        Ok(provider) => provider,
+        Err(err) => {
+            error!("getting provider"; "error" => err);
+            panic!()
+        }
+    };
+
+    // fetch the metadata from that provider
+    let _metadata = match fetch() {
+        Ok(metadata) => metadata,
+        Err(err) => {
+            error!("fetching metadata from provider"; "error" => err);
+            panic!()
+        }
+    };
 }
 
 fn init() -> Result<Config, String> {
@@ -128,4 +152,10 @@ fn get_oem() -> Result<String, String> {
     }
 
     Err(format!("Couldn't find '{}' flag in cmdline file ({})", CMDLINE_OEM_FLAG, CMDLINE_PATH))
+}
+
+fn get_metadata_fetch(provider: String) -> Result<Provider, String> {
+    match provider.deref() {
+        _ => Err(format!("unknown provider '{}'", provider)),
+    }
 }
