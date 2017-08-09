@@ -5,6 +5,7 @@ authors = ["Stephen Demos <stephen.demos@coreos.com>"]
 
 [dependencies]
 clap = "*"
+users = "*"
 slog-term = "*"
 slog-async = "*"
 slog-scope = "*"

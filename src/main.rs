@@ -20,12 +20,17 @@ extern crate slog_term;
 extern crate slog_async;
 #[macro_use]
 extern crate slog_scope;
+extern crate users;
 
+use std::fs;
 use std::fs::File;
+use std::path::{Path, PathBuf};
 use std::io::prelude::*;
 use clap::{Arg, App};
 use slog::Drain;
 use std::ops::Deref;
+use std::collections::HashMap;
+use users::os::unix::UserExt;
 
 const CMDLINE_PATH: &'static str = "/proc/cmdline";
 const CMDLINE_OEM_FLAG:&'static str = "coreos.oem.id";
@@ -42,20 +47,140 @@ struct Config {
 type Provider = fn() -> Result<Metadata, String>;
 
 struct Metadata {
+    attributes: HashMap<String, String>,
+    hostname: Option<String>,
+    ssh_keys: Vec<String>,
+    network: Vec<NetworkInterface>,
+    net_dev: Vec<NetworkDevice>,
+}
+
+struct NetworkInterface {
+}
+
+struct NetworkDevice{
+}
+
+impl NetworkInterface {
+    fn unit_name(&self) -> String {
+        String::new()
+    }
+    fn config(&self) -> String {
+        String::new()
+    }
+}
+
+impl NetworkDevice {
+    fn unit_name(&self) -> String {
+        String::new()
+    }
+    fn config(&self) -> String {
+        String::new()
+    }
+}
+
+fn create_file(filename: String) -> Result<File, String> {
+    let file_path = Path::new(&filename);
+    // create the directories if they don't exist
+    let folder = file_path.parent()
+        .ok_or(format!("could not get parent directory of {:?}", file_path))?;
+    fs::create_dir_all(&folder)
+        .map_err(|err| format!("failed to create directory {:?}: {:?}", folder, err))?;
+    // create (or truncate) the file we want to write to
+    File::create(file_path)
+        .map_err(|err| format!("failed to create file {:?}: {:?}", file_path, err))
+}
+
+// this actually has to be a lot more complicate than this. We need to properly
+// interact with the existing go tooling, which uses lock files on disk to
+// ensure that only one program is manipulating the authorized keys
+// this whole part of the os is really weird.
+// for now, with this poc, just leave it like this.
+fn create_authorized_keys_dir(user: users::User) -> Result<PathBuf, String> {
+    // construct the path to the authorized keys directory
+    let ssh_dir = user.home_dir().join(".ssh");
+    let authorized_keys_dir = ssh_dir.join("authorized_keys.d");
+    // check if the authorized keys directory exists
+    if authorized_keys_dir.is_dir() {
+        // if it does, just return
+        return Ok(authorized_keys_dir);
+    }
+    // if it doesn't, create it
+    fs::create_dir_all(&authorized_keys_dir)
+        .map_err(|err| format!("failed to create directory {:?}: {:?}", authorized_keys_dir, err))?;
+    // check if there is an authorized keys file
+    let authorized_keys_file = ssh_dir.join("authorized_keys");
+    if authorized_keys_file.is_file() {
+        // if there is, copy it into the authorized keys directory
+        let preserved_keys_file = authorized_keys_dir.join("orig_authorzied_keys");
+        fs::copy(&authorized_keys_file, preserved_keys_file)
+            .map_err(|err| format!("failed to copy old authorzied keys file: {:?}", err))?;
+    }
+    // then we are done
+    Ok(authorized_keys_dir)
+}
+
+fn sync_authorized_keys(authorized_keys_dir: PathBuf) -> Result<(), String> {
+    let ssh_dir = authorized_keys_dir.parent()
+        .ok_or(format!("could not get parent directory of {:?}", authorized_keys_dir))?;
+    let authorized_keys_file = File::create(ssh_dir.join("authorized_keys"))
+        .map_err(|err| format!("failed to create file {:?}: {:?}", ssh_dir.join("authorized_keys"), err));
+    let dir = fs::read_dir(authorized_keys_dir)
+        .map_err(|err| format!("failed to read from directory {:?}: {:?}", authorized_keys_dir, err))?;
+    for entry in dir {
+
+    }
 }
 
 impl Metadata {
-    pub fn write_attributes(&self, _attributes_file: String) -> Result<(), String> {
-        Err("not implemented".to_string())
+    fn write_attributes(&self, attributes_file_path: String) -> Result<(), String> {
+        let mut attributes_file = create_file(attributes_file_path)?;
+        for (k,v) in &self.attributes {
+            write!(&mut attributes_file, "COREOS_{}={}\n", k, v)
+                .map_err(|err| format!("failed to write attributes to file {:?}: {:?}", attributes_file, err))?;
+        }
+        Ok(())
     }
-    pub fn write_ssh_keys(&self, _ssh_keys_user: String) -> Result<(), String> {
-        Err("not implemented".to_string())
+    fn write_ssh_keys(&self, ssh_keys_user: String) -> Result<(), String> {
+        let user = users::get_user_by_name(ssh_keys_user.as_str())
+            .ok_or(format!("could not find user with username {:?}", ssh_keys_user))?;
+        let authorized_keys_dir = create_authorized_keys_dir(user)?;
+        let mut authorized_keys_file = File::create(authorized_keys_dir.join("coreos-metadata"))
+            .map_err(|err| format!("failed to create the file {:?} in the ssh authorized users directory: {:?}", "coreos-metadata", err))?;
+        for ssh_key in &self.ssh_keys {
+            write!(&mut authorized_keys_file, "{}\n", ssh_key)
+                .map_err(|err| format!("failed to write ssh key to file {:?}: {:?}", authorized_keys_file, err))?;
+        }
+        sync_authorized_keys(authorized_keys_dir)
     }
-    pub fn write_hostname(&self, _hostname_file: String) -> Result<(), String> {
-        Err("not implemented".to_string())
+    fn write_hostname(&self, hostname_file_path: String) -> Result<(), String> {
+        match self.hostname {
+            Some(ref hostname) => {
+                let mut hostname_file = create_file(hostname_file_path)?;
+                write!(&mut hostname_file, "{}\n", hostname)
+                    .map_err(|err| format!("failed to write hostname {:?} to file {:?}: {:?}", self.hostname, hostname_file, err))
+            }
+            None => Ok(())
+        }
     }
-    pub fn write_network_units(&self, _network_units_dir: String) -> Result<(), String> {
-        Err("not implemented".to_string())
+    fn write_network_units(&self, network_units_dir: String) -> Result<(), String> {
+        let dir_path = Path::new(&network_units_dir);
+        fs::create_dir_all(&dir_path)
+            .map_err(|err| format!("failed to create directory {:?}: {:?}", dir_path, err))?;
+        for interface in &self.network {
+            let file_path = dir_path.join(interface.unit_name());
+            let mut unit_file = File::create(&file_path)
+                .map_err(|err| format!("failed to create file {:?}: {:?}", file_path, err))?;
+            write!(&mut unit_file, "{}", interface.config())
+                .map_err(|err| format!("failed to write network interface unit file {:?}: {:?}", unit_file, err))?;
+        }
+        for device in &self.net_dev {
+            let file_path = dir_path.join(device.unit_name());
+            let mut unit_file = File::create(&file_path)
+                .map_err(|err| format!("failed to create file {:?}: {:?}", file_path, err))?;
+            write!(&mut unit_file, "{}", device.config())
+                .map_err(|err| format!("failed to write network device unit file {:?}: {:?}", unit_file, err))?;
+        }
+        Ok(())
     }
 }
 
