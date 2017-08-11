@@ -40,11 +40,11 @@ pub struct NetworkRoute {
 }
 
 #[derive(Clone, Copy, Debug)]
-pub struct MacAddr(pub u8, pub u8, pub u8,pub u8, pub u8, pub u8, pub u8, pub u8);
+pub struct MacAddr(pub u8, pub u8, pub u8,pub u8, pub u8, pub u8);
 
 impl fmt::Display for MacAddr {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:x}:{:x}:{:x}:{:x}:{:x}:{:x}:{:x}:{:x}", self.0, self.1, self.2, self.3, self.4, self.5, self.6, self.7)
+        write!(f, "{:02x}:{:02x}:{:02x}:{:02x}:{:02x}:{:02x}", self.0, self.1, self.2, self.3, self.4, self.5)
     }
 }
 
@@ -84,10 +84,10 @@ impl Interface {
     pub fn unit_name(&self) -> String {
         format!("{:02}-{}.network",
                 self.priority.unwrap_or(10),
-                self.name.clone().unwrap_or(
-                    self.mac_address.unwrap_or_else(
-                        // needs to be a lambda or we panic immediately
-                        // yay, manual thunking!
+                self.name.clone().unwrap_or_else(
+                    // needs to be a lambda or we panic immediately
+                    // yay, manual thunking!
+                    ||self.mac_address.unwrap_or_else(
                         ||panic!("interface needs either name or mac address (or both)")
                     ).to_string()
                 ))
@@ -143,5 +143,250 @@ impl Device {
         }
 
         config
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::net::{Ipv4Addr, Ipv6Addr};
+
+    #[test]
+    fn mac_addr_display() {
+        let m = MacAddr(0xf4,0x00,0x34,0x09,0x73,0xee);
+        assert_eq!(m.to_string(), "f4:00:34:09:73:ee");
+    }
+
+    #[test]
+    fn ip_network_display() {
+        let ips = vec![
+            (IpNetwork {
+                addr: IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)),
+                prefix: 8,
+            }, "127.0.0.1/8"),
+            (IpNetwork {
+                addr: IpAddr::V4(Ipv4Addr::new(129, 21, 50, 131)),
+                prefix: 32,
+            }, "129.21.50.131/32"),
+            (IpNetwork {
+                addr: IpAddr::V6(Ipv6Addr::new(0xfe80, 0, 0, 0, 0xf696, 0x34ff, 0xfe09, 0x7347)),
+                prefix: 64,
+            }, "fe80::f696:34ff:fe09:7347/64"),
+            (IpNetwork {
+                addr: IpAddr::V6(Ipv6Addr::new(0,0,0,0,0,0,0,1)),
+                prefix: 128,
+            }, "::1/128")
+        ];
+
+        for (ip, s) in ips {
+            assert_eq!(ip.to_string(), s);
+        }
+    }
+
+    #[test]
+    fn interface_unit_name() {
+        let is = vec![
+            (Interface {
+                name: Some(String::from("lo")),
+                mac_address: Some(MacAddr(0,0,0,0,0,0)),
+                priority: Some(20),
+                nameservers: vec![],
+                ip_addresses: vec![],
+                routes: vec![],
+                bond: None,
+            }, "20-lo.network"),
+            (Interface {
+                name: Some(String::from("lo")),
+                mac_address: Some(MacAddr(0,0,0,0,0,0)),
+                priority: None,
+                nameservers: vec![],
+                ip_addresses: vec![],
+                routes: vec![],
+                bond: None,
+            }, "10-lo.network"),
+            (Interface {
+                name: None,
+                mac_address: Some(MacAddr(0,0,0,0,0,0)),
+                priority: Some(20),
+                nameservers: vec![],
+                ip_addresses: vec![],
+                routes: vec![],
+                bond: None,
+            }, "20-00:00:00:00:00:00.network"),
+            (Interface {
+                name: Some(String::from("lo")),
+                mac_address: None,
+                priority: Some(20),
+                nameservers: vec![],
+                ip_addresses: vec![],
+                routes: vec![],
+                bond: None,
+            }, "20-lo.network"),
+        ];
+
+        for (i, s) in is {
+            assert_eq!(i.unit_name(), s);
+        }
+    }
+
+    #[test]
+    #[should_panic]
+    fn interface_unit_name_no_name_no_mac() {
+        let i = Interface {
+            name: None,
+            mac_address: None,
+            priority: Some(20),
+            nameservers: vec![],
+            ip_addresses: vec![],
+            routes: vec![],
+            bond: None,
+        };
+        let _name = i.unit_name();
+    }
+
+    #[test]
+    fn device_unit_name() {
+        let ds = vec![
+            (Device {
+                name: String::from("vlan0"),
+                kind: String::from("vlan"),
+                mac_address: MacAddr(0,0,0,0,0,0),
+                priority: Some(20),
+                sections: vec![],
+            }, "20-vlan0.netdev"),
+            (Device {
+                name: String::from("vlan0"),
+                kind: String::from("vlan"),
+                mac_address: MacAddr(0,0,0,0,0,0),
+                priority: None,
+                sections: vec![],
+            }, "10-vlan0.netdev"),
+        ];
+
+        for (d, s) in ds {
+            assert_eq!(d.unit_name(), s);
+        }
+    }
+
+    #[test]
+    fn interface_config() {
+        let is = vec![
+            (Interface {
+                name: Some(String::from("lo")),
+                mac_address: Some(MacAddr(0,0,0,0,0,0)),
+                priority: Some(20),
+                nameservers: vec![
+                    IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)),
+                    IpAddr::V6(Ipv6Addr::new(0, 0, 0, 0, 0, 0, 0, 1)),
+                ],
+                ip_addresses: vec![
+                    IpNetwork {
+                        addr: IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)),
+                        prefix: 8,
+                    },
+                    IpNetwork {
+                        addr: IpAddr::V6(Ipv6Addr::new(0, 0, 0, 0, 0, 0, 0, 1)),
+                        prefix: 128,
+                    }
+                ],
+                routes: vec![
+                    NetworkRoute {
+                        destination: IpNetwork {
+                            addr: IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)),
+                            prefix: 8,
+                        },
+                        gateway: IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)),
+                    }
+                ],
+                bond: Some(String::from("james")),
+            }, "[Match]
+Name=lo
+MACAddress=00:00:00:00:00:00
+
+[Network]
+DNS=127.0.0.1
+DNS=::1
+Bond=james
+
+[Address]
+Address=127.0.0.1/8
+
+[Address]
+Address=::1/128
+
+[Route]
+Destination=127.0.0.1/8
+Gateway=127.0.0.1
+"),
+            // this isn't really a valid interface object, but it's testing
+            // the minimum possible configuration for all peices at the same
+            // time, so I'll allow it. (sdemos)
+            (Interface {
+                name: None,
+                mac_address: None,
+                priority: None,
+                nameservers: vec![],
+                ip_addresses: vec![],
+                routes: vec![],
+                bond: None,
+            }, "[Match]
+
+[Network]
+")
+        ];
+
+        for (i, s) in is {
+            assert_eq!(i.config(), s);
+        }
+    }
+
+    #[test]
+    fn device_config() {
+        let ds = vec![
+            (Device {
+                name: String::from("vlan0"),
+                kind: String::from("vlan"),
+                mac_address: MacAddr(0,0,0,0,0,0),
+                priority: Some(20),
+                sections: vec![
+                    Section {
+                        name: String::from("Test"),
+                        attributes: vec![
+                            (String::from("foo"), String::from("bar")),
+                            (String::from("oingo"), String::from("boingo")),
+                        ]
+                    },
+                    Section {
+                        name: String::from("Empty"),
+                        attributes: vec![],
+                    }
+                ],
+            }, "[NetDev]
+Name=vlan0
+Kind=vlan
+MACAddress=00:00:00:00:00:00
+
+[Test]
+foo=bar
+oingo=boingo
+
+[Empty]
+"),
+            (Device {
+                name: String::from("vlan0"),
+                kind: String::from("vlan"),
+                mac_address: MacAddr(0,0,0,0,0,0),
+                priority: Some(20),
+                sections: vec![],
+            }, "[NetDev]
+Name=vlan0
+Kind=vlan
+MACAddress=00:00:00:00:00:00
+")
+        ];
+
+        for (d, s) in ds {
+            assert_eq!(d.config(), s);
+        }
     }
 }
