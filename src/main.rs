@@ -22,6 +22,8 @@ extern crate slog_async;
 extern crate slog_scope;
 extern crate users;
 
+#[macro_use]
+mod macros;
 mod metadata;
 mod ssh;
 mod network;
@@ -41,15 +43,6 @@ struct Config {
     ssh_keys_user: Option<String>,
     hostname_file: Option<String>,
     network_units_dir: Option<String>,
-}
-
-macro_rules! log_and_die {
-    ($x:expr) => {
-        |err| {
-            error!($x; "error" => err);
-            panic!()
-        }
-    };
 }
 
 fn main() {
@@ -144,12 +137,12 @@ fn init() -> Result<Config, String> {
 fn get_oem() -> Result<String, String> {
     // open the cmdline file
     let mut file = File::open(CMDLINE_PATH)
-        .map_err(|err| format!("Failed to open cmdline file ({}) - {}", CMDLINE_PATH, err))?;
+        .map_err(wrap_error!("Failed to open cmdline file ({})", CMDLINE_PATH))?;
 
     // read the contents
     let mut contents = String::new();
     file.read_to_string(&mut contents)
-        .map_err(|err| format!("Failed to read cmdline file ({}) - {}", CMDLINE_PATH, err))?;
+        .map_err(wrap_error!("Failed to read cmdline file ({})", CMDLINE_PATH))?;
 
     // split the contents into elements
     let params: Vec<Vec<&str>> = contents.split(' ')

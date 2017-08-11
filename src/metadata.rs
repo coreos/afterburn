@@ -35,10 +35,10 @@ fn create_file(filename: String) -> Result<File, String> {
     let folder = file_path.parent()
         .ok_or(format!("could not get parent directory of {:?}", file_path))?;
     fs::create_dir_all(&folder)
-        .map_err(|err| format!("failed to create directory {:?}: {:?}", folder, err))?;
+        .map_err(wrap_error!("failed to create directory {:?}", folder))?;
     // create (or truncate) the file we want to write to
     File::create(file_path)
-        .map_err(|err| format!("failed to create file {:?}: {:?}", file_path, err))
+        .map_err(wrap_error!("failed to create file {:?}", file_path))
 }
 
 impl Metadata {
@@ -46,7 +46,7 @@ impl Metadata {
         let mut attributes_file = create_file(attributes_file_path)?;
         for (k,v) in &self.attributes {
             write!(&mut attributes_file, "COREOS_{}={}\n", k, v)
-                .map_err(|err| format!("failed to write attributes to file {:?}: {:?}", attributes_file, err))?;
+                .map_err(wrap_error!("failed to write attributes to file {:?}", attributes_file))?;
         }
         Ok(())
     }
@@ -58,10 +58,10 @@ impl Metadata {
             .ok_or(format!("could not find user with username {:?}", ssh_keys_user))?;
         let authorized_keys_dir = ssh::create_authorized_keys_dir(user)?;
         let mut authorized_keys_file = File::create(authorized_keys_dir.join("coreos-metadata"))
-            .map_err(|err| format!("failed to create the file {:?} in the ssh authorized users directory: {:?}", "coreos-metadata", err))?;
+            .map_err(wrap_error!("failed to create the file {:?} in the ssh authorized users directory", "coreos-metadata"))?;
         for ssh_key in &self.ssh_keys {
             write!(&mut authorized_keys_file, "{}\n", ssh_key)
-                .map_err(|err| format!("failed to write ssh key to file {:?}: {:?}", authorized_keys_file, err))?;
+                .map_err(wrap_error!("failed to write ssh key to file {:?}", authorized_keys_file))?;
         }
         ssh::sync_authorized_keys(authorized_keys_dir)
     }
@@ -70,7 +70,7 @@ impl Metadata {
             Some(ref hostname) => {
                 let mut hostname_file = create_file(hostname_file_path)?;
                 write!(&mut hostname_file, "{}\n", hostname)
-                    .map_err(|err| format!("failed to write hostname {:?} to file {:?}: {:?}", self.hostname, hostname_file, err))
+                    .map_err(wrap_error!("failed to write hostname {:?} to file {:?}", self.hostname, hostname_file))
             }
             None => Ok(())
         }
@@ -78,20 +78,20 @@ impl Metadata {
     pub fn write_network_units(&self, network_units_dir: String) -> Result<(), String> {
         let dir_path = Path::new(&network_units_dir);
         fs::create_dir_all(&dir_path)
-            .map_err(|err| format!("failed to create directory {:?}: {:?}", dir_path, err))?;
+            .map_err(wrap_error!("failed to create directory {:?}", dir_path))?;
         for interface in &self.network {
             let file_path = dir_path.join(interface.unit_name());
             let mut unit_file = File::create(&file_path)
-                .map_err(|err| format!("failed to create file {:?}: {:?}", file_path, err))?;
+                .map_err(wrap_error!("failed to create file {:?}", file_path))?;
             write!(&mut unit_file, "{}", interface.config())
-                .map_err(|err| format!("failed to write network interface unit file {:?}: {:?}", unit_file, err))?;
+                .map_err(wrap_error!("failed to write network interface unit file {:?}", unit_file))?;
         }
         for device in &self.net_dev {
             let file_path = dir_path.join(device.unit_name());
             let mut unit_file = File::create(&file_path)
-                .map_err(|err| format!("failed to create file {:?}: {:?}", file_path, err))?;
+                .map_err(wrap_error!("failed to create file {:?}", file_path))?;
             write!(&mut unit_file, "{}", device.config())
-                .map_err(|err| format!("failed to write network device unit file {:?}: {:?}", unit_file, err))?;
+                .map_err(wrap_error!("failed to write network device unit file {:?}", unit_file))?;
         }
         Ok(())
     }

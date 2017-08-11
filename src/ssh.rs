@@ -37,14 +37,14 @@ pub fn create_authorized_keys_dir(user: users::User) -> Result<PathBuf, String> 
     }
     // if it doesn't, create it
     fs::create_dir_all(&authorized_keys_dir)
-        .map_err(|err| format!("failed to create directory {:?}: {:?}", authorized_keys_dir, err))?;
+        .map_err(wrap_error!("failed to create directory {:?}", authorized_keys_dir))?;
     // check if there is an authorized keys file
     let authorized_keys_file = ssh_dir.join("authorized_keys");
     if authorized_keys_file.is_file() {
         // if there is, copy it into the authorized keys directory
         let preserved_keys_file = authorized_keys_dir.join("orig_authorzied_keys");
         fs::copy(&authorized_keys_file, preserved_keys_file)
-            .map_err(|err| format!("failed to copy old authorzied keys file: {:?}", err))?;
+            .map_err(wrap_error!("failed to copy old authorzied keys file"))?;
     }
     // then we are done
     Ok(authorized_keys_dir)
@@ -54,27 +54,27 @@ pub fn sync_authorized_keys(authorized_keys_dir: PathBuf) -> Result<(), String> 
     let ssh_dir = authorized_keys_dir.parent()
         .ok_or(format!("could not get parent directory of {:?}", authorized_keys_dir))?;
     let mut authorized_keys_file = File::create(ssh_dir.join("authorized_keys"))
-        .map_err(|err| format!("failed to create file {:?}: {:?}", ssh_dir.join("authorized_keys"), err))?;
+        .map_err(wrap_error!("failed to create file {:?}", ssh_dir.join("authorized_keys")))?;
     flatten_dir(&mut authorized_keys_file, &authorized_keys_dir)
 }
 
 fn flatten_dir(mut file: &mut File, dir: &PathBuf) -> Result<(), String> {
     let dir_contents = fs::read_dir(&dir)
-        .map_err(|err| format!("failed to read from directory {:?}: {:?}", dir, err))?;
+        .map_err(wrap_error!("failed to read from directory {:?}", dir))?;
     for entry in dir_contents {
-        let entry = entry.map_err(|err| format!("failed to read entry in directory {:?}: {:?}", dir, err))?;
+        let entry = entry.map_err(wrap_error!("failed to read entry in directory {:?}", dir))?;
         let path = entry.path();
         if path.is_dir() {
             // if it's a directory, recurse into it
             flatten_dir(&mut file, &path)?;
         } else {
             let mut from = File::open(&path)
-                .map_err(|err| format!("failed to open file {:?}: {:?}", path, err))?;
+                .map_err(wrap_error!("failed to open file {:?}", path))?;
             let mut contents = String::new();
             from.read_to_string(&mut contents)
-                .map_err(|err| format!("failed to read file {:?}: {:?}", path, err))?;
+                .map_err(wrap_error!("failed to read file {:?}", path))?;
             write!(&mut file, "{}\n", contents)
-                .map_err(|err| format!("failed to write to file {:?}: {:?}", file, err))?;
+                .map_err(wrap_error!("failed to write to file {:?}", file))?;
         }
     }
     Ok(())
