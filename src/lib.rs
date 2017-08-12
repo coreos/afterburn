@@ -31,6 +31,7 @@ mod metadata;
 mod ssh;
 mod network;
 
+use providers::*;
 use metadata::Metadata;
 
 /// fetch_metadata is the generic, top-level function that is used by the main
@@ -38,6 +39,7 @@ use metadata::Metadata;
 /// function dispatches the call to the correct provider-specific fetch function
 pub fn fetch_metadata(provider: &str) -> Result<Metadata, String> {
     match provider {
+        "azure" => azure::fetch_metadata(),
         _ => Err(format!("unknown provider '{}'", provider)),
     }
 }

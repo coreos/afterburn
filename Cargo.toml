@@ -9,6 +9,18 @@ users = "*"
 slog-term = "*"
 slog-async = "*"
 slog-scope = "*"
+# use an old version of hyper
+# because the new ones are weird
+hyper = "0.10"
+mime = "0.3"
+serde = "1.0"
+serde_derive = "1.0"
+serde-xml-rs = "0.2"
+# use my fork of openssl until my changes are released
+# they are merged into master, just waiting on a tag
+openssl = { path = "/home/demos/projects/rust-openssl/openssl" }
+base64 = "0.6"
+byteorder = "1.1"
 
 [dependencies.slog]
 version = "*"
