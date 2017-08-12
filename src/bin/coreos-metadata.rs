@@ -23,15 +23,14 @@ extern crate slog_scope;
 extern crate users;
 
 #[macro_use]
-mod macros;
-mod metadata;
-mod ssh;
-mod network;
+extern crate coreos_metadata;
 
 use std::fs::File;
 use std::io::prelude::*;
 use clap::{Arg, App};
 use slog::Drain;
+
+use coreos_metadata::fetch_metadata;
 
 const CMDLINE_PATH: &'static str = "/proc/cmdline";
 const CMDLINE_OEM_FLAG:&'static str = "coreos.oem.id";
@@ -62,7 +61,7 @@ fn main() {
     trace!("cli configuration - {:?}", config);
 
     // fetch the metadata from the configured provider
-    let metadata = metadata::fetch_metadata(&config.provider)
+    let metadata = fetch_metadata(&config.provider)
         .unwrap_or_else(log_and_die!("fetching metadata from provider"));
 
     // write attributes if configured to do so

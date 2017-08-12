@@ -21,6 +21,10 @@ use users;
 use ssh;
 use network;
 
+pub struct MetadataBuilder {
+    metadata: Metadata,
+}
+
 pub struct Metadata {
     attributes: HashMap<String, String>,
     hostname: Option<String>,
@@ -41,7 +45,58 @@ fn create_file(filename: String) -> Result<File, String> {
         .map_err(wrap_error!("failed to create file {:?}", file_path))
 }
 
+impl MetadataBuilder {
+    pub fn new() -> Self {
+        MetadataBuilder {
+            metadata: Metadata::new(),
+        }
+    }
+
+    pub fn add_attribute(mut self, key: String, value: String) -> Self {
+        self.metadata.attributes.insert(key, value);
+        self
+    }
+
+    pub fn set_hostname(mut self, hostname: String) -> Self {
+        self.metadata.hostname = Some(hostname);
+        self
+    }
+
+    pub fn add_ssh_key(mut self, ssh_key: String) -> Self {
+        self.metadata.ssh_keys.push(ssh_key);
+        self
+    }
+
+    pub fn add_network_interface(mut self, interface: network::Interface) -> Self {
+        self.metadata.network.push(interface);
+        self
+    }
+
+    pub fn add_network_device(mut self, device: network::Device) -> Self {
+        self.metadata.net_dev.push(device);
+        self
+    }
+
+    pub fn build(self) -> Metadata {
+        self.metadata
+    }
+}
+
 impl Metadata {
+    pub fn builder() -> MetadataBuilder {
+        MetadataBuilder::new()
+    }
+
+    pub fn new() -> Self {
+        Metadata {
+            attributes: HashMap::new(),
+            hostname: None,
+            ssh_keys: vec![],
+            network: vec![],
+            net_dev: vec![],
+        }
+    }
+
     pub fn write_attributes(&self, attributes_file_path: String) -> Result<(), String> {
         let mut attributes_file = create_file(attributes_file_path)?;
         for (k,v) in &self.attributes {
@@ -94,14 +149,5 @@ impl Metadata {
                 .map_err(wrap_error!("failed to write network device unit file {:?}", unit_file))?;
         }
         Ok(())
-    }
-}
-
-/// fetch_metadata is the generic, top-level function that is used by the main
-/// function to fetch metadata. The configured provider is passed in and this
-/// function dispatches the call to the correct provider-specific fetch function
-pub fn fetch_metadata(provider: &str) -> Result<Metadata, String> {
-    match provider {
-        _ => Err(format!("unknown provider '{}'", provider)),
     }
 }
