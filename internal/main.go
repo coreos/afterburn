@@ -55,10 +55,10 @@ func (sm *StringMapFlag) String() string {
 }
 
 func (sm *StringMapFlag) Set(v string) error {
-	vals := strings.Split(v, "=")
+	vals := strings.SplitN(v, "=", 1)
 	if len(vals) != 2 {
-		fmt.Println("Could not split override set correctly")
-		return nil
+		fmt.Printf("Incorrectly formatted -set argument: %s\n", v)
+		return fmt.Errorf("Incorrectly formatted -set argument: %s", v)
 	}
 	(*sm)[vals[0]] = vals[1]
 	return nil
