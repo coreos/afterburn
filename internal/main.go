@@ -81,9 +81,9 @@ func main() {
 	flag.StringVar(&flags.hostname, "hostname", "", "The file into which the hostname should be written")
 	flag.StringVar(&flags.networkUnits, "network-units", "", "The directory into which network units are written")
 	flag.StringVar(&flags.provider, "provider", "", "The name of the cloud provider")
+	flag.Var(&flags.overrides, "set", "Set an environment variable, overriding the default/detected variable")
 	flag.StringVar(&flags.sshKeys, "ssh-keys", "", "Update SSH keys for the given user")
 	flag.BoolVar(&flags.version, "version", false, "Print the version and exit")
-	flag.Var(&flags.overrides, "set", "Set an environment variable, overriding the default/detected variable")
 
 	flag.Parse()
 
