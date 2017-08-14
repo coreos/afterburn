@@ -24,3 +24,9 @@
 //! `fetch_metadata()` function in metadata.rs.
 
 pub mod azure;
+pub mod digitalocean;
+pub mod ec2;
+pub mod gce;
+pub mod openstack;
+pub mod packet;
+pub mod vagrant_virtualbox;

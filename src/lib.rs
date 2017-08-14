@@ -40,6 +40,12 @@ use metadata::Metadata;
 pub fn fetch_metadata(provider: &str) -> Result<Metadata, String> {
     match provider {
         "azure" => azure::fetch_metadata(),
+        "digitalocean" => digitalocean::fetch_metadata(),
+        "ec2" => ec2::fetch_metadata(),
+        "gce" => gce::fetch_metadata(),
+        "openstack" => openstack::fetch_metadata(),
+        "packet" => packet::fetch_metadata(),
+        "vagrant_virtualbox" => vagrant_virtualbox::fetch_metadata(),
         _ => Err(format!("unknown provider '{}'", provider)),
     }
 }
