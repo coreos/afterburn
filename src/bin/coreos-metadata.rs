@@ -72,17 +72,17 @@ fn main() {
     // write ssh keys if configured to do so
     config.ssh_keys_user
         .map_or(Ok(()), |x| metadata.write_ssh_keys(x))
-        .unwrap_or_else(log_and_die!("writing metadata attributes"));
+        .unwrap_or_else(log_and_die!("writing ssh keys"));
 
     // write hostname if configured to do so
     config.hostname_file
         .map_or(Ok(()), |x| metadata.write_hostname(x))
-        .unwrap_or_else(log_and_die!("writing metadata attributes"));
+        .unwrap_or_else(log_and_die!("writing hostname"));
 
     // write network units if configured to do so
     config.network_units_dir
         .map_or(Ok(()), |x| metadata.write_network_units(x))
-        .unwrap_or_else(log_and_die!("writing metadata attributes"));
+        .unwrap_or_else(log_and_die!("writing network units"));
 
     debug!("Done!")
 }
