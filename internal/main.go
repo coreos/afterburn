@@ -48,6 +48,22 @@ const (
 	cmdlineOEMFlag = "coreos.oem.id"
 )
 
+type StringMapFlag map[string]string
+
+func (sm *StringMapFlag) String() string {
+	return fmt.Sprintf("%+v", *sm)
+}
+
+func (sm *StringMapFlag) Set(v string) error {
+	vals := strings.Split(v, "=")
+	if len(vals) != 2 {
+		fmt.Println("Could not split override set correctly")
+		return nil
+	}
+	(*sm)[vals[0]] = vals[1]
+	return nil
+}
+
 func main() {
 	flags := struct {
 		attributes   string
@@ -57,7 +73,8 @@ func main() {
 		provider     string
 		sshKeys      string
 		version      bool
-	}{}
+		overrides    StringMapFlag
+	}{overrides: make(map[string]string)}
 
 	flag.StringVar(&flags.attributes, "attributes", "", "The file into which the metadata attributes are written")
 	flag.BoolVar(&flags.cmdline, "cmdline", false, "Read the cloud provider from the kernel cmdline")
@@ -66,6 +83,7 @@ func main() {
 	flag.StringVar(&flags.provider, "provider", "", "The name of the cloud provider")
 	flag.StringVar(&flags.sshKeys, "ssh-keys", "", "Update SSH keys for the given user")
 	flag.BoolVar(&flags.version, "version", false, "Print the version and exit")
+	flag.Var(&flags.overrides, "set", "Set an environment variable, overriding the default/detected variable")
 
 	flag.Parse()
 
@@ -94,6 +112,11 @@ func main() {
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to fetch metadata: %v\n", err)
 		os.Exit(1)
+	}
+
+	// Merge flag provided overrides
+	for k, v := range flags.overrides {
+		metadata.Attributes[k] = v
 	}
 
 	if err := writeMetadataAttributes(flags.attributes, metadata); err != nil {
