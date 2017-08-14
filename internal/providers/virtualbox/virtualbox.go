@@ -12,21 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package vagrant_virtualbox
+package virtualbox
 
 import (
-	"errors"
-	"fmt"
-	"net"
 	"os"
-	"time"
 
 	"github.com/coreos/coreos-metadata/internal/providers"
 )
 
 type metadata struct {
-	privateIPv4 net.IP
-	hostname    string
+	hostname string
 }
 
 func FetchMetadata() (providers.Metadata, error) {
@@ -37,8 +32,7 @@ func FetchMetadata() (providers.Metadata, error) {
 
 	return providers.Metadata{
 		Attributes: map[string]string{
-			"VAGRANT_VIRTUALBOX_PRIVATE_IPV4": providers.String(config.privateIPv4),
-			"VAGRANT_VIRTUALBOX_HOSTNAME":     config.hostname,
+			"VIRTUALBOX_HOSTNAME": config.hostname,
 		},
 	}, nil
 }
@@ -46,44 +40,9 @@ func FetchMetadata() (providers.Metadata, error) {
 func genConfig() (metadata, error) {
 	config := metadata{}
 	var err error
-	config.privateIPv4, err = getIP()
-	if err != nil {
-		return metadata{}, err
-	}
 	config.hostname, err = os.Hostname()
 	if err != nil {
 		return metadata{}, err
 	}
 	return config, nil
-}
-
-func getIP() (net.IP, error) {
-	// eth1 may not yet be available or configured; wait
-	maxAttempts := 30
-	for attempt := 1; attempt <= maxAttempts; attempt++ {
-		interfaces, err := net.Interfaces()
-		if err != nil {
-			return nil, err
-		}
-		for _, iface := range interfaces {
-			if iface.Name == "eth1" {
-				addrs, err := iface.Addrs()
-				if err != nil {
-					return nil, err
-				}
-				for _, addr := range addrs {
-					ip, _, err := net.ParseCIDR(addr.String())
-					if err != nil {
-						return nil, err
-					}
-					if ip.To4() != nil {
-						return ip, nil
-					}
-				}
-			}
-		}
-		fmt.Println("eth1 not found; waiting 2 seconds")
-		time.Sleep(2 * time.Second)
-	}
-	return nil, errors.New("eth1 was not found!")
 }

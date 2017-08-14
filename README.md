@@ -50,5 +50,9 @@ The supported cloud providers and their respective metadata are as follows:
       - COREOS_OPENSTACK_IPV4_LOCAL
       - COREOS_OPENSTACK_IPV4_PUBLIC
       - COREOS_OPENSTACK_INSTANCE_ID
+  - virtualbox
+    - Attributes
+      - COREOS_VIRTUALBOX_HOSTNAME
+      - COREOS_VIRTUALBOX_IPV4 (only via vagrant)
 
 [ignition]: https://github.com/coreos/ignition
