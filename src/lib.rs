@@ -37,6 +37,7 @@ mod providers;
 mod metadata;
 mod ssh;
 mod network;
+mod retry;
 
 use providers::*;
 use metadata::Metadata;
