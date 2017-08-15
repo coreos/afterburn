@@ -85,21 +85,40 @@ struct CertificatesFile {
     pub data: String
 }
 
+#[derive(Debug, Deserialize)]
+struct Versions {
+    #[serde(rename = "Supported")]
+    pub supported: Supported
+}
+
+#[derive(Debug, Deserialize)]
+struct Supported {
+    #[serde(rename = "Version", default)]
+    pub versions: Vec<String>
+}
+
 struct Azure {
     client: Client,
+    endpoint: IpAddr,
 }
 
 impl Azure {
-    fn new() -> Self {
-        Azure {
+    fn new() -> Result<Self, String> {
+        let addr = Azure::get_fabric_address()
+            .map_err(wrap_error!("failed to get fabric address"))?;
+        let azure = Azure {
             client: Client::new(),
-        }
+            endpoint: addr,
+        };
+        azure.is_fabric_compatible(MS_VERSION)
+            .map_err(wrap_error!("failed version compatibility check"))?;
+        Ok(azure)
     }
 
     // I don't really understand why this is how we need to get this ip
     // address but this is how it works in the original implementation
     // and nobody complains about it, so w/e
-    fn get_fabric_address(&self) -> Result<IpAddr, String> {
+    fn get_fabric_address() -> Result<IpAddr, String> {
         // get the interfaces on the machine
         let interfaces = pnet::datalink::interfaces();
         trace!("interfaces - {:?}", interfaces);
@@ -137,13 +156,31 @@ impl Azure {
         Err(format!("failed to retrieve fabric address"))
     }
 
-    fn get_certs_endpoint(&self) -> Result<String, String> {
-        // get the address that we need to call to get the goalstate
-        let addr = self.get_fabric_address()
-            .map_err(wrap_error!("failed to get fabric address"))?;
+    fn is_fabric_compatible(&self, version: &str) -> Result<(), String> {
+        let mut res = self.client.get(&format!("http://{}/?comp=versions", self.endpoint))
+            .header(MSAgentName(MS_AGENT_NAME.to_owned()))
+            .header(MSVersion(MS_VERSION.to_owned()))
+            .header(header::ContentType(mime::Mime(mime::TopLevel::Text, mime::SubLevel::Xml, vec![(mime::Attr::Charset, mime::Value::Utf8)])))
+            .send()
+            .map_err(wrap_error!("failed to request versions"))?;
 
+        let mut body = String::new();
+        res.read_to_string(&mut body)
+            .map_err(wrap_error!("failed to read versions response body"))?;
+
+        let versions: Versions = deserialize(body.as_bytes())
+            .map_err(wrap_error!("failed to deserialize xml into versions struct"))?;
+
+        if versions.supported.versions.iter().any(|v| v == version) {
+            Ok(())
+        } else {
+            Err(format!("fabric version {} not compatible with fabric address {}", MS_VERSION, self.endpoint))
+        }
+    }
+
+    fn get_certs_endpoint(&self) -> Result<String, String> {
         // make the request to the goalstate endpoint
-        let mut res = self.client.get(&format!("http://{}/machine/?comp=goalstate", addr))
+        let mut res = self.client.get(&format!("http://{}/machine/?comp=goalstate", self.endpoint))
             .header(MSAgentName(MS_AGENT_NAME.to_owned()))
             .header(MSVersion(MS_VERSION.to_owned()))
             .header(header::ContentType(mime::Mime(mime::TopLevel::Text, mime::SubLevel::Xml, vec![(mime::Attr::Charset, mime::Value::Utf8)])))
@@ -225,7 +262,8 @@ impl Azure {
 }
 
 pub fn fetch_metadata() -> Result<Metadata, String> {
-    let provider = Azure::new();
+    let provider = Azure::new()
+        .map_err(wrap_error!("azure: failed create metadata client"))?;
 
     let ssh_pubkey = provider.get_ssh_pubkey()
         .map_err(wrap_error!("azure: failed to get ssh pubkey"))?;
