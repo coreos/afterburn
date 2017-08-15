@@ -68,6 +68,7 @@ impl<'a, D> RequestBuilder<'a, D>
     pub fn header<H>(mut self, header: H) -> Self
         where H: header::Header + header::HeaderFormat
     {
+        trace!("http request to '{}': adding header: {:?}", self.uri, header);
         self.req = self.req.header(header);
         self
     }
@@ -112,6 +113,7 @@ impl<D> Client<D>
 
     pub fn get(&self, uri: String) -> RequestBuilder<D> {
         trace!("http get request to '{}' with headers '{:?}'", uri, self.headers);
+
         let req = self.client.get(&uri).headers(self.headers.clone());
         RequestBuilder {
             req: req,

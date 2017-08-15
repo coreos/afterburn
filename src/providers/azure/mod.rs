@@ -20,18 +20,18 @@ use self::crypto::x509;
 
 use metadata::Metadata;
 
-use hyper::client::Client;
 use hyper::header;
 use hyper::mime;
 
 use pnet;
 
-use serde_xml_rs::deserialize;
+
+use retry;
 
 use std::net::{IpAddr, Ipv4Addr};
 use std::fs::File;
 use std::path::Path;
-use std::io::{BufRead, BufReader, Read};
+use std::io::{BufRead, BufReader};
 
 header! {(MSAgentName, "x-ms-agent-name") => [String]}
 header! {(MSVersion, "x-ms-version") => [String]}
@@ -98,7 +98,7 @@ struct Supported {
 }
 
 struct Azure {
-    client: Client,
+    client: retry::Client<retry::Xml>,
     endpoint: IpAddr,
 }
 
@@ -106,8 +106,12 @@ impl Azure {
     fn new() -> Result<Self, String> {
         let addr = Azure::get_fabric_address()
             .map_err(wrap_error!("failed to get fabric address"))?;
+        let client = retry::Client::new(retry::Xml)
+            .header(MSAgentName(MS_AGENT_NAME.to_owned()))
+            .header(MSVersion(MS_VERSION.to_owned()))
+            .header(header::ContentType(mime::Mime(mime::TopLevel::Text, mime::SubLevel::Xml, vec![(mime::Attr::Charset, mime::Value::Utf8)])));
         let azure = Azure {
-            client: Client::new(),
+            client: client,
             endpoint: addr,
         };
         azure.is_fabric_compatible(MS_VERSION)
@@ -157,19 +161,9 @@ impl Azure {
     }
 
     fn is_fabric_compatible(&self, version: &str) -> Result<(), String> {
-        let mut res = self.client.get(&format!("http://{}/?comp=versions", self.endpoint))
-            .header(MSAgentName(MS_AGENT_NAME.to_owned()))
-            .header(MSVersion(MS_VERSION.to_owned()))
-            .header(header::ContentType(mime::Mime(mime::TopLevel::Text, mime::SubLevel::Xml, vec![(mime::Attr::Charset, mime::Value::Utf8)])))
+        let versions: Versions = self.client.get(format!("http://{}/?comp=versions", self.endpoint))
             .send()
-            .map_err(wrap_error!("failed to request versions"))?;
-
-        let mut body = String::new();
-        res.read_to_string(&mut body)
-            .map_err(wrap_error!("failed to read versions response body"))?;
-
-        let versions: Versions = deserialize(body.as_bytes())
-            .map_err(wrap_error!("failed to deserialize xml into versions struct"))?;
+            .map_err(wrap_error!("failed to get versions"))?;
 
         if versions.supported.versions.iter().any(|v| v == version) {
             Ok(())
@@ -179,22 +173,9 @@ impl Azure {
     }
 
     fn get_certs_endpoint(&self) -> Result<String, String> {
-        // make the request to the goalstate endpoint
-        let mut res = self.client.get(&format!("http://{}/machine/?comp=goalstate", self.endpoint))
-            .header(MSAgentName(MS_AGENT_NAME.to_owned()))
-            .header(MSVersion(MS_VERSION.to_owned()))
-            .header(header::ContentType(mime::Mime(mime::TopLevel::Text, mime::SubLevel::Xml, vec![(mime::Attr::Charset, mime::Value::Utf8)])))
+        let goalstate: GoalState = self.client.get(format!("http://{}/machine/?comp=goalstate", self.endpoint))
             .send()
-            .map_err(wrap_error!("failed to request goal state"))?;
-
-        // read the goalstate body
-        let mut body = String::new();
-        res.read_to_string(&mut body)
-            .map_err(wrap_error!("failed to read goal state response body"))?;
-
-        // then deserialize the response into xml
-        let goalstate: GoalState = deserialize(body.as_bytes())
-            .map_err(wrap_error!("failed to deserialize xml into goalstate struct"))?;
+            .map_err(wrap_error!("failed to get goal state"))?;
 
         // grab the certificates endpoint from the xml and return it
         let cert_endpoint: &str = &goalstate.container.role_instance_list.role_instances[0].configuration.certificates;
@@ -202,24 +183,12 @@ impl Azure {
     }
 
     fn get_certs(&self, endpoint: String, mangled_pem: String) -> Result<String, String> {
-        // we need to make the request to the endpoint we got earlier to get the
-        // certificates file.
-        let mut res = self.client.get(&endpoint)
-            .header(MSAgentName(MS_AGENT_NAME.to_owned()))
-            .header(MSVersion(MS_VERSION.to_owned()))
-            .header(header::ContentType(mime::Mime(mime::TopLevel::Text, mime::SubLevel::Xml, vec![(mime::Attr::Charset, mime::Value::Utf8)])))
+        // get the certificates
+        let certs: CertificatesFile = self.client.get(endpoint)
             .header(MSCipherName("DES_EDE3_CBC".to_owned()))
             .header(MSCert(mangled_pem))
             .send()
-            .map_err(wrap_error!("failed to fetch certificates"))?;
-
-        let mut body = String::new();
-        res.read_to_string(&mut body)
-            .map_err(wrap_error!("failed to read certificates file from response body"))?;
-
-        // deserialize that too.
-        let certs: CertificatesFile = deserialize(body.as_bytes())
-            .map_err(wrap_error!("failed to deserialize xml into CertificatesFile struct"))?;
+            .map_err(wrap_error!("failed to get certificates"))?;
 
         // the cms decryption expects it to have MIME information on the top
         // since cms is really for email attachments...don't tell the cops.
