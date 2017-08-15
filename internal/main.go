@@ -57,7 +57,6 @@ func (sm *StringMapFlag) String() string {
 func (sm *StringMapFlag) Set(v string) error {
 	vals := strings.SplitN(v, "=", 1)
 	if len(vals) != 2 {
-		fmt.Printf("Incorrectly formatted -set argument: %s\n", v)
 		return fmt.Errorf("Incorrectly formatted -set argument: %s", v)
 	}
 	(*sm)[vals[0]] = vals[1]
@@ -81,7 +80,7 @@ func main() {
 	flag.StringVar(&flags.hostname, "hostname", "", "The file into which the hostname should be written")
 	flag.StringVar(&flags.networkUnits, "network-units", "", "The directory into which network units are written")
 	flag.StringVar(&flags.provider, "provider", "", "The name of the cloud provider")
-	flag.Var(&flags.overrides, "set", "Set a metadata attribute, potentially overriding the attribute given by a provider. This flag can be specified multiple times and expects a key=value pair. Eg: VIRTUALBOX_IPV4_PRIVATE=172.17.4.101")
+	flag.Var(&flags.overrides, "set", "Set a metadata attribute, potentially overriding the attribute given by a provider. This flag can be specified multiple times and expects a key=value pair. e.g. VIRTUALBOX_IPV4_PRIVATE=172.17.4.101")
 	flag.StringVar(&flags.sshKeys, "ssh-keys", "", "Update SSH keys for the given user")
 	flag.BoolVar(&flags.version, "version", false, "Print the version and exit")
 
