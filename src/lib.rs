@@ -16,9 +16,16 @@
 extern crate hyper;
 
 #[macro_use]
+extern crate slog;
+#[macro_use]
+extern crate slog_scope;
+
+#[macro_use]
 extern crate serde_derive;
 extern crate serde;
 extern crate serde_xml_rs;
+
+extern crate pnet;
 
 extern crate openssl;
 

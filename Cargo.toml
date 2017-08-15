@@ -21,6 +21,7 @@ serde-xml-rs = "0.2"
 openssl = { path = "/home/demos/projects/rust-openssl/openssl" }
 base64 = "0.6"
 byteorder = "1.1"
+pnet = "0.19"
 
 [dependencies.slog]
 version = "*"

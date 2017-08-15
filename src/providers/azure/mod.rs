@@ -24,16 +24,21 @@ use hyper::client::Client;
 use hyper::header;
 use hyper::mime;
 
+use pnet;
+
 use serde_xml_rs::deserialize;
 
 use std::net::{IpAddr, Ipv4Addr};
-use std::io::Read;
+use std::fs::File;
+use std::path::Path;
+use std::io::{BufRead, BufReader, Read};
 
 header! {(MSAgentName, "x-ms-agent-name") => [String]}
 header! {(MSVersion, "x-ms-version") => [String]}
 header! {(MSCipherName, "x-ms-cipher-name") => [String]}
 header! {(MSCert, "x-ms-guest-agent-public-x509-cert") => [String]}
 
+const OPTION_245: &str = "OPTION_245";
 const MS_AGENT_NAME: &str = "com.coreos.metadata";
 const MS_VERSION: &str = "2012-11-30";
 const SMIME_HEADER: &str = "\
@@ -91,9 +96,45 @@ impl Azure {
         }
     }
 
-    //TODO(sdemos): get the actual fabric address, instead of hardcoding it
+    // I don't really understand why this is how we need to get this ip
+    // address but this is how it works in the original implementation
+    // and nobody complains about it, so w/e
     fn get_fabric_address(&self) -> Result<IpAddr, String> {
-        Ok(IpAddr::V4(Ipv4Addr::new(168, 63, 129, 16)))
+        // get the interfaces on the machine
+        let interfaces = pnet::datalink::interfaces();
+        trace!("interfaces - {:?}", interfaces);
+
+        for interface in interfaces {
+            trace!("looking at interface {:?}", interface);
+            let lease_path = format!("/run/systemd/netif/leases/{}", interface.index);
+            let lease_path = Path::new(&lease_path);
+            if lease_path.exists() {
+                debug!("found lease file - {:?}", lease_path);
+                let lease = File::open(&lease_path)
+                    .map_err(wrap_error!("failed to open lease file ({:?})", lease_path))?;
+                let lease = BufReader::new(&lease);
+
+                // find the OPTION_245 flag
+                for line in lease.lines() {
+                    let line = line
+                        .map_err(wrap_error!("failed to read from lease file ({:?})", lease_path))?;
+                    let option: Vec<&str> = line.split('=').collect();
+                    if option.len() > 1 && option[0] == OPTION_245 {
+                        // value is an 8 digit hex value. convert it to u32 and
+                        // then parse that into an ip. Ipv4Addr::from(u32)
+                        // performs conversion from big-endian
+                        trace!("found fabric address in hex - {:?}", option[1]);
+                        let dec = u32::from_str_radix(option[1], 16)
+                            .map_err(wrap_error!("failed to convert '{}' from hex", option[1]))?;
+                        return Ok(IpAddr::V4(Ipv4Addr::from(dec)));
+                    }
+                }
+
+                debug!("failed to get fabric address from existing lease file '{:?}'", lease_path);
+            }
+        }
+
+        Err(format!("failed to retrieve fabric address"))
     }
 
     fn get_certs_endpoint(&self) -> Result<String, String> {
