@@ -16,9 +16,7 @@ mime = "0.3"
 serde = "1.0"
 serde_derive = "1.0"
 serde-xml-rs = "0.2"
-# use my fork of openssl until my changes are released
-# they are merged into master, just waiting on a tag
-openssl = { path = "/home/demos/projects/rust-openssl/openssl" }
+openssl = "0.9.17"
 base64 = "0.6"
 byteorder = "1.1"
 pnet = "0.19"
