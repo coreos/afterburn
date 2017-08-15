@@ -148,7 +148,7 @@ func getMetadataProvider(providerName string) (func() (providers.Metadata, error
 		return packet.FetchMetadata, nil
 	case "openstack-metadata":
 		return openstackMetadata.FetchMetadata, nil
-	case "virtualbox":
+	case "virtualbox", "vagrant-virtualbox":
 		return virtualbox.FetchMetadata, nil
 	default:
 		return nil, ErrUnknownProvider
