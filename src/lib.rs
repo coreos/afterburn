@@ -14,6 +14,7 @@
 
 #[macro_use]
 extern crate hyper;
+extern crate reqwest;
 
 #[macro_use]
 extern crate slog;

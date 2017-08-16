@@ -9,9 +9,6 @@ users = "*"
 slog-term = "*"
 slog-async = "*"
 slog-scope = "*"
-# use an old version of hyper
-# because the new ones are weird
-hyper = "0.10"
 mime = "0.3"
 serde = "1.0"
 serde_derive = "1.0"
@@ -20,6 +17,8 @@ openssl = "0.9.17"
 base64 = "0.6"
 byteorder = "1.1"
 pnet = "0.19"
+reqwest = "0.7"
+hyper = "0.11"
 
 [dependencies.slog]
 version = "*"

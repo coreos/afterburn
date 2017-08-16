@@ -20,11 +20,7 @@ use self::crypto::x509;
 
 use metadata::Metadata;
 
-use hyper::header;
-use hyper::mime;
-
 use pnet;
-
 
 use retry;
 
@@ -98,7 +94,7 @@ struct Supported {
 }
 
 struct Azure {
-    client: retry::Client<retry::Xml>,
+    client: retry::Client,
     endpoint: IpAddr,
 }
 
@@ -106,10 +102,9 @@ impl Azure {
     fn new() -> Result<Self, String> {
         let addr = Azure::get_fabric_address()
             .map_err(wrap_error!("failed to get fabric address"))?;
-        let client = retry::Client::new(retry::Xml)
+        let client = retry::Client::new()?
             .header(MSAgentName(MS_AGENT_NAME.to_owned()))
-            .header(MSVersion(MS_VERSION.to_owned()))
-            .header(header::ContentType(mime::Mime(mime::TopLevel::Text, mime::SubLevel::Xml, vec![(mime::Attr::Charset, mime::Value::Utf8)])));
+            .header(MSVersion(MS_VERSION.to_owned()));
         let azure = Azure {
             client: client,
             endpoint: addr,
@@ -161,8 +156,7 @@ impl Azure {
     }
 
     fn is_fabric_compatible(&self, version: &str) -> Result<(), String> {
-        let versions: Versions = self.client.get(format!("http://{}/?comp=versions", self.endpoint))
-            .send()
+        let versions: Versions = self.client.get(retry::Xml, format!("http://{}/?comp=versions", self.endpoint)).send()
             .map_err(wrap_error!("failed to get versions"))?;
 
         if versions.supported.versions.iter().any(|v| v == version) {
@@ -173,8 +167,7 @@ impl Azure {
     }
 
     fn get_certs_endpoint(&self) -> Result<String, String> {
-        let goalstate: GoalState = self.client.get(format!("http://{}/machine/?comp=goalstate", self.endpoint))
-            .send()
+        let goalstate: GoalState = self.client.get(retry::Xml, format!("http://{}/machine/?comp=goalstate", self.endpoint)).send()
             .map_err(wrap_error!("failed to get goal state"))?;
 
         // grab the certificates endpoint from the xml and return it
@@ -184,7 +177,7 @@ impl Azure {
 
     fn get_certs(&self, endpoint: String, mangled_pem: String) -> Result<String, String> {
         // get the certificates
-        let certs: CertificatesFile = self.client.get(endpoint)
+        let certs: CertificatesFile = self.client.get(retry::Xml, endpoint)
             .header(MSCipherName("DES_EDE3_CBC".to_owned()))
             .header(MSCert(mangled_pem))
             .send()
