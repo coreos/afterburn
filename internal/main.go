@@ -148,6 +148,8 @@ func getMetadataProvider(providerName string) (func() (providers.Metadata, error
 		return packet.FetchMetadata, nil
 	case "openstack-metadata":
 		return openstackMetadata.FetchMetadata, nil
+	// There was previous a vagrant-virtualbox provider which had the same attributes as virtualbox now has,
+	// just with a slightly different name. We will keep that providerName here for backwards compatibility
 	case "virtualbox", "vagrant-virtualbox":
 		return virtualbox.FetchMetadata, nil
 	default:
