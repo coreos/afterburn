@@ -53,6 +53,6 @@ The supported cloud providers and their respective metadata are as follows:
   - virtualbox
     - Attributes
       - COREOS_VIRTUALBOX_HOSTNAME
-      - COREOS_VIRTUALBOX_IPV4 (only via vagrant)
+      - COREOS_VIRTUALBOX_IPV4_PRIVATE (only via vagrant)
 
 [ignition]: https://github.com/coreos/ignition
