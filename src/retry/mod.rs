@@ -192,7 +192,7 @@ impl<D> RequestBuilder<D>
         self
     }
 
-    pub fn send<T>(&self) -> Result<T>
+    pub fn send<T>(&self) -> Result<Option<T>>
         where T: for<'de> serde::Deserialize<'de>
     {
         let url = reqwest::Url::parse(self.url.as_str())
@@ -203,7 +203,7 @@ impl<D> RequestBuilder<D>
         self.dispatch_request(req, self.initial_backoff, 0)
     }
 
-    fn dispatch_request<T>(&self, req: Request, delay: Duration, num_attempts: u32) -> Result<T>
+    fn dispatch_request<T>(&self, req: Request, delay: Duration, num_attempts: u32) -> Result<Option<T>>
         where T: for<'de> serde::Deserialize<'de>
     {
         info!("Fetching {}: Attempt#{}", req.url(), num_attempts + 1);
@@ -211,12 +211,15 @@ impl<D> RequestBuilder<D>
         match self.client.execute(clone_request(&req)) {
             Ok(resp) => {
                 match (resp.status(), self.return_on_404) {
-                    (reqwest::StatusCode::Ok,_) => self.d.deserialize(resp)
-                        .chain_err(|| format!("failed to deserialize data")),
+                    (reqwest::StatusCode::Ok,_) => {
+                        info!("Fetch successful");
+                        self.d.deserialize(resp)
+                            .map(|x| Some(x))
+                            .chain_err(|| format!("failed to deserialize data"))
+                    }
                     (reqwest::StatusCode::NotFound,true) => {
-                        // TODO: return empty (failed?)
-                        error!("Failed to fetch: should return!");
-                        self.wait_then_retry(req, delay, num_attempts)
+                        info!("Fetch failed with 404: resource not found");
+                        Ok(None)
                     }
                     (s,_) => {
                         info!("Failed to fetch: {}", s);
@@ -231,7 +234,7 @@ impl<D> RequestBuilder<D>
         }
     }
 
-    fn wait_then_retry<T>(&self, req: Request, delay: Duration, num_attempts: u32) -> Result<T>
+    fn wait_then_retry<T>(&self, req: Request, delay: Duration, num_attempts: u32) -> Result<Option<T>>
         where T: for<'de> serde::Deserialize<'de>
     {
         thread::sleep(delay);
@@ -242,7 +245,7 @@ impl<D> RequestBuilder<D>
             };
         let num_attempts = num_attempts + 1;
         if num_attempts == self.max_attempts {
-            Err(format!("Timed out while fetching {}", req.url()))
+            Err(format!("Timed out while fetching {}", req.url()).into())
         } else {
             self.dispatch_request(req, delay, num_attempts)
         }

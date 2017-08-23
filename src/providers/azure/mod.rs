@@ -159,7 +159,8 @@ impl Azure {
 
     fn is_fabric_compatible(&self, version: &str) -> Result<()> {
         let versions: Versions = self.client.get(retry::Xml, format!("http://{}/?comp=versions", self.endpoint)).send()
-            .chain_err(|| format!("failed to get versions"))?;
+            .chain_err(|| format!("failed to get versions"))?
+            .ok_or("failed to get versions: not found".to_owned())?;
 
         if versions.supported.versions.iter().any(|v| v == version) {
             Ok(())
@@ -170,7 +171,8 @@ impl Azure {
 
     fn get_certs_endpoint(&self) -> Result<String> {
         let goalstate: GoalState = self.client.get(retry::Xml, format!("http://{}/machine/?comp=goalstate", self.endpoint)).send()
-            .chain_err(|| format!("failed to get goal state"))?;
+            .chain_err(|| format!("failed to get goal state"))?
+            .ok_or("failed to get goal state: not found response".to_owned())?;
 
         // grab the certificates endpoint from the xml and return it
         let cert_endpoint: &str = &goalstate.container.role_instance_list.role_instances[0].configuration.certificates;
@@ -183,7 +185,8 @@ impl Azure {
             .header(MSCipherName("DES_EDE3_CBC".to_owned()))
             .header(MSCert(mangled_pem))
             .send()
-            .chain_err(|| format!("failed to get certificates"))?;
+            .chain_err(|| format!("failed to get certificates"))?
+            .ok_or("failed to get certificates: not found".to_owned())?;
 
         // the cms decryption expects it to have MIME information on the top
         // since cms is really for email attachments...don't tell the cops.

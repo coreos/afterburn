@@ -59,9 +59,23 @@ impl MetadataBuilder {
         self
     }
 
+    pub fn add_attribute_if_exists(mut self, key: String, value: Option<String>) -> Self {
+        match value {
+            Some(v) => self.add_attribute(key, v),
+            None => self
+        }
+    }
+
     pub fn set_hostname(mut self, hostname: String) -> Self {
         self.metadata.hostname = Some(hostname);
         self
+    }
+
+    pub fn set_hostname_if_exists(mut self, hostname: Option<String>) -> Self {
+        match hostname {
+            Some(v) => self.set_hostname(v),
+            None => self
+        }
     }
 
     pub fn add_ssh_key(mut self, ssh_key: String) -> Self {
