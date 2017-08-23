@@ -41,7 +41,7 @@ pub fn default_initial_backoff() -> Duration { Duration::new(1,0) }
 #[inline(always)]
 pub fn default_max_backoff() -> Duration { Duration::new(5,0) }
 #[inline(always)]
-pub fn default_max_attempts() -> u32 { 0 }
+pub fn default_max_attempts() -> u32 { 10 }
 
 pub trait Deserializer {
     fn deserialize<T, R>(&self, R) -> Result<T>
@@ -241,8 +241,8 @@ impl<D> RequestBuilder<D>
                 delay * 2
             };
         let num_attempts = num_attempts + 1;
-        if self.max_attempts != 0 && num_attempts == self.max_attempts {
-            Err(format!("Timed out while fetching {}", req.url()).into())
+        if num_attempts == self.max_attempts {
+            Err(format!("Timed out while fetching {}", req.url()))
         } else {
             self.dispatch_request(req, delay, num_attempts)
         }
