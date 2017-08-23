@@ -30,6 +30,9 @@ use reqwest::{Method,Request};
 
 use serde;
 use serde_xml_rs;
+use serde_json;
+
+mod raw_deserializer;
 
 use errors::*;
 
@@ -41,8 +44,8 @@ pub fn default_max_backoff() -> Duration { Duration::new(5,0) }
 pub fn default_max_attempts() -> u32 { 0 }
 
 pub trait Deserializer {
-    fn deserialize<'de, T>(&self, &str) -> Result<T>
-        where T: serde::Deserialize<'de>;
+    fn deserialize<T, R>(&self, R) -> Result<T>
+        where T: for<'de> serde::Deserialize<'de>, R: Read;
     fn content_type(&self) -> ContentType;
 }
 
@@ -50,14 +53,44 @@ pub trait Deserializer {
 pub struct Xml;
 
 impl Deserializer for Xml {
-    fn deserialize<'de, T>(&self, input: &str) -> Result<T>
-        where T: serde::Deserialize<'de>
+    fn deserialize<T, R>(&self, r: R) -> Result<T>
+        where T: for<'de> serde::Deserialize<'de>, R: Read
     {
-        serde_xml_rs::deserialize(input.as_bytes())
+        serde_xml_rs::deserialize(r)
             .chain_err(|| format!("failed xml deserialization"))
     }
     fn content_type(&self) -> ContentType {
         ContentType("text/xml; charset=utf-8".parse().unwrap())
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct Json;
+
+impl Deserializer for Json {
+    fn deserialize<T, R>(&self, r: R) -> Result<T>
+        where T: serde::de::DeserializeOwned, R: Read
+    {
+        serde_json::from_reader(r)
+            .chain_err(|| format!("failed json deserialization"))
+    }
+    fn content_type(&self) -> ContentType {
+        ContentType("text/json; charset=utf-8".parse().unwrap())
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct Raw;
+
+impl Deserializer for Raw {
+    fn deserialize<T, R>(&self, r: R) -> Result<T>
+        where T: for<'de> serde::Deserialize<'de>, R: Read
+    {
+        raw_deserializer::from_reader(r)
+            .chain_err(|| format!("failed raw deserialization"))
+    }
+    fn content_type(&self) -> ContentType {
+        ContentType("text/plain; charset=utf-8".parse().unwrap())
     }
 }
 
@@ -159,8 +192,8 @@ impl<D> RequestBuilder<D>
         self
     }
 
-    pub fn send<'de, T>(&self) -> Result<T>
-        where T: serde::Deserialize<'de> + 'de
+    pub fn send<T>(&self) -> Result<T>
+        where T: for<'de> serde::Deserialize<'de>
     {
         let url = reqwest::Url::parse(self.url.as_str())
             .chain_err(|| format!("failed to parse uri"))?;
@@ -170,27 +203,16 @@ impl<D> RequestBuilder<D>
         self.dispatch_request(req, self.initial_backoff, 0)
     }
 
-    fn dispatch_request<'de, T>(&self, req: Request, delay: Duration, num_attempts: u32) -> Result<T>
-        where T: serde::Deserialize<'de> + 'de
+    fn dispatch_request<T>(&self, req: Request, delay: Duration, num_attempts: u32) -> Result<T>
+        where T: for<'de> serde::Deserialize<'de>
     {
         info!("Fetching {}: Attempt#{}", req.url(), num_attempts + 1);
 
         match self.client.execute(clone_request(&req)) {
-            Ok(mut resp) => {
+            Ok(resp) => {
                 match (resp.status(), self.return_on_404) {
-                    (reqwest::StatusCode::Ok,_) => {
-                        let mut buf = String::new();
-                        match resp.read_to_string(&mut buf) {
-                            Ok(_) => {
-                                self.d.deserialize(buf.as_str())
-                                    .chain_err(|| format!("failed to deserialize data"))
-                            }
-                            Err(e) => {
-                                info!("error reading body: {}", e);
-                                self.wait_then_retry(req, delay, num_attempts)
-                            }
-                        }
-                    }
+                    (reqwest::StatusCode::Ok,_) => self.d.deserialize(resp)
+                        .chain_err(|| format!("failed to deserialize data")),
                     (reqwest::StatusCode::NotFound,true) => {
                         // TODO: return empty (failed?)
                         error!("Failed to fetch: should return!");
@@ -209,8 +231,8 @@ impl<D> RequestBuilder<D>
         }
     }
 
-    fn wait_then_retry<'de, T>(&self, req: Request, delay: Duration, num_attempts: u32) -> Result<T>
-        where T: serde::Deserialize<'de> + 'de
+    fn wait_then_retry<T>(&self, req: Request, delay: Duration, num_attempts: u32) -> Result<T>
+        where T: for<'de> serde::Deserialize<'de>
     {
         thread::sleep(delay);
         let delay = if self.max_backoff != Duration::new(0,0) && delay * 2 > self.max_backoff {
