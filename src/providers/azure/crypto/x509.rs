@@ -14,8 +14,6 @@
 
 //! Generate X509 certificate and associated RSA public/private keypair
 
-extern crate openssl;
-
 use openssl::x509::{X509, X509Name};
 use openssl::rsa::Rsa;
 use openssl::pkey::PKey;
@@ -25,13 +23,7 @@ use openssl::bn;
 use openssl::conf::{Conf, ConfMethod};
 use openssl::x509::extension;
 
-macro_rules! wrap_error {
-    ($x:expr) => {
-        |err| {
-            format!("{}: {}", $x, err)
-        }
-    };
-}
+use errors::*;
 
 pub struct Config {
     rsa_bits: u32,
@@ -47,53 +39,53 @@ impl Config {
     }
 }
 
-pub fn generate_cert(config: Config) -> Result<(X509, PKey), String> {
+pub fn generate_cert(config: Config) -> Result<(X509, PKey)> {
     // generate an rsa public/private keypair
     let rsa = Rsa::generate(config.rsa_bits)
-        .map_err(wrap_error!("failed to generate rsa keypair"))?;
+        .chain_err(|| format!("failed to generate rsa keypair"))?;
     // put it into the pkey struct
     let pkey = PKey::from_rsa(rsa)
-        .map_err(wrap_error!("failed to create pkey struct from rsa keypair"))?;
+        .chain_err(|| format!("failed to create pkey struct from rsa keypair"))?;
 
     // make a new x509 certificate with the pkey we generated
     let mut x509builder = X509::builder()
-        .map_err(wrap_error!("failed to make x509 builder"))?;
+        .chain_err(|| format!("failed to make x509 builder"))?;
     x509builder.set_version(2)
-        .map_err(wrap_error!("failed to set x509 version"))?;
+        .chain_err(|| format!("failed to set x509 version"))?;
 
     // set the serial number to some big random positive integer
     let mut serial = bn::BigNum::new()
-        .map_err(wrap_error!("failed to make new bignum"))?;
+        .chain_err(|| format!("failed to make new bignum"))?;
     serial.rand(32, bn::MSB_ONE, false)
-        .map_err(wrap_error!("failed to generate random bignum"))?;
+        .chain_err(|| format!("failed to generate random bignum"))?;
     let serial = serial.to_asn1_integer()
-        .map_err(wrap_error!("failed to get asn1 integer from bignum"))?;
+        .chain_err(|| format!("failed to get asn1 integer from bignum"))?;
     x509builder.set_serial_number(&serial)
-        .map_err(wrap_error!("failed to set x509 serial number"))?;
+        .chain_err(|| format!("failed to set x509 serial number"))?;
 
     // call fails without expiration dates
     // I guess they are important anyway, but still
     x509builder.set_not_before(&Asn1Time::days_from_now(0).unwrap())
-        .map_err(wrap_error!("failed to set x509 start date"))?;
+        .chain_err(|| format!("failed to set x509 start date"))?;
     x509builder.set_not_after(&Asn1Time::days_from_now(config.expire_in_days).unwrap())
-        .map_err(wrap_error!("failed to set x509 expiration date"))?;
+        .chain_err(|| format!("failed to set x509 expiration date"))?;
 
     // add the issuer and subject name
     // it's set to "/CN=LinuxTransport"
     // if we want we can make that configurable later
     let mut x509namebuilder = X509Name::builder()
-        .map_err(wrap_error!("failed to get x509name builder"))?;
+        .chain_err(|| format!("failed to get x509name builder"))?;
     x509namebuilder.append_entry_by_text("CN", "LinuxTransport")
-        .map_err(wrap_error!("failed to append /CN=LinuxTransport to x509name builder"))?;
+        .chain_err(|| format!("failed to append /CN=LinuxTransport to x509name builder"))?;
     let x509name = x509namebuilder.build();
     x509builder.set_issuer_name(&x509name)
-        .map_err(wrap_error!("failed to set x509 issuer name"))?;
+        .chain_err(|| format!("failed to set x509 issuer name"))?;
     x509builder.set_subject_name(&x509name)
-        .map_err(wrap_error!("failed to set x509 subject name"))?;
+        .chain_err(|| format!("failed to set x509 subject name"))?;
 
     // set the public key
     x509builder.set_pubkey(&pkey)
-        .map_err(wrap_error!("failed to set x509 pubkey"))?;
+        .chain_err(|| format!("failed to set x509 pubkey"))?;
 
     // it also needs several extensions
     // in the openssl configuration file, these are set when generating certs
@@ -105,15 +97,15 @@ pub fn generate_cert(config: Config) -> Result<(X509, PKey), String> {
     // need to add them manually.
     // we need to do them one at a time, and they need to be in this order
     let conf = Conf::new(ConfMethod::default())
-        .map_err(wrap_error!("failed to make new conf struct"))?;
+        .chain_err(|| format!("failed to make new conf struct"))?;
     // it seems like everything depends on the basic constraints, so let's do
     // that first.
     let bc = extension::BasicConstraints::new()
         .ca()
         .build()
-        .map_err(wrap_error!("failed to build BasicConstraints extension"))?;
+        .chain_err(|| format!("failed to build BasicConstraints extension"))?;
     x509builder.append_extension(bc)
-        .map_err(wrap_error!("failed to append BasicConstraints extension"))?;
+        .chain_err(|| format!("failed to append BasicConstraints extension"))?;
 
     // the akid depends on the skid. I guess it copies the skid when the cert is
     // self-signed or something, I'm not really sure.
@@ -123,10 +115,10 @@ pub fn generate_cert(config: Config) -> Result<(X509, PKey), String> {
         let ext_con = x509builder.x509v3_context(None, Some(&conf));
         extension::SubjectKeyIdentifier::new()
             .build(&ext_con)
-            .map_err(wrap_error!("failed to build SubjectKeyIdentifier extention"))?
+            .chain_err(|| format!("failed to build SubjectKeyIdentifier extention"))?
     };
     x509builder.append_extension(skid)
-        .map_err(wrap_error!("failed to append SubjectKeyIdentifier extention"))?;
+        .chain_err(|| format!("failed to append SubjectKeyIdentifier extention"))?;
 
     // now that the skid is added we can add the akid
     let akid = {
@@ -135,14 +127,14 @@ pub fn generate_cert(config: Config) -> Result<(X509, PKey), String> {
             .keyid(true)
             .issuer(false)
             .build(&ext_con)
-            .map_err(wrap_error!("failed to build AuthorityKeyIdentifier extention"))?
+            .chain_err(|| format!("failed to build AuthorityKeyIdentifier extention"))?
     };
     x509builder.append_extension(akid)
-        .map_err(wrap_error!("failed to append AuthorityKeyIdentifier extention"))?;
+        .chain_err(|| format!("failed to append AuthorityKeyIdentifier extention"))?;
 
     // self-sign the certificate
     x509builder.sign(&pkey, MessageDigest::sha256())
-        .map_err(wrap_error!("failed to self-sign x509 cert"))?;
+        .chain_err(|| format!("failed to self-sign x509 cert"))?;
 
     let x509 = x509builder.build();
 

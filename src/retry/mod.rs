@@ -31,6 +31,8 @@ use reqwest::{Method,Request};
 use serde;
 use serde_xml_rs;
 
+use errors::*;
+
 #[inline(always)]
 pub fn default_initial_backoff() -> Duration { Duration::new(1,0) }
 #[inline(always)]
@@ -39,7 +41,7 @@ pub fn default_max_backoff() -> Duration { Duration::new(5,0) }
 pub fn default_max_attempts() -> u32 { 0 }
 
 pub trait Deserializer {
-    fn deserialize<'de, T>(&self, &str) -> Result<T, String>
+    fn deserialize<'de, T>(&self, &str) -> Result<T>
         where T: serde::Deserialize<'de>;
     fn content_type(&self) -> ContentType;
 }
@@ -48,11 +50,11 @@ pub trait Deserializer {
 pub struct Xml;
 
 impl Deserializer for Xml {
-    fn deserialize<'de, T>(&self, input: &str) -> Result<T, String>
+    fn deserialize<'de, T>(&self, input: &str) -> Result<T>
         where T: serde::Deserialize<'de>
     {
         serde_xml_rs::deserialize(input.as_bytes())
-            .map_err(wrap_error!("failed xml deserialization"))
+            .chain_err(|| format!("failed xml deserialization"))
     }
     fn content_type(&self) -> ContentType {
         ContentType("text/xml; charset=utf-8".parse().unwrap())
@@ -70,9 +72,9 @@ pub struct Client {
 }
 
 impl Client {
-    pub fn new() -> Result<Self,String> {
+    pub fn new() -> Result<Self> {
         let client = reqwest::Client::new()
-            .map_err(wrap_error!("failed to initialize client"))?;
+            .chain_err(|| format!("failed to initialize client"))?;
         Ok(Client{
             client,
             headers: header::Headers::new(),
@@ -157,18 +159,18 @@ impl<D> RequestBuilder<D>
         self
     }
 
-    pub fn send<'de, T>(&self) -> Result<T, String>
+    pub fn send<'de, T>(&self) -> Result<T>
         where T: serde::Deserialize<'de> + 'de
     {
         let url = reqwest::Url::parse(self.url.as_str())
-            .map_err(wrap_error!("failed to parse uri"))?;
+            .chain_err(|| format!("failed to parse uri"))?;
         let mut req = Request::new(Method::Get, url);
         req.headers_mut().extend(self.headers.iter());
         req.headers_mut().set(self.d.content_type());
         self.dispatch_request(req, self.initial_backoff, 0)
     }
 
-    fn dispatch_request<'de, T>(&self, req: Request, delay: Duration, num_attempts: u32) -> Result<T, String>
+    fn dispatch_request<'de, T>(&self, req: Request, delay: Duration, num_attempts: u32) -> Result<T>
         where T: serde::Deserialize<'de> + 'de
     {
         info!("Fetching {}: Attempt#{}", req.url(), num_attempts + 1);
@@ -181,7 +183,7 @@ impl<D> RequestBuilder<D>
                         match resp.read_to_string(&mut buf) {
                             Ok(_) => {
                                 self.d.deserialize(buf.as_str())
-                                    .map_err(wrap_error!("failed to deserialize data"))
+                                    .chain_err(|| format!("failed to deserialize data"))
                             }
                             Err(e) => {
                                 info!("error reading body: {}", e);
@@ -207,7 +209,7 @@ impl<D> RequestBuilder<D>
         }
     }
 
-    fn wait_then_retry<'de, T>(&self, req: Request, delay: Duration, num_attempts: u32) -> Result<T, String>
+    fn wait_then_retry<'de, T>(&self, req: Request, delay: Duration, num_attempts: u32) -> Result<T>
         where T: serde::Deserialize<'de> + 'de
     {
         thread::sleep(delay);
@@ -218,7 +220,7 @@ impl<D> RequestBuilder<D>
             };
         let num_attempts = num_attempts + 1;
         if self.max_attempts != 0 && num_attempts == self.max_attempts {
-            Err(format!("Timed out while fetching {}", req.url()))
+            Err(format!("Timed out while fetching {}", req.url()).into())
         } else {
             self.dispatch_request(req, delay, num_attempts)
         }

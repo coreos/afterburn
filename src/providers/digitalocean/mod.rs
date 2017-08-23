@@ -16,6 +16,8 @@
 
 use metadata::Metadata;
 
-pub fn fetch_metadata() -> Result<Metadata, String> {
+use errors::*;
+
+pub fn fetch_metadata() -> Result<Metadata> {
     unimplemented!();
 }

@@ -16,6 +16,12 @@
 extern crate hyper;
 extern crate reqwest;
 
+extern crate base64;
+extern crate byteorder;
+
+#[macro_use]
+extern crate error_chain;
+
 #[macro_use]
 extern crate slog;
 #[macro_use]
@@ -32,21 +38,40 @@ extern crate openssl;
 
 extern crate users;
 
-#[macro_use]
-mod macros;
 mod providers;
 mod metadata;
 mod ssh;
 mod network;
 mod retry;
 
+pub mod errors {
+    error_chain!{
+        foreign_links {
+            Log(::slog::Error);
+            XmlDeserialize(::serde_xml_rs::Error);
+            Base64Decode(::base64::DecodeError);
+            Io(::std::io::Error);
+            Reqwest(::reqwest::Error);
+            Hyper(::hyper::error::Error);
+        }
+        errors {
+            UnknownProvider(p: String) {
+                description("unknown provider")
+                display("unknown provider '{}'", p)
+            }
+        }
+    }
+}
+
 use providers::*;
 use metadata::Metadata;
+
+use errors::*;
 
 /// fetch_metadata is the generic, top-level function that is used by the main
 /// function to fetch metadata. The configured provider is passed in and this
 /// function dispatches the call to the correct provider-specific fetch function
-pub fn fetch_metadata(provider: &str) -> Result<Metadata, String> {
+pub fn fetch_metadata(provider: &str) -> Result<Metadata> {
     match provider {
         "azure" => azure::fetch_metadata(),
         "digitalocean" => digitalocean::fetch_metadata(),
@@ -55,6 +80,6 @@ pub fn fetch_metadata(provider: &str) -> Result<Metadata, String> {
         "openstack" => openstack::fetch_metadata(),
         "packet" => packet::fetch_metadata(),
         "vagrant_virtualbox" => vagrant_virtualbox::fetch_metadata(),
-        _ => Err(format!("unknown provider '{}'", provider)),
+        _ => Err(errors::ErrorKind::UnknownProvider(provider.to_owned()).into()),
     }
 }

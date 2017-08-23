@@ -15,6 +15,8 @@
 #[macro_use]
 extern crate clap;
 #[macro_use]
+extern crate error_chain;
+#[macro_use]
 extern crate slog;
 extern crate slog_term;
 extern crate slog_async;
@@ -22,7 +24,6 @@ extern crate slog_async;
 extern crate slog_scope;
 extern crate users;
 
-#[macro_use]
 extern crate coreos_metadata;
 
 use std::fs::File;
@@ -31,6 +32,7 @@ use clap::{Arg, App};
 use slog::Drain;
 
 use coreos_metadata::fetch_metadata;
+use coreos_metadata::errors::*;
 
 const CMDLINE_PATH: &'static str = "/proc/cmdline";
 const CMDLINE_OEM_FLAG:&'static str = "coreos.oem.id";
@@ -44,7 +46,9 @@ struct Config {
     network_units_dir: Option<String>,
 }
 
-fn main() {
+quick_main!(run);
+
+fn run() -> Result<()> {
     // setup logging
     let decorator = slog_term::TermDecorator::new().build();
     let drain = slog_term::FullFormat::new(decorator).build().fuse();
@@ -56,38 +60,40 @@ fn main() {
 
     // initialize program
     let config = init()
-        .unwrap_or_else(log_and_die!("initialization"));
+        .chain_err(|| format!("initialization"))?;
 
     trace!("cli configuration - {:?}", config);
 
     // fetch the metadata from the configured provider
     let metadata = fetch_metadata(&config.provider)
-        .unwrap_or_else(log_and_die!("fetching metadata from provider"));
+        .chain_err(|| format!("fetching metadata from provider"))?;
 
     // write attributes if configured to do so
     config.attributes_file
         .map_or(Ok(()), |x| metadata.write_attributes(x))
-        .unwrap_or_else(log_and_die!("writing metadata attributes"));
+        .chain_err(|| format!("writing metadata attributes"))?;
 
     // write ssh keys if configured to do so
     config.ssh_keys_user
         .map_or(Ok(()), |x| metadata.write_ssh_keys(x))
-        .unwrap_or_else(log_and_die!("writing ssh keys"));
+        .chain_err(|| format!("writing ssh keys"))?;
 
     // write hostname if configured to do so
     config.hostname_file
         .map_or(Ok(()), |x| metadata.write_hostname(x))
-        .unwrap_or_else(log_and_die!("writing hostname"));
+        .chain_err(|| format!("writing hostname"))?;
 
     // write network units if configured to do so
     config.network_units_dir
         .map_or(Ok(()), |x| metadata.write_network_units(x))
-        .unwrap_or_else(log_and_die!("writing network units"));
+        .chain_err(|| format!("writing network units"))?;
 
-    debug!("Done!")
+    debug!("Done!");
+
+    Ok(())
 }
 
-fn init() -> Result<Config, String> {
+fn init() -> Result<Config> {
     // setup cli
     let matches = App::new("coreos-metadata")
         .version(crate_version!())
@@ -123,7 +129,7 @@ fn init() -> Result<Config, String> {
             None => if matches.is_present("cmdline") {
                 get_oem()?
             } else {
-                return Err("Must set either --provider or --cmdline".to_string());
+                return Err("Must set either --provider or --cmdline".into());
             }
         },
         attributes_file: matches.value_of("attributes").map(String::from),
@@ -133,15 +139,15 @@ fn init() -> Result<Config, String> {
     })
 }
 
-fn get_oem() -> Result<String, String> {
+fn get_oem() -> Result<String> {
     // open the cmdline file
     let mut file = File::open(CMDLINE_PATH)
-        .map_err(wrap_error!("Failed to open cmdline file ({})", CMDLINE_PATH))?;
+        .chain_err(|| format!("Failed to open cmdline file ({})", CMDLINE_PATH))?;
 
     // read the contents
     let mut contents = String::new();
     file.read_to_string(&mut contents)
-        .map_err(wrap_error!("Failed to read cmdline file ({})", CMDLINE_PATH))?;
+        .chain_err(|| format!("Failed to read cmdline file ({})", CMDLINE_PATH))?;
 
     // split the contents into elements
     let params: Vec<Vec<&str>> = contents.split(' ')
@@ -155,5 +161,5 @@ fn get_oem() -> Result<String, String> {
         }
     }
 
-    Err(format!("Couldn't find '{}' flag in cmdline file ({})", CMDLINE_OEM_FLAG, CMDLINE_PATH))
+    Err(format!("Couldn't find '{}' flag in cmdline file ({})", CMDLINE_OEM_FLAG, CMDLINE_PATH).into())
 }

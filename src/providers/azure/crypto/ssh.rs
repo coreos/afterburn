@@ -30,11 +30,9 @@
 //! println!("my ssh public key: {}", ssh_pubkey);
 //! ```
 
-extern crate base64;
-extern crate byteorder;
-extern crate openssl;
+use base64;
 
-use self::byteorder::{WriteBytesExt, BigEndian};
+use byteorder::{WriteBytesExt, BigEndian};
 
 use openssl::rsa::Rsa;
 use openssl::bn;
