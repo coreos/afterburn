@@ -13,11 +13,43 @@
 // limitations under the License.
 
 //! aws ec2 metadata fetcher
+//!
+use retry;
 
 use metadata::Metadata;
 
 use errors::*;
 
+fn url_for_key(key: &str) -> String {
+    format!("http://169.254.169.254/2009-04-04/{}", key)
+}
+
+#[allow(non_snake_case)]
+#[derive(Debug, Deserialize)]
+struct InstanceIdDoc {
+    region: String,
+}
+
 pub fn fetch_metadata() -> Result<Metadata> {
-    unimplemented!();
+    let client = retry::Client::new()
+        .chain_err(|| format!("ec2: failed to create http client"))?
+        .return_on_404(true);
+
+    let instance_id: Option<String> = client.get(retry::Raw, url_for_key("meta-data/instance-id")).send()?;
+    let public: Option<String> = client.get(retry::Raw, url_for_key("meta-data/public-ipv4")).send()?;
+    let local: Option<String> = client.get(retry::Raw, url_for_key("meta-data/local-ipv4")).send()?;
+    let hostname: Option<String> = client.get(retry::Raw, url_for_key("meta-data/hostname")).send()?;
+    let availability_zone: Option<String> = client.get(retry::Raw, url_for_key("meta-data/placement/availability-zone")).send()?;
+    let region: Option<String> = client.get(retry::Json, url_for_key("dynamic/instance-identity/document")).send()?
+        .map(|instance_id_doc: InstanceIdDoc| instance_id_doc.region);
+
+    Ok(Metadata::builder()
+        .add_attribute_if_exists("EC2_REGION".to_owned(), region)
+        .add_attribute_if_exists("EC2_INSTANCE_ID".to_owned(), instance_id)
+        .add_attribute_if_exists("EC2_IPV4_PUBLIC".to_owned(), public)
+        .add_attribute_if_exists("EC2_IPV4_LOCAL".to_owned(), local)
+        .add_attribute_if_exists("EC2_HOSTNAME".to_owned(), hostname.clone())
+        .add_attribute_if_exists("EC2_AVAILABILITY_ZONE".to_owned(), availability_zone)
+        .set_hostname_if_exists(hostname)
+        .build())
 }
