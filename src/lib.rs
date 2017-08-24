@@ -44,6 +44,7 @@ mod ssh;
 mod network;
 mod retry;
 
+#[allow(unused_doc_comment)]
 pub mod errors {
     error_chain!{
         foreign_links {
