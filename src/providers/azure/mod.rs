@@ -236,6 +236,6 @@ pub fn fetch_metadata() -> Result<Metadata> {
         .chain_err(|| format!("azure: failed to get ssh pubkey"))?;
 
     Ok(Metadata::builder()
-       .add_ssh_key(ssh_pubkey)
+       .add_ssh_keys(vec![ssh_pubkey])
        .build())
 }

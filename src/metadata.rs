@@ -78,8 +78,8 @@ impl MetadataBuilder {
         }
     }
 
-    pub fn add_ssh_key(mut self, ssh_key: String) -> Self {
-        self.metadata.ssh_keys.push(ssh_key);
+    pub fn add_ssh_keys(mut self, mut ssh_keys: Vec<String>) -> Self {
+        self.metadata.ssh_keys.append(&mut ssh_keys);
         self
     }
 
