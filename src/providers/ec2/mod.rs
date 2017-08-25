@@ -43,7 +43,7 @@ pub fn fetch_metadata() -> Result<Metadata> {
     let region: Option<String> = client.get(retry::Json, url_for_key("dynamic/instance-identity/document")).send()?
         .map(|instance_id_doc: InstanceIdDoc| instance_id_doc.region);
 
-    let mut ssh_keys: Vec<String> = fetch_ssh_keys(client)?;
+    let ssh_keys: Vec<String> = fetch_ssh_keys(client)?;
 
     Ok(Metadata::builder()
         .add_attribute_if_exists("EC2_REGION".to_owned(), region)
