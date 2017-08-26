@@ -15,12 +15,13 @@
 //! crypto module takes care of cryptographic functions
 
 pub mod x509;
-pub mod ssh;
 
 use openssl::x509::X509;
 use openssl::pkey::PKey;
 use openssl::cms::CmsContentInfo;
 use openssl::pkcs12::Pkcs12;
+
+use ssh_keys;
 
 use errors::*;
 
@@ -69,11 +70,8 @@ pub fn p12_to_ssh_pubkey(p12_der: &[u8]) -> Result<String> {
     let ssh_pubkey_pem = ssh_pubkey_pem.rsa()        // get the rsa contents from the pkey struct
         .chain_err(|| format!("failed to get rsa contents from pkey"))?;
 
-    // so now I have a pkey struct which represents my rsa public key. This is
-    // my ssh public key. However, I can only export it in pem or der. Ther are
-    // no existing rust (or go for that matter) libraries which do the
-    // conversion I want, so I guess I'll have to write my own function to do it
-    let ssh_pubkey = ssh::rsa_to_ssh(&ssh_pubkey_pem, "");
+    // convert the openssl Rsa public key to an OpenSSH public key in string format
+    let ssh_pubkey = ssh_keys::PublicKey::from_rsa(&ssh_pubkey_pem).to_string("");
 
     Ok(ssh_pubkey)
 }

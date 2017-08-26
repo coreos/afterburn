@@ -36,6 +36,7 @@ extern crate serde_json;
 extern crate pnet;
 
 extern crate openssl;
+extern crate ssh_keys;
 
 extern crate users;
 
