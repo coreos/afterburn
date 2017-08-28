@@ -45,6 +45,7 @@ mod metadata;
 mod ssh;
 mod network;
 mod retry;
+mod util;
 
 #[allow(unused_doc_comment)]
 pub mod errors {
