@@ -71,7 +71,9 @@ pub fn p12_to_ssh_pubkey(p12_der: &[u8]) -> Result<String> {
         .chain_err(|| format!("failed to get rsa contents from pkey"))?;
 
     // convert the openssl Rsa public key to an OpenSSH public key in string format
-    let ssh_pubkey = ssh_keys::PublicKey::from_rsa(&ssh_pubkey_pem).to_string("");
+    let e = ssh_pubkey_pem.e().unwrap().to_vec();
+    let n = ssh_pubkey_pem.n().unwrap().to_vec();
+    let ssh_pubkey = ssh_keys::PublicKey::from_rsa(e, n).to_string("");
 
     Ok(ssh_pubkey)
 }
