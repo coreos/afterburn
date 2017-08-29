@@ -22,6 +22,7 @@ reqwest = "0.7"
 hyper = "0.11"
 error-chain = "0.10"
 ssh-keys = { git = "https://github.com/sdemos/ssh-keys" }
+ipnetwork = "0.12"
 
 [dependencies.slog]
 version = "*"

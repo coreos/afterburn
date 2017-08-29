@@ -40,6 +40,8 @@ extern crate ssh_keys;
 
 extern crate users;
 
+extern crate ipnetwork;
+
 mod providers;
 mod metadata;
 mod ssh;

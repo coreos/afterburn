@@ -21,26 +21,68 @@ use std::fmt;
 use std::string::String;
 use std::string::ToString;
 
-#[derive(Clone, Copy, Debug)]
-pub struct IpNetwork {
-    addr: IpAddr,
-    prefix: u8,
-}
+use ipnetwork::IpNetwork;
+use errors::*;
 
-impl fmt::Display for IpNetwork {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}/{}", self.addr, self.prefix)
+pub const BONDING_MODE_BALANCE_RR: u32 = 0;
+pub const BONDING_MODE_ACTIVE_BACKUP: u32 = 1;
+pub const BONDING_MODE_BALANCE_XOR: u32 = 2;
+pub const BONDING_MODE_BROADCAST: u32 = 3;
+pub const BONDING_MODE_LACP: u32 = 4;
+pub const BONDING_MODE_BALANCE_TLB: u32 = 5;
+pub const BONDING_MODE_BALANCE_ALB: u32 = 6;
+
+const BONDING_MODES: [(u32,&str); 7] = [
+    (BONDING_MODE_BALANCE_RR,"balance-rr"),
+    (BONDING_MODE_ACTIVE_BACKUP,"active-backup"),
+    (BONDING_MODE_BALANCE_XOR,"balance-xor"),
+    (BONDING_MODE_BROADCAST,"broadcast"),
+    (BONDING_MODE_LACP,"802.3ad"),
+    (BONDING_MODE_BALANCE_TLB,"balance-tlb"),
+    (BONDING_MODE_BALANCE_ALB,"balance-alb"),
+];
+
+pub fn bonding_mode_to_string(mode: &u32) -> Result<String> {
+    for &(m,s) in BONDING_MODES.iter() {
+        if m == *mode {
+            return Ok(s.to_owned())
+        }
     }
+    Err(format!("no such bonding mode: {}", mode).into())
 }
 
 #[derive(Clone, Copy, Debug)]
 pub struct NetworkRoute {
-    destination: IpNetwork,
-    gateway: IpAddr,
+    pub destination: IpNetwork,
+    pub gateway: IpAddr,
 }
 
 #[derive(Clone, Copy, Debug)]
 pub struct MacAddr(pub u8, pub u8, pub u8,pub u8, pub u8, pub u8);
+
+impl MacAddr {
+    pub fn from_string(s: String) -> Result<MacAddr> {
+        let stripped_s = s.replace(":", "");
+        let mut chars = stripped_s.chars();
+        let mut octets = Vec::new();
+        for _ in 0..6 {
+            let mut s = String::new();
+            s.push_str(&chars.next().ok_or("invalid mac address")?.to_string());
+            s.push_str(&chars.next().ok_or("invalid mac address")?.to_string());
+            let num = u8::from_str_radix(&s, 16)
+                .chain_err(|| format!("invalid hexadecimal octet"))?;
+            octets.push(num);
+        }
+        Ok(MacAddr(
+            octets[0],
+            octets[1],
+            octets[2],
+            octets[3],
+            octets[4],
+            octets[5]
+        ))
+    }
+}
 
 impl fmt::Display for MacAddr {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -56,28 +98,28 @@ impl fmt::Display for MacAddr {
 /// so it's not really that big of a deal.
 #[derive(Clone, Debug)]
 pub struct Interface {
-    name: Option<String>,
-    mac_address: Option<MacAddr>,
-    priority: Option<u32>,
-    nameservers: Vec<IpAddr>,
-    ip_addresses: Vec<IpNetwork>,
-    routes: Vec<NetworkRoute>,
-    bond: Option<String>,
+    pub name: Option<String>,
+    pub mac_address: Option<MacAddr>,
+    pub priority: Option<u32>,
+    pub nameservers: Vec<IpAddr>,
+    pub ip_addresses: Vec<IpNetwork>,
+    pub routes: Vec<NetworkRoute>,
+    pub bond: Option<String>,
 }
 
 #[derive(Clone, Debug)]
 pub struct Section {
-    name: String,
-    attributes: Vec<(String, String)>,
+    pub name: String,
+    pub attributes: Vec<(String, String)>,
 }
 
 #[derive(Clone, Debug)]
 pub struct Device {
-    name: String,
-    kind: String,
-    mac_address: MacAddr,
-    priority: Option<u32>,
-    sections: Vec<Section>
+    pub name: String,
+    pub kind: String,
+    pub mac_address: MacAddr,
+    pub priority: Option<u32>,
+    pub sections: Vec<Section>
 }
 
 impl Interface {
@@ -150,37 +192,12 @@ impl Device {
 mod tests {
     use super::*;
     use std::net::{Ipv4Addr, Ipv6Addr};
+    use ipnetwork::{Ipv4Network,Ipv6Network};
 
     #[test]
     fn mac_addr_display() {
         let m = MacAddr(0xf4,0x00,0x34,0x09,0x73,0xee);
         assert_eq!(m.to_string(), "f4:00:34:09:73:ee");
-    }
-
-    #[test]
-    fn ip_network_display() {
-        let ips = vec![
-            (IpNetwork {
-                addr: IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)),
-                prefix: 8,
-            }, "127.0.0.1/8"),
-            (IpNetwork {
-                addr: IpAddr::V4(Ipv4Addr::new(129, 21, 50, 131)),
-                prefix: 32,
-            }, "129.21.50.131/32"),
-            (IpNetwork {
-                addr: IpAddr::V6(Ipv6Addr::new(0xfe80, 0, 0, 0, 0xf696, 0x34ff, 0xfe09, 0x7347)),
-                prefix: 64,
-            }, "fe80::f696:34ff:fe09:7347/64"),
-            (IpNetwork {
-                addr: IpAddr::V6(Ipv6Addr::new(0,0,0,0,0,0,0,1)),
-                prefix: 128,
-            }, "::1/128")
-        ];
-
-        for (ip, s) in ips {
-            assert_eq!(ip.to_string(), s);
-        }
     }
 
     #[test]
@@ -280,21 +297,21 @@ mod tests {
                     IpAddr::V6(Ipv6Addr::new(0, 0, 0, 0, 0, 0, 0, 1)),
                 ],
                 ip_addresses: vec![
-                    IpNetwork {
-                        addr: IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)),
-                        prefix: 8,
-                    },
-                    IpNetwork {
-                        addr: IpAddr::V6(Ipv6Addr::new(0, 0, 0, 0, 0, 0, 0, 1)),
-                        prefix: 128,
-                    }
+                    IpNetwork::V4(Ipv4Network::new(
+                            Ipv4Addr::new(127, 0, 0, 1),
+                            8
+                        ).unwrap()),
+                    IpNetwork::V6(Ipv6Network::new(
+                            Ipv6Addr::new(0, 0, 0, 0, 0, 0, 0, 1),
+                            128
+                        ).unwrap()),
                 ],
                 routes: vec![
                     NetworkRoute {
-                        destination: IpNetwork {
-                            addr: IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)),
-                            prefix: 8,
-                        },
+                        destination: IpNetwork::V4(Ipv4Network::new(
+                                Ipv4Addr::new(127, 0, 0, 1),
+                                8
+                            ).unwrap()),
                         gateway: IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)),
                     }
                 ],

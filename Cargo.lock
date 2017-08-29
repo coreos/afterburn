@@ -7,6 +7,7 @@ dependencies = [
  "clap 2.26.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "error-chain 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "hyper 0.11.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "ipnetwork 0.12.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "mime 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "openssl 0.9.17 (registry+https://github.com/rust-lang/crates.io-index)",
  "pnet 0.19.0 (registry+https://github.com/rust-lang/crates.io-index)",
