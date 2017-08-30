@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! ssh manipulates the authorized_keys directory and file
+//! ssh manipulates the `authorized_keys` directory and file
 //! TODO(sdemos):
 //! right now this doesn't do the file locking expected by the other tools which manipulate this directory
 //! for testing purposes, I'll leave it that way for now. If this ever gets used in real life, fix this somehow.
@@ -21,14 +21,14 @@
 
 use std::fs;
 use std::fs::File;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::io::prelude::*;
 use users::os::unix::UserExt;
 use users;
 
 use errors::*;
 
-pub fn create_authorized_keys_dir(user: users::User) -> Result<PathBuf> {
+pub fn create_authorized_keys_dir(user: &users::User) -> Result<PathBuf> {
     // construct the path to the authorized keys directory
     let ssh_dir = user.home_dir().join(".ssh");
     let authorized_keys_dir = ssh_dir.join("authorized_keys.d");
@@ -46,21 +46,21 @@ pub fn create_authorized_keys_dir(user: users::User) -> Result<PathBuf> {
         // if there is, copy it into the authorized keys directory
         let preserved_keys_file = authorized_keys_dir.join("orig_authorzied_keys");
         fs::copy(&authorized_keys_file, preserved_keys_file)
-            .chain_err(|| format!("failed to copy old authorzied keys file"))?;
+            .chain_err(|| "failed to copy old authorzied keys file")?;
     }
     // then we are done
     Ok(authorized_keys_dir)
 }
 
-pub fn sync_authorized_keys(authorized_keys_dir: PathBuf) -> Result<()> {
+pub fn sync_authorized_keys(authorized_keys_dir: &Path) -> Result<()> {
     let ssh_dir = authorized_keys_dir.parent()
-        .ok_or(format!("could not get parent directory of {:?}", authorized_keys_dir))?;
+        .ok_or_else(|| format!("could not get parent directory of {:?}", authorized_keys_dir))?;
     let mut authorized_keys_file = File::create(ssh_dir.join("authorized_keys"))
         .chain_err(|| format!("failed to create file {:?}", ssh_dir.join("authorized_keys")))?;
-    flatten_dir(&mut authorized_keys_file, &authorized_keys_dir)
+    flatten_dir(&mut authorized_keys_file, authorized_keys_dir)
 }
 
-fn flatten_dir(mut file: &mut File, dir: &PathBuf) -> Result<()> {
+fn flatten_dir(mut file: &mut File, dir: &Path) -> Result<()> {
     let dir_contents = fs::read_dir(&dir)
         .chain_err(|| format!("failed to read from directory {:?}", dir))?;
     for entry in dir_contents {

@@ -12,6 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#![cfg_attr(feature="clippy", feature(plugin))]
+#![cfg_attr(feature="clippy", plugin(clippy))]
+
 #[macro_use]
 extern crate clap;
 #[macro_use]
@@ -22,7 +25,6 @@ extern crate slog_term;
 extern crate slog_async;
 #[macro_use]
 extern crate slog_scope;
-extern crate users;
 
 extern crate coreos_metadata;
 
@@ -60,33 +62,33 @@ fn run() -> Result<()> {
 
     // initialize program
     let config = init()
-        .chain_err(|| format!("initialization"))?;
+        .chain_err(|| "initialization")?;
 
     trace!("cli configuration - {:?}", config);
 
     // fetch the metadata from the configured provider
     let metadata = fetch_metadata(&config.provider)
-        .chain_err(|| format!("fetching metadata from provider"))?;
+        .chain_err(|| "fetching metadata from provider")?;
 
     // write attributes if configured to do so
     config.attributes_file
         .map_or(Ok(()), |x| metadata.write_attributes(x))
-        .chain_err(|| format!("writing metadata attributes"))?;
+        .chain_err(|| "writing metadata attributes")?;
 
     // write ssh keys if configured to do so
     config.ssh_keys_user
         .map_or(Ok(()), |x| metadata.write_ssh_keys(x))
-        .chain_err(|| format!("writing ssh keys"))?;
+        .chain_err(|| "writing ssh keys")?;
 
     // write hostname if configured to do so
     config.hostname_file
         .map_or(Ok(()), |x| metadata.write_hostname(x))
-        .chain_err(|| format!("writing hostname"))?;
+        .chain_err(|| "writing hostname")?;
 
     // write network units if configured to do so
     config.network_units_dir
         .map_or(Ok(()), |x| metadata.write_network_units(x))
-        .chain_err(|| format!("writing network units"))?;
+        .chain_err(|| "writing network units")?;
 
     debug!("Done!");
 

@@ -109,11 +109,11 @@ fn get_dns_servers() -> Result<Vec<IpAddr>> {
         .ok_or("DNS not found in netif state file")?;
     let mut addrs = Vec::new();
     for ip_string in ip_strings.split(' ') {
-        addrs.push(IpAddr::from_str(&ip_string)
-            .chain_err(|| format!("failed to parse IP address"))?);
+        addrs.push(IpAddr::from_str(ip_string)
+            .chain_err(|| "failed to parse IP address")?);
     }
-    if addrs.len() == 0 {
-        return Err(format!("no DNS servers in /run/systemd/netif/state").into());
+    if addrs.is_empty() {
+        return Err("no DNS servers in /run/systemd/netif/state".into());
     }
     Ok(addrs)
 }
@@ -142,16 +142,16 @@ fn parse_network(netinfo: &PacketNetworkInfo) -> Result<(Vec<Interface>,Vec<Devi
     };
     for a in netinfo.addresses.clone() {
         let prefix = ipnetwork::ip_mask_to_prefix(a.netmask)
-            .chain_err(|| format!("invalid network mask"))?;
+            .chain_err(|| "invalid network mask")?;
         iface.ip_addresses.push(
             match a.address {
                 IpAddr::V4(addrv4) => IpNetwork::V4(Ipv4Network::new(addrv4, prefix)
-                    .chain_err(|| format!("invalid IP address or prefix"))?),
+                    .chain_err(|| "invalid IP address or prefix")?),
                 IpAddr::V6(addrv6) => IpNetwork::V6(Ipv6Network::new(addrv6, prefix)
-                    .chain_err(|| format!("invalid IP address or prefix"))?),
+                    .chain_err(|| "invalid IP address or prefix")?),
             }
         );
-        let dest = match (a.public,a.address.clone()) {
+        let dest = match (a.public,a.address) {
             (false,IpAddr::V4(_)) =>
                     IpNetwork::V4(Ipv4Network::new(Ipv4Addr::new(10,0,0,0),8).unwrap()),
             (true,IpAddr::V4(_)) =>
@@ -184,8 +184,7 @@ fn parse_network(netinfo: &PacketNetworkInfo) -> Result<(Vec<Interface>,Vec<Devi
             name: "bond0".to_owned(),
             kind: "bond".to_owned(),
             mac_address: interfaces[0].mac_address
-                .ok_or("first interface doesn't have a mac address, should be impossible")?
-                .clone(),
+                .ok_or("first interface doesn't have a mac address, should be impossible")?,
             priority: Some(5),
             sections: vec![
                 Section{
@@ -209,19 +208,19 @@ fn get_attrs(data: &PacketData) -> Result<Vec<(String,String)>> {
         match (a.address,a.public) {
             (IpAddr::V4(a),true) => {
                 attrs.push((format!("PACKET_IPV4_PUBLIC_{}", v4_public_counter), format!("{}", a)));
-                v4_public_counter = v4_public_counter + 1;
+                v4_public_counter += 1;
             }
             (IpAddr::V4(a),false) => {
                 attrs.push((format!("PACKET_IPV4_PRIVATE_{}", v4_private_counter), format!("{}", a)));
-                v4_private_counter = v4_private_counter + 1;
+                v4_private_counter += 1;
             }
             (IpAddr::V6(a),true) => {
                 attrs.push((format!("PACKET_IPV6_PUBLIC_{}", v6_public_counter), format!("{}", a)));
-                v6_public_counter = v6_public_counter + 1;
+                v6_public_counter += 1;
             }
             (IpAddr::V6(a),false) => {
                 attrs.push((format!("PACKET_IPV6_PRIVATE_{}", v6_private_counter), format!("{}", a)));
-                v6_private_counter = v6_private_counter + 1;
+                v6_private_counter += 1;
             }
         }
     }

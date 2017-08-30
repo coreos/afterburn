@@ -103,7 +103,7 @@ struct Azure {
 impl Azure {
     fn new() -> Result<Self> {
         let addr = Azure::get_fabric_address()
-            .chain_err(|| format!("failed to get fabric address"))?;
+            .chain_err(|| "failed to get fabric address")?;
         let client = retry::Client::new()?
             .header(MSAgentName(MS_AGENT_NAME.to_owned()))
             .header(MSVersion(MS_VERSION.to_owned()));
@@ -112,7 +112,7 @@ impl Azure {
             endpoint: addr,
         };
         azure.is_fabric_compatible(MS_VERSION)
-            .chain_err(|| format!("failed version compatibility check"))?;
+            .chain_err(|| "failed version compatibility check")?;
         Ok(azure)
     }
 
@@ -154,13 +154,13 @@ impl Azure {
             }
         }
 
-        Err(format!("failed to retrieve fabric address").into())
+        Err("failed to retrieve fabric address".into())
     }
 
     fn is_fabric_compatible(&self, version: &str) -> Result<()> {
         let versions: Versions = self.client.get(retry::Xml, format!("http://{}/?comp=versions", self.endpoint)).send()
-            .chain_err(|| format!("failed to get versions"))?
-            .ok_or("failed to get versions: not found".to_owned())?;
+            .chain_err(|| "failed to get versions")?
+            .ok_or_else(|| "failed to get versions: not found")?;
 
         if versions.supported.versions.iter().any(|v| v == version) {
             Ok(())
@@ -171,8 +171,8 @@ impl Azure {
 
     fn get_certs_endpoint(&self) -> Result<String> {
         let goalstate: GoalState = self.client.get(retry::Xml, format!("http://{}/machine/?comp=goalstate", self.endpoint)).send()
-            .chain_err(|| format!("failed to get goal state"))?
-            .ok_or("failed to get goal state: not found response".to_owned())?;
+            .chain_err(|| "failed to get goal state")?
+            .ok_or_else(|| "failed to get goal state: not found response")?;
 
         // grab the certificates endpoint from the xml and return it
         let cert_endpoint: &str = &goalstate.container.role_instance_list.role_instances[0].configuration.certificates;
@@ -185,8 +185,8 @@ impl Azure {
             .header(MSCipherName("DES_EDE3_CBC".to_owned()))
             .header(MSCert(mangled_pem))
             .send()
-            .chain_err(|| format!("failed to get certificates"))?
-            .ok_or("failed to get certificates: not found".to_owned())?;
+            .chain_err(|| "failed to get certificates")?
+            .ok_or_else(|| "failed to get certificates: not found")?;
 
         // the cms decryption expects it to have MIME information on the top
         // since cms is really for email attachments...don't tell the cops.
@@ -200,29 +200,29 @@ impl Azure {
     fn get_ssh_pubkey(&self) -> Result<String> {
         // first we have to get the certificates endoint.
         let certs_endpoint = self.get_certs_endpoint()
-            .chain_err(|| format!("failed to get certs endpoint"))?;
+            .chain_err(|| "failed to get certs endpoint")?;
 
         // we have to generate the rsa public/private keypair and the x509 cert
         // that we use to make the request. this is equivalent to
         // `openssl req -x509 -nodes -subj /CN=LinuxTransport -days 365 -newkey rsa:2048 -keyout private.pem -out cert.pem`
-        let (x509, pkey) = x509::generate_cert(x509::Config::new(2048, 365))
-            .chain_err(|| format!("failed to generate keys"))?;
+        let (x509, pkey) = x509::generate_cert(&x509::Config::new(2048, 365))
+            .chain_err(|| "failed to generate keys")?;
 
         // mangle the pem file for the request
         let mangled_pem = crypto::mangle_pem(&x509)
-            .chain_err(|| format!("failed to mangle pem"))?;
+            .chain_err(|| "failed to mangle pem")?;
 
         // fetch the encrypted cms blob from the certs endpoint
         let smime = self.get_certs(certs_endpoint, mangled_pem)
-            .chain_err(|| format!("failed to get certs"))?;
+            .chain_err(|| "failed to get certs")?;
 
         // decrypt the cms blob
         let p12 = crypto::decrypt_cms(smime.as_bytes(), &pkey, &x509)
-            .chain_err(|| format!("failed to decrypt cms blob"))?;
+            .chain_err(|| "failed to decrypt cms blob")?;
 
         // convert that to the OpenSSH public key format
         let ssh_pubkey = crypto::p12_to_ssh_pubkey(&p12)
-            .chain_err(|| format!("failed to convert pkcs12 blob to ssh pubkey"))?;
+            .chain_err(|| "failed to convert pkcs12 blob to ssh pubkey")?;
 
         Ok(ssh_pubkey)
     }
@@ -230,10 +230,10 @@ impl Azure {
 
 pub fn fetch_metadata() -> Result<Metadata> {
     let provider = Azure::new()
-        .chain_err(|| format!("azure: failed create metadata client"))?;
+        .chain_err(|| "azure: failed create metadata client")?;
 
     let ssh_pubkey = provider.get_ssh_pubkey()
-        .chain_err(|| format!("azure: failed to get ssh pubkey"))?;
+        .chain_err(|| "azure: failed to get ssh pubkey")?;
 
     Ok(Metadata::builder()
        .add_ssh_keys(vec![ssh_pubkey])

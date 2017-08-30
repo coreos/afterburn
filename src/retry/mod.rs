@@ -36,11 +36,8 @@ mod raw_deserializer;
 
 use errors::*;
 
-#[inline(always)]
 pub fn default_initial_backoff() -> Duration { Duration::new(1,0) }
-#[inline(always)]
 pub fn default_max_backoff() -> Duration { Duration::new(5,0) }
-#[inline(always)]
 pub fn default_max_attempts() -> u32 { 10 }
 
 pub trait Deserializer {
@@ -57,7 +54,7 @@ impl Deserializer for Xml {
         where T: for<'de> serde::Deserialize<'de>, R: Read
     {
         serde_xml_rs::deserialize(r)
-            .chain_err(|| format!("failed xml deserialization"))
+            .chain_err(|| "failed xml deserialization")
     }
     fn content_type(&self) -> ContentType {
         ContentType("text/xml; charset=utf-8".parse().unwrap())
@@ -72,7 +69,7 @@ impl Deserializer for Json {
         where T: serde::de::DeserializeOwned, R: Read
     {
         serde_json::from_reader(r)
-            .chain_err(|| format!("failed json deserialization"))
+            .chain_err(|| "failed json deserialization")
     }
     fn content_type(&self) -> ContentType {
         ContentType("text/json; charset=utf-8".parse().unwrap())
@@ -87,7 +84,7 @@ impl Deserializer for Raw {
         where T: for<'de> serde::Deserialize<'de>, R: Read
     {
         raw_deserializer::from_reader(r)
-            .chain_err(|| format!("failed raw deserialization"))
+            .chain_err(|| "failed raw deserialization")
     }
     fn content_type(&self) -> ContentType {
         ContentType("text/plain; charset=utf-8".parse().unwrap())
@@ -107,7 +104,7 @@ pub struct Client {
 impl Client {
     pub fn new() -> Result<Self> {
         let client = reqwest::Client::new()
-            .chain_err(|| format!("failed to initialize client"))?;
+            .chain_err(|| "failed to initialize client")?;
         Ok(Client{
             client,
             headers: header::Headers::new(),
@@ -160,10 +157,10 @@ impl Client {
             d,
             client: self.client.clone(),
             headers: self.headers.clone(),
-            initial_backoff: self.initial_backoff.clone(),
-            max_backoff: self.max_backoff.clone(),
-            max_attempts: self.max_attempts.clone(),
-            return_on_404: self.return_on_404.clone(),
+            initial_backoff: self.initial_backoff,
+            max_backoff: self.max_backoff,
+            max_attempts: self.max_attempts,
+            return_on_404: self.return_on_404,
         }
     }
 }
@@ -196,7 +193,7 @@ impl<D> RequestBuilder<D>
         where T: for<'de> serde::Deserialize<'de>
     {
         let url = reqwest::Url::parse(self.url.as_str())
-            .chain_err(|| format!("failed to parse uri"))?;
+            .chain_err(|| "failed to parse uri")?;
         let mut req = Request::new(Method::Get, url);
         req.headers_mut().extend(self.headers.iter());
         req.headers_mut().set(self.d.content_type());
@@ -214,8 +211,8 @@ impl<D> RequestBuilder<D>
                     (reqwest::StatusCode::Ok,_) => {
                         info!("Fetch successful");
                         self.d.deserialize(resp)
-                            .map(|x| Some(x))
-                            .chain_err(|| format!("failed to deserialize data"))
+                            .map(Some)
+                            .chain_err(|| "failed to deserialize data")
                     }
                     (reqwest::StatusCode::NotFound,true) => {
                         info!("Fetch failed with 404: resource not found");

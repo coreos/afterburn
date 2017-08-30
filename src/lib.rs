@@ -12,12 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#![cfg_attr(feature="clippy", feature(plugin))]
+#![cfg_attr(feature="clippy", plugin(clippy))]
+
 #[macro_use]
 extern crate hyper;
 extern crate reqwest;
 
 extern crate base64;
-extern crate byteorder;
 
 #[macro_use]
 extern crate error_chain;
@@ -74,7 +76,7 @@ use metadata::Metadata;
 
 use errors::*;
 
-/// fetch_metadata is the generic, top-level function that is used by the main
+/// `fetch_metadata` is the generic, top-level function that is used by the main
 /// function to fetch metadata. The configured provider is passed in and this
 /// function dispatches the call to the correct provider-specific fetch function
 pub fn fetch_metadata(provider: &str) -> Result<Metadata> {

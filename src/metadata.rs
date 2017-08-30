@@ -23,10 +23,12 @@ use network;
 
 use errors::*;
 
+#[derive(Default, Debug, Clone)]
 pub struct MetadataBuilder {
     metadata: Metadata,
 }
 
+#[derive(Default, Debug, Clone)]
 pub struct Metadata {
     attributes: HashMap<String, String>,
     hostname: Option<String>,
@@ -35,11 +37,11 @@ pub struct Metadata {
     net_dev: Vec<network::Device>,
 }
 
-fn create_file(filename: String) -> Result<File> {
+fn create_file(filename: &str) -> Result<File> {
     let file_path = Path::new(&filename);
     // create the directories if they don't exist
     let folder = file_path.parent()
-        .ok_or(format!("could not get parent directory of {:?}", file_path))?;
+        .ok_or_else(|| format!("could not get parent directory of {:?}", file_path))?;
     fs::create_dir_all(&folder)
         .chain_err(|| format!("failed to create directory {:?}", folder))?;
     // create (or truncate) the file we want to write to
@@ -114,7 +116,7 @@ impl Metadata {
     }
 
     pub fn write_attributes(&self, attributes_file_path: String) -> Result<()> {
-        let mut attributes_file = create_file(attributes_file_path)?;
+        let mut attributes_file = create_file(&attributes_file_path)?;
         for (k,v) in &self.attributes {
             write!(&mut attributes_file, "COREOS_{}={}\n", k, v)
                 .chain_err(|| format!("failed to write attributes to file {:?}", attributes_file))?;
@@ -126,20 +128,20 @@ impl Metadata {
         // and we need a new tool that does this generically for rust anyway
         // so I actually just have to rewrite update-ssh-keys
         let user = users::get_user_by_name(ssh_keys_user.as_str())
-            .ok_or(format!("could not find user with username {:?}", ssh_keys_user))?;
-        let authorized_keys_dir = ssh::create_authorized_keys_dir(user)?;
+            .ok_or_else(|| format!("could not find user with username {:?}", ssh_keys_user))?;
+        let authorized_keys_dir = ssh::create_authorized_keys_dir(&user)?;
         let mut authorized_keys_file = File::create(authorized_keys_dir.join("coreos-metadata"))
             .chain_err(|| format!("failed to create the file {:?} in the ssh authorized users directory", "coreos-metadata"))?;
         for ssh_key in &self.ssh_keys {
             write!(&mut authorized_keys_file, "{}\n", ssh_key)
                 .chain_err(|| format!("failed to write ssh key to file {:?}", authorized_keys_file))?;
         }
-        ssh::sync_authorized_keys(authorized_keys_dir)
+        ssh::sync_authorized_keys(&authorized_keys_dir)
     }
     pub fn write_hostname(&self, hostname_file_path: String) -> Result<()> {
         match self.hostname {
             Some(ref hostname) => {
-                let mut hostname_file = create_file(hostname_file_path)?;
+                let mut hostname_file = create_file(&hostname_file_path)?;
                 write!(&mut hostname_file, "{}\n", hostname)
                     .chain_err(|| format!("failed to write hostname {:?} to file {:?}", self.hostname, hostname_file))
             }

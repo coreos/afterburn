@@ -28,9 +28,9 @@ use errors::*;
 pub fn mangle_pem(x509: &X509) -> Result<String> {
     // get the pem
     let pem = x509.to_pem()
-        .chain_err(|| format!("failed to convert x509 cert to pem"))?;
+        .chain_err(|| "failed to convert x509 cert to pem")?;
     let pem = String::from_utf8(pem)
-        .chain_err(|| format!("failed to convert x509 pem file from utf8 to a string"))?;
+        .chain_err(|| "failed to convert x509 pem file from utf8 to a string")?;
 
     // the pem needs to be mangled to send as a header
     Ok(pem.lines()
@@ -41,11 +41,11 @@ pub fn mangle_pem(x509: &X509) -> Result<String> {
 pub fn decrypt_cms(smime: &[u8], pkey: &PKey, x509: &X509) -> Result<Vec<u8>> {
     // now we need to read in that mime file
     let cms = CmsContentInfo::smime_read_cms(smime)
-        .chain_err(|| format!("failed to read cms file"))?;
+        .chain_err(|| "failed to read cms file")?;
 
     // and decrypt it's contents
-    let p12_der = cms.decrypt(&pkey, &x509)
-        .chain_err(|| format!("failed to decrypt cms file"))?;
+    let p12_der = cms.decrypt(pkey, x509)
+        .chain_err(|| "failed to decrypt cms file")?;
 
     Ok(p12_der)
 }
@@ -55,20 +55,20 @@ pub fn p12_to_ssh_pubkey(p12_der: &[u8]) -> Result<String> {
     // cryptographic structure. we read that in from the contents and parse it.
     // PKCS12 has the ability to have a password, but we don't have one, hence
     // empty string.
-    let p12 = Pkcs12::from_der(&p12_der)
-        .chain_err(|| format!("failed to get pkcs12 blob from der"))?;
+    let p12 = Pkcs12::from_der(p12_der)
+        .chain_err(|| "failed to get pkcs12 blob from der")?;
     let p12 = p12.parse("")
-        .chain_err(|| format!("failed to parse pkcs12 blob"))?;
+        .chain_err(|| "failed to parse pkcs12 blob")?;
 
     // PKCS12 has three parts. A pkey, a main x509 cert, and a list of other
     // x509 certs. The list of other x509 certs is called the chain. there is
     // only one cert in this chain, and it is the ssh public key.
     let ssh_pubkey_pem = p12.chain.get(0).unwrap();
-    // .chain_err(|| format!("failed to get cert from pkcs12 chain"))?;
+    // .chain_err(|| "failed to get cert from pkcs12 chain")?;
     let ssh_pubkey_pem = ssh_pubkey_pem.public_key() // get the public key from the x509 cert
-        .chain_err(|| format!("failed to get public key from cert"))?;
+        .chain_err(|| "failed to get public key from cert")?;
     let ssh_pubkey_pem = ssh_pubkey_pem.rsa()        // get the rsa contents from the pkey struct
-        .chain_err(|| format!("failed to get rsa contents from pkey"))?;
+        .chain_err(|| "failed to get rsa contents from pkey")?;
 
     // convert the openssl Rsa public key to an OpenSSH public key in string format
     let e = ssh_pubkey_pem.e().unwrap().to_vec();

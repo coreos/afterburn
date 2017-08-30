@@ -15,7 +15,7 @@
 //! utility functions
 
 pub fn key_lookup(delim: char, key: &str, contents: &str) -> Option<String> {
-    for l in contents.clone().lines() {
+    for l in contents.lines() {
         match l.find(delim) {
             Some(index) => {
                 let l = l.to_owned();

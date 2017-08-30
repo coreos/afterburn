@@ -32,7 +32,7 @@ impl RawDeserializer
     {
         let mut s = String::new();
         r.read_to_string(&mut s)
-            .chain_err(|| format!("error reading"))?;
+            .chain_err(|| "error reading")?;
         Ok(RawDeserializer { s })
     }
 }
@@ -42,7 +42,7 @@ pub fn from_reader<T, R>(r: R) -> Result<T>
 {
     let mut deserializer = RawDeserializer::from_reader(r)?;
     Ok(T::deserialize(&mut deserializer)
-       .chain_err(|| format!("error deserializing"))?)
+       .chain_err(|| "error deserializing")?)
 }
 
 impl<'de, 'a> de::Deserializer<'de> for &'a mut RawDeserializer {

@@ -43,7 +43,7 @@ const BONDING_MODES: [(u32,&str); 7] = [
 ];
 
 pub fn bonding_mode_to_string(mode: &u32) -> Result<String> {
-    for &(m,s) in BONDING_MODES.iter() {
+    for &(m,s) in &BONDING_MODES {
         if m == *mode {
             return Ok(s.to_owned())
         }
@@ -70,7 +70,7 @@ impl MacAddr {
             s.push_str(&chars.next().ok_or("invalid mac address")?.to_string());
             s.push_str(&chars.next().ok_or("invalid mac address")?.to_string());
             let num = u8::from_str_radix(&s, 16)
-                .chain_err(|| format!("invalid hexadecimal octet"))?;
+                .chain_err(|| "invalid hexadecimal octet")?;
             octets.push(num);
         }
         Ok(MacAddr(

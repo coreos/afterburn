@@ -32,7 +32,7 @@ struct InstanceIdDoc {
 
 pub fn fetch_metadata() -> Result<Metadata> {
     let client = retry::Client::new()
-        .chain_err(|| format!("ec2: failed to create http client"))?
+        .chain_err(|| "ec2: failed to create http client")?
         .return_on_404(true);
 
     let instance_id: Option<String> = client.get(retry::Raw, url_for_key("meta-data/instance-id")).send()?;
@@ -43,7 +43,7 @@ pub fn fetch_metadata() -> Result<Metadata> {
     let region: Option<String> = client.get(retry::Json, url_for_key("dynamic/instance-identity/document")).send()?
         .map(|instance_id_doc: InstanceIdDoc| instance_id_doc.region);
 
-    let ssh_keys: Vec<String> = fetch_ssh_keys(client)?;
+    let ssh_keys: Vec<String> = fetch_ssh_keys(&client)?;
 
     Ok(Metadata::builder()
         .add_attribute_if_exists("EC2_REGION".to_owned(), region)
@@ -57,7 +57,7 @@ pub fn fetch_metadata() -> Result<Metadata> {
         .build())
 }
 
-fn fetch_ssh_keys(client: retry::Client) -> Result<Vec<String>> {
+fn fetch_ssh_keys(client: &retry::Client) -> Result<Vec<String>> {
     let keydata: Option<String> = client.get(retry::Raw, url_for_key("meta-data/public-keys")).send()?;
     match keydata {
         Some(s) => {
@@ -70,9 +70,8 @@ fn fetch_ssh_keys(client: retry::Client) -> Result<Vec<String>> {
                 }
                 let ssh_key: String = client.get(retry::Raw, url_for_key(&format!("meta-data/public-keys/{}/openssh-key", tokens[0]))).send()?
                     .ok_or("missing ssh key")?;
-                match res.as_mut() {
-                    Ok(keys) => (*keys).push(ssh_key),
-                    Err(_) => (),
+                if let Ok(keys) = res.as_mut() {
+                    keys.push(ssh_key);
                 }
             }
             res
