@@ -65,25 +65,17 @@ pub fn fetch_metadata() -> Result<Metadata> {
 
 fn fetch_ssh_keys(client: &retry::Client) -> Result<Vec<String>> {
     let keydata: Option<String> = client.get(retry::Raw, url_for_key("meta-data/public-keys")).send()?;
-    match keydata {
-        Some(s) => {
-            let mut res = Ok(Vec::new());
-            for keyname in s.split_whitespace() {
-                let tokens: Vec<&str> = keyname.split('=').collect();
-                if tokens.len() != 2 {
-                    res = Err("malformed public key".into());
-                    break;
-                }
-                let ssh_key: String = client.get(retry::Raw, url_for_key(&format!("meta-data/public-keys/{}/openssh-key", tokens[0]))).send()?
-                    .ok_or("missing ssh key")?;
-                if let Ok(keys) = res.as_mut() {
-                    keys.push(ssh_key);
-                }
+    let mut keys = Vec::new();
+    if let Some(keys_list) = keydata {
+        for l in keys_list.lines() {
+            let tokens: Vec<&str> = l.split('=').collect();
+            if tokens.len() != 2 {
+                return Err("error parsing keyID".into());
             }
-            res
-        }
-        None => {
-            Ok(Vec::new())
+            let key: String = client.get(retry::Raw, url_for_key(&format!("meta-data/public-keys/{}/openssh-key", tokens[0]))).send()?
+                    .ok_or("missing ssh key")?;
+            keys.push(key)
         }
     }
+    Ok(keys)
 }
