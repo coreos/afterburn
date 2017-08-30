@@ -14,10 +14,4 @@
 
 //! openstack metadata fetcher
 
-use metadata::Metadata;
-
-use errors::*;
-
-pub fn fetch_metadata() -> Result<Metadata> {
-    unimplemented!();
-}
+pub mod network;
