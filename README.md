@@ -53,11 +53,15 @@ The supported cloud providers and their respective metadata are as follows:
   - cloudstack-configdrive
     - SSH Keys
     - Attributes
-      - CLOUDSTACK_AVAILABILITY_ZONE
-      - CLOUDSTACK_INSTANCE_ID
-      - CLOUDSTACK_SERVICE_OFFERING
-      - CLOUDSTACK_CLOUD_IDENTIFIER
-      - CLOUDSTACK_LOCAL_HOSTNAME
-      - CLOUDSTACK_VM_ID
+      - COREOS_CLOUDSTACK_AVAILABILITY_ZONE
+      - COREOS_CLOUDSTACK_INSTANCE_ID
+      - COREOS_CLOUDSTACK_SERVICE_OFFERING
+      - COREOS_CLOUDSTACK_CLOUD_IDENTIFIER
+      - COREOS_CLOUDSTACK_LOCAL_HOSTNAME
+      - COREOS_CLOUDSTACK_VM_ID
+  - vagrant-virtualbox
+    - Attributes
+      - COREOS_VAGRANT_VIRTUALBOX_PRIVATE_IPV4
+      - COREOS_VAGRANT_VIRTUALBOX_HOSTNAME
 
 [ignition]: https://github.com/coreos/ignition
