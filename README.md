@@ -59,5 +59,9 @@ The supported cloud providers and their respective metadata are as follows:
       - CLOUDSTACK_CLOUD_IDENTIFIER
       - CLOUDSTACK_LOCAL_HOSTNAME
       - CLOUDSTACK_VM_ID
+  - vagrant-virtualbox
+    - Attributes
+      - COREOS_VAGRANT_VIRTUALBOX_PRIVATE_IPV4
+      - COREOS_VAGRANT_VIRTUALBOX_HOSTNAME
 
 [ignition]: https://github.com/coreos/ignition
