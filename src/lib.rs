@@ -42,8 +42,10 @@ extern crate ssh_keys;
 extern crate update_ssh_keys;
 
 extern crate users;
+extern crate hostname;
 
 extern crate ipnetwork;
+
 
 mod providers;
 mod metadata;
@@ -91,7 +93,7 @@ pub fn fetch_metadata(provider: &str) -> Result<Metadata> {
         "gce" => gce::fetch_metadata(),
         "openstack" => openstack::fetch_metadata(),
         "packet" => packet::fetch_metadata(),
-        "vagrant_virtualbox" => vagrant_virtualbox::fetch_metadata(),
+        "vagrant-virtualbox" => vagrant_virtualbox::fetch_metadata(),
         _ => Err(errors::ErrorKind::UnknownProvider(provider.to_owned()).into()),
     }
 }

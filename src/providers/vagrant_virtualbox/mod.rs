@@ -18,6 +18,47 @@ use metadata::Metadata;
 
 use errors::*;
 
+use std::net::IpAddr;
+use std::time::Duration;
+use std::thread;
+
+use hostname;
+use pnet;
+
 pub fn fetch_metadata() -> Result<Metadata> {
-    unimplemented!();
+    let h = hostname::get_hostname().ok_or("unable to get hostname")?;
+    let ip = get_ip()?;
+
+    Ok(Metadata::builder()
+       .add_attribute("VAGRANT_VIRTUALBOX_PRIVATE_IPV4".to_owned(), ip)
+       .add_attribute("VAGRANT_VIRTUALBOX_HOSTNAME".to_owned(), h.clone())
+       .set_hostname(h)
+       .build())
+}
+
+fn get_ip() -> Result<String> {
+    let max_attempts = 30;
+    for _ in 0..max_attempts {
+        let iface = find_eth1();
+        if let Some(iface) = iface {
+            for a in iface.ips {
+                if let IpAddr::V4(a) = a.ip() {
+                    return Ok(format!("{}", a));
+                }
+            }
+        }
+        info!("eth1 not found or is lacking an ipv4 address; waiting 2 seconds");
+        thread::sleep(Duration::from_secs(2));
+    }
+    Err("eth1 was not found!".into())
+}
+
+fn find_eth1() -> Option<pnet::datalink::NetworkInterface> {
+    let mut ifaces = pnet::datalink::interfaces();
+    ifaces.retain(|i| i.name == "eth1");
+    if !ifaces.is_empty() {
+        Some(ifaces[0].clone())
+    } else {
+        None
+    }
 }
