@@ -39,6 +39,7 @@ extern crate pnet;
 
 extern crate openssl;
 extern crate ssh_keys;
+extern crate update_ssh_keys;
 
 extern crate users;
 
@@ -46,7 +47,6 @@ extern crate ipnetwork;
 
 mod providers;
 mod metadata;
-mod ssh;
 mod network;
 mod retry;
 mod util;
@@ -54,6 +54,10 @@ mod util;
 #[allow(unused_doc_comment)]
 pub mod errors {
     error_chain!{
+        links {
+            PublicKey(::ssh_keys::errors::Error, ::ssh_keys::errors::ErrorKind);
+            AuthorizedKeys(::update_ssh_keys::errors::Error, ::update_ssh_keys::errors::ErrorKind);
+        }
         foreign_links {
             Log(::slog::Error);
             XmlDeserialize(::serde_xml_rs::Error);

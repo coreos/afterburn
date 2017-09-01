@@ -53,7 +53,7 @@ pub fn fetch_metadata() -> Result<Metadata> {
         .add_attribute_if_exists("EC2_HOSTNAME".to_owned(), hostname.clone())
         .add_attribute_if_exists("EC2_AVAILABILITY_ZONE".to_owned(), availability_zone)
         .set_hostname_if_exists(hostname)
-        .add_ssh_keys(ssh_keys)
+        .add_ssh_keys(ssh_keys)?
         .build())
 }
 

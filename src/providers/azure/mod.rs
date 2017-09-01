@@ -17,14 +17,11 @@
 mod crypto;
 
 use self::crypto::x509;
-
 use errors::*;
-
 use metadata::Metadata;
-
 use pnet;
-
 use retry;
+use ssh_keys::PublicKey;
 
 use std::net::{IpAddr, Ipv4Addr};
 use std::fs::File;
@@ -197,7 +194,7 @@ impl Azure {
     }
 
     // put it all together
-    fn get_ssh_pubkey(&self) -> Result<String> {
+    fn get_ssh_pubkey(&self) -> Result<PublicKey> {
         // first we have to get the certificates endoint.
         let certs_endpoint = self.get_certs_endpoint()
             .chain_err(|| "failed to get certs endpoint")?;
@@ -236,6 +233,6 @@ pub fn fetch_metadata() -> Result<Metadata> {
         .chain_err(|| "azure: failed to get ssh pubkey")?;
 
     Ok(Metadata::builder()
-       .add_ssh_keys(vec![ssh_pubkey])
+       .add_publickeys(vec![ssh_pubkey])
        .build())
 }

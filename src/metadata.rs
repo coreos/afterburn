@@ -18,7 +18,8 @@ use std::path::Path;
 use std::io::prelude::*;
 use std::collections::HashMap;
 use users;
-use ssh;
+use ssh_keys::PublicKey;
+use update_ssh_keys::AuthorizedKeys;
 use network;
 
 use errors::*;
@@ -32,7 +33,7 @@ pub struct MetadataBuilder {
 pub struct Metadata {
     attributes: HashMap<String, String>,
     hostname: Option<String>,
-    ssh_keys: Vec<String>,
+    ssh_keys: Vec<PublicKey>,
     network: Vec<network::Interface>,
     net_dev: Vec<network::Device>,
 }
@@ -80,7 +81,15 @@ impl MetadataBuilder {
         }
     }
 
-    pub fn add_ssh_keys(mut self, mut ssh_keys: Vec<String>) -> Self {
+    pub fn add_ssh_keys(mut self, ssh_keys: Vec<String>) -> Result<Self> {
+        for key in ssh_keys {
+            let key = PublicKey::parse(&key)?;
+            self.metadata.ssh_keys.push(key);
+        }
+        Ok(self)
+    }
+
+    pub fn add_publickeys(mut self, mut ssh_keys: Vec<PublicKey>) -> Self {
         self.metadata.ssh_keys.append(&mut ssh_keys);
         self
     }
@@ -124,19 +133,20 @@ impl Metadata {
         Ok(())
     }
     pub fn write_ssh_keys(&self, ssh_keys_user: String) -> Result<()> {
-        // this function actually needs to be pretty complicated
-        // and we need a new tool that does this generically for rust anyway
-        // so I actually just have to rewrite update-ssh-keys
-        let user = users::get_user_by_name(ssh_keys_user.as_str())
+        // find the ssh keys user and open their ssh authorized keys directory
+        let user = users::get_user_by_name(&ssh_keys_user)
             .ok_or_else(|| format!("could not find user with username {:?}", ssh_keys_user))?;
-        let authorized_keys_dir = ssh::create_authorized_keys_dir(&user)?;
-        let mut authorized_keys_file = File::create(authorized_keys_dir.join("coreos-metadata"))
-            .chain_err(|| format!("failed to create the file {:?} in the ssh authorized users directory", "coreos-metadata"))?;
-        for ssh_key in &self.ssh_keys {
-            write!(&mut authorized_keys_file, "{}\n", ssh_key)
-                .chain_err(|| format!("failed to write ssh key to file {:?}", authorized_keys_file))?;
-        }
-        ssh::sync_authorized_keys(&authorized_keys_dir)
+        let mut authorized_keys_dir = AuthorizedKeys::open(user, true)
+            .chain_err(|| format!("failed to open authorzied keys directory for user '{}'", ssh_keys_user))?;
+
+        // add the ssh keys to the directory
+        authorized_keys_dir.add_keys("coreos-metadata", self.ssh_keys.clone(), true, true)?;
+
+        // write the changes and sync the directory
+        authorized_keys_dir.write()
+            .chain_err(|| "failed to update authorized keys directory")?;
+        authorized_keys_dir.sync()
+            .chain_err(|| "failed to update authorized keys")
     }
     pub fn write_hostname(&self, hostname_file_path: String) -> Result<()> {
         match self.hostname {

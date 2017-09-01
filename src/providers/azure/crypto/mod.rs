@@ -21,7 +21,7 @@ use openssl::pkey::PKey;
 use openssl::cms::CmsContentInfo;
 use openssl::pkcs12::Pkcs12;
 
-use ssh_keys;
+use ssh_keys::PublicKey;
 
 use errors::*;
 
@@ -50,7 +50,7 @@ pub fn decrypt_cms(smime: &[u8], pkey: &PKey, x509: &X509) -> Result<Vec<u8>> {
     Ok(p12_der)
 }
 
-pub fn p12_to_ssh_pubkey(p12_der: &[u8]) -> Result<String> {
+pub fn p12_to_ssh_pubkey(p12_der: &[u8]) -> Result<PublicKey> {
     // the contents of that encrypted cms blob we got are actually a different
     // cryptographic structure. we read that in from the contents and parse it.
     // PKCS12 has the ability to have a password, but we don't have one, hence
@@ -73,7 +73,7 @@ pub fn p12_to_ssh_pubkey(p12_der: &[u8]) -> Result<String> {
     // convert the openssl Rsa public key to an OpenSSH public key in string format
     let e = ssh_pubkey_pem.e().unwrap().to_vec();
     let n = ssh_pubkey_pem.n().unwrap().to_vec();
-    let ssh_pubkey = ssh_keys::PublicKey::from_rsa(e, n).to_string("");
+    let ssh_pubkey = PublicKey::from_rsa(e, n);
 
     Ok(ssh_pubkey)
 }

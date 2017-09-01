@@ -85,7 +85,7 @@ pub fn fetch_metadata() -> Result<Metadata> {
     let attrs = get_attrs(&data)?;
 
     let mut m = Metadata::builder()
-        .add_ssh_keys(data.ssh_keys)
+        .add_ssh_keys(data.ssh_keys)?
         .set_hostname(data.hostname);
 
     for (key,val) in attrs {
