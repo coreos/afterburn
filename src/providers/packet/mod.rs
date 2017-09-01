@@ -26,7 +26,8 @@ use std::str::FromStr;
 use util;
 
 use network;
-use network::{MacAddr,Interface,Device,Section,NetworkRoute};
+use network::{Interface,Device,Section,NetworkRoute};
+use pnet::util::MacAddr;
 use std::net::{IpAddr,Ipv4Addr,Ipv6Addr};
 use ipnetwork;
 use ipnetwork::{IpNetwork,Ipv4Network,Ipv6Network};
@@ -121,8 +122,11 @@ fn get_dns_servers() -> Result<Vec<IpAddr>> {
 fn parse_network(netinfo: &PacketNetworkInfo) -> Result<(Vec<Interface>,Vec<Device>)> {
     let mut interfaces = Vec::new();
     for i in netinfo.interfaces.clone() {
+        let mac = MacAddr::from_str(&i.mac)
+            .map_err(|err| Error::from(format!("{:?}", err)))
+            .chain_err(|| format!("failed to parse mac address: '{}'", i.mac))?;
         interfaces.push(Interface {
-            mac_address: Some(MacAddr::from_string(i.mac)?),
+            mac_address: Some(mac),
             bond: Some("bond0".to_owned()),
             name: None,
             priority: None,

@@ -17,7 +17,7 @@
 //! the necessary unit.
 
 use std::net::IpAddr;
-use std::fmt;
+use pnet::util::MacAddr;
 use std::string::String;
 use std::string::ToString;
 
@@ -55,39 +55,6 @@ pub fn bonding_mode_to_string(mode: &u32) -> Result<String> {
 pub struct NetworkRoute {
     pub destination: IpNetwork,
     pub gateway: IpAddr,
-}
-
-#[derive(Clone, Copy, Debug)]
-pub struct MacAddr(pub u8, pub u8, pub u8,pub u8, pub u8, pub u8);
-
-impl MacAddr {
-    pub fn from_string(s: String) -> Result<MacAddr> {
-        let stripped_s = s.replace(":", "");
-        let mut chars = stripped_s.chars();
-        let mut octets = Vec::new();
-        for _ in 0..6 {
-            let mut s = String::new();
-            s.push_str(&chars.next().ok_or("invalid mac address")?.to_string());
-            s.push_str(&chars.next().ok_or("invalid mac address")?.to_string());
-            let num = u8::from_str_radix(&s, 16)
-                .chain_err(|| "invalid hexadecimal octet")?;
-            octets.push(num);
-        }
-        Ok(MacAddr(
-            octets[0],
-            octets[1],
-            octets[2],
-            octets[3],
-            octets[4],
-            octets[5]
-        ))
-    }
-}
-
-impl fmt::Display for MacAddr {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:02x}:{:02x}:{:02x}:{:02x}:{:02x}:{:02x}", self.0, self.1, self.2, self.3, self.4, self.5)
-    }
 }
 
 /// for naming purposes an interface needs either a name or an address.
