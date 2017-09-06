@@ -21,7 +21,7 @@ use errors::*;
 use metadata::Metadata;
 use pnet;
 use retry;
-use ssh_keys::PublicKey;
+use openssh_keys::PublicKey;
 
 use std::net::{IpAddr, Ipv4Addr};
 use std::fs::File;

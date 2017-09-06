@@ -21,7 +21,7 @@ use openssl::pkey::PKey;
 use openssl::cms::CmsContentInfo;
 use openssl::pkcs12::Pkcs12;
 
-use ssh_keys::PublicKey;
+use openssh_keys::PublicKey;
 
 use errors::*;
 

@@ -38,7 +38,7 @@ extern crate serde_json;
 extern crate pnet;
 
 extern crate openssl;
-extern crate ssh_keys;
+extern crate openssh_keys;
 extern crate update_ssh_keys;
 
 extern crate users;
@@ -57,7 +57,7 @@ mod util;
 pub mod errors {
     error_chain!{
         links {
-            PublicKey(::ssh_keys::errors::Error, ::ssh_keys::errors::ErrorKind);
+            PublicKey(::openssh_keys::errors::Error, ::openssh_keys::errors::ErrorKind);
             AuthorizedKeys(::update_ssh_keys::errors::Error, ::update_ssh_keys::errors::ErrorKind);
         }
         foreign_links {

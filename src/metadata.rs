@@ -18,7 +18,7 @@ use std::path::Path;
 use std::io::prelude::*;
 use std::collections::HashMap;
 use users;
-use ssh_keys::PublicKey;
+use openssh_keys::PublicKey;
 use update_ssh_keys::AuthorizedKeys;
 use network;
 
