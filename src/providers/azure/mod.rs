@@ -23,7 +23,7 @@ use retry;
 use util;
 use openssh_keys::PublicKey;
 
-use std::net::IpAddr;
+use std::net::{IpAddr, SocketAddr};
 
 header! {(MSAgentName, "x-ms-agent-name") => [String]}
 header! {(MSVersion, "x-ms-version") => [String]}
@@ -68,7 +68,9 @@ struct RoleInstance {
 #[derive(Debug, Deserialize)]
 struct Configuration {
     #[serde(rename = "Certificates", default)]
-    pub certificates: String
+    pub certificates: String,
+    #[serde(rename = "SharedConfig", default)]
+    pub shared_config: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -87,6 +89,51 @@ struct Versions {
 struct Supported {
     #[serde(rename = "Version", default)]
     pub versions: Vec<String>
+}
+
+#[derive(Debug, Deserialize)]
+struct SharedConfig {
+    #[serde(rename = "Incarnation")]
+    pub incarnation: Incarnation,
+    #[serde(rename = "Instances")]
+    pub instances: Instances,
+}
+
+#[derive(Debug, Deserialize)]
+struct Incarnation {
+    pub instance: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct Instances {
+    #[serde(rename = "Instance", default)]
+    pub instances: Vec<Instance>,
+}
+
+#[derive(Debug, Deserialize)]
+struct Instance {
+    pub id: String,
+    pub address: String,
+    #[serde(rename = "InputEndpoints")]
+    pub input_endpoints: InputEndpoints,
+}
+
+#[derive(Debug, Deserialize)]
+struct InputEndpoints {
+    #[serde(rename = "Endpoint", default)]
+    pub endpoints: Vec<Endpoint>,
+}
+
+#[derive(Debug, Deserialize)]
+struct Endpoint {
+    #[serde(rename = "loadBalancedPublicAddress", default)]
+    pub load_balanced_public_address: String,
+}
+
+#[derive(Debug, Copy, Clone, Default)]
+struct Attributes {
+    pub virtual_ipv4: Option<IpAddr>,
+    pub dynamic_ipv4: Option<IpAddr>,
 }
 
 struct Azure {
@@ -133,18 +180,25 @@ impl Azure {
         }
     }
 
-    fn get_certs_endpoint(&self) -> Result<String> {
-        let goalstate: GoalState = self.client.get(retry::Xml, format!("http://{}/machine/?comp=goalstate", self.endpoint)).send()
+    fn get_goal_state(&self) -> Result<GoalState> {
+        self.client.get(retry::Xml, format!("http://{}/machine/?comp=goalstate", self.endpoint)).send()
             .chain_err(|| "failed to get goal state")?
-            .ok_or_else(|| "failed to get goal state: not found response")?;
+            .ok_or_else(|| "failed to get goal state: not found response".into())
+    }
+
+    fn get_certs_endpoint(&self) -> Result<String> {
+        let goalstate = self.get_goal_state()?;
 
         // grab the certificates endpoint from the xml and return it
         let cert_endpoint: &str = &goalstate.container.role_instance_list.role_instances[0].configuration.certificates;
         Ok(String::from(cert_endpoint))
     }
 
-    fn get_certs(&self, endpoint: String, mangled_pem: String) -> Result<String> {
+    fn get_certs(&self, mangled_pem: String) -> Result<String> {
         // get the certificates
+        let endpoint = self.get_certs_endpoint()
+            .chain_err(|| "failed to get certs endpoint")?;
+
         let certs: CertificatesFile = self.client.get(retry::Xml, endpoint)
             .header(MSCipherName("DES_EDE3_CBC".to_owned()))
             .header(MSCert(mangled_pem))
@@ -163,9 +217,6 @@ impl Azure {
     // put it all together
     fn get_ssh_pubkey(&self) -> Result<PublicKey> {
         // first we have to get the certificates endoint.
-        let certs_endpoint = self.get_certs_endpoint()
-            .chain_err(|| "failed to get certs endpoint")?;
-
         // we have to generate the rsa public/private keypair and the x509 cert
         // that we use to make the request. this is equivalent to
         // `openssl req -x509 -nodes -subj /CN=LinuxTransport -days 365 -newkey rsa:2048 -keyout private.pem -out cert.pem`
@@ -177,7 +228,7 @@ impl Azure {
             .chain_err(|| "failed to mangle pem")?;
 
         // fetch the encrypted cms blob from the certs endpoint
-        let smime = self.get_certs(certs_endpoint, mangled_pem)
+        let smime = self.get_certs(mangled_pem)
             .chain_err(|| "failed to get certs")?;
 
         // decrypt the cms blob
@@ -190,6 +241,33 @@ impl Azure {
 
         Ok(ssh_pubkey)
     }
+
+    fn get_attributes(&self) -> Result<Attributes> {
+        let goalstate = self.get_goal_state()?;
+
+        let endpoint = &goalstate.container.role_instance_list.role_instances[0].configuration.shared_config;
+
+        let shared_config: SharedConfig = self.client.get(retry::Xml, endpoint.to_string()).send()
+            .chain_err(|| "failed to get shared configuration")?
+            .ok_or_else(|| "failed to get shared configuration: not found")?;
+
+        let mut attributes = Attributes::default();
+
+        for instance in shared_config.instances.instances {
+            if instance.id == shared_config.incarnation.instance {
+                attributes.dynamic_ipv4 = Some(instance.address.parse()
+                    .chain_err(|| format!("failed to parse instance ip address: {}", instance.address))?);
+                for endpoint in instance.input_endpoints.endpoints {
+                    attributes.virtual_ipv4 = match endpoint.load_balanced_public_address.parse::<SocketAddr>() {
+                        Ok(lbpa) => Some(lbpa.ip()),
+                        Err(_) => continue,
+                    };
+                }
+            }
+        }
+
+        Ok(attributes)
+    }
 }
 
 pub fn fetch_metadata() -> Result<Metadata> {
@@ -199,7 +277,12 @@ pub fn fetch_metadata() -> Result<Metadata> {
     let ssh_pubkey = provider.get_ssh_pubkey()
         .chain_err(|| "azure: failed to get ssh pubkey")?;
 
+    let attributes = provider.get_attributes()
+        .chain_err(|| "azure: failed to get attributes")?;
+
     Ok(Metadata::builder()
        .add_publickeys(vec![ssh_pubkey])
+       .add_attribute_if_exists("AZURE_IPV4_DYNAMIC".to_string(), attributes.dynamic_ipv4.map(|x| x.to_string()))
+       .add_attribute_if_exists("AZURE_IPV4_VIRTUAL".to_string(), attributes.virtual_ipv4.map(|x| x.to_string()))
        .build())
 }
