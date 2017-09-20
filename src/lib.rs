@@ -53,7 +53,6 @@ mod network;
 mod retry;
 mod util;
 
-#[allow(unused_doc_comment)]
 pub mod errors {
     error_chain!{
         links {

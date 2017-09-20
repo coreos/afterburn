@@ -20,7 +20,7 @@ byteorder = "1.1"
 pnet = "0.19"
 reqwest = "0.7"
 hyper = "0.11"
-error-chain = "0.10"
+error-chain = { version = "0.11", default-features = false }
 openssh-keys = "0.1"
 update-ssh-keys = { git = "https://github.com/sdemos/update-ssh-keys-rs" }
 ipnetwork = "0.12"
