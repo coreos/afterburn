@@ -23,10 +23,12 @@ use pnet;
 use retry;
 use openssh_keys::PublicKey;
 
-use std::net::{IpAddr, Ipv4Addr};
+use std::net::IpAddr;
 use std::fs::File;
 use std::path::Path;
 use std::io::{BufRead, BufReader};
+use std::time::Duration;
+use std::thread;
 
 header! {(MSAgentName, "x-ms-agent-name") => [String]}
 header! {(MSVersion, "x-ms-version") => [String]}
@@ -113,45 +115,49 @@ impl Azure {
         Ok(azure)
     }
 
-    // I don't really understand why this is how we need to get this ip
-    // address but this is how it works in the original implementation
-    // and nobody complains about it, so w/e
     fn get_fabric_address() -> Result<IpAddr> {
         // get the interfaces on the machine
         let interfaces = pnet::datalink::interfaces();
         trace!("interfaces - {:?}", interfaces);
 
-        for interface in interfaces {
-            trace!("looking at interface {:?}", interface);
-            let lease_path = format!("/run/systemd/netif/leases/{}", interface.index);
-            let lease_path = Path::new(&lease_path);
-            if lease_path.exists() {
-                debug!("found lease file - {:?}", lease_path);
-                let lease = File::open(&lease_path)
-                    .chain_err(|| format!("failed to open lease file ({:?})", lease_path))?;
-                let lease = BufReader::new(&lease);
+        // if we don't find the dhcp lease, keep trying
+        // TODO(sdemos): eventually this should be a backoff timer instead of
+        // looping forever.
+        loop {
+            for interface in interfaces.clone() {
+                trace!("looking at interface {:?}", interface);
+                let lease_path = format!("/run/systemd/netif/leases/{}", interface.index);
+                let lease_path = Path::new(&lease_path);
+                if lease_path.exists() {
+                    debug!("found lease file - {:?}", lease_path);
+                    let lease = File::open(&lease_path)
+                        .chain_err(|| format!("failed to open lease file ({:?})", lease_path))?;
+                    let lease = BufReader::new(&lease);
 
-                // find the OPTION_245 flag
-                for line in lease.lines() {
-                    let line = line
-                        .chain_err(|| format!("failed to read from lease file ({:?})", lease_path))?;
-                    let option: Vec<&str> = line.split('=').collect();
-                    if option.len() > 1 && option[0] == OPTION_245 {
-                        // value is an 8 digit hex value. convert it to u32 and
-                        // then parse that into an ip. Ipv4Addr::from(u32)
-                        // performs conversion from big-endian
-                        trace!("found fabric address in hex - {:?}", option[1]);
-                        let dec = u32::from_str_radix(option[1], 16)
-                            .chain_err(|| format!("failed to convert '{}' from hex", option[1]))?;
-                        return Ok(IpAddr::V4(Ipv4Addr::from(dec)));
+                    // find the OPTION_245 flag
+                    for line in lease.lines() {
+                        let line = line
+                            .chain_err(|| format!("failed to read from lease file ({:?})", lease_path))?;
+                        let option: Vec<&str> = line.split('=').collect();
+                        if option.len() > 1 && option[0] == OPTION_245 {
+                            // value is an 8 digit hex value. convert it to u32 and
+                            // then parse that into an ip. Ipv4Addr::from(u32)
+                            // performs conversion from big-endian
+                            trace!("found fabric address in hex - {:?}", option[1]);
+                            let dec = u32::from_str_radix(option[1], 16)
+                                .chain_err(|| format!("failed to convert '{}' from hex", option[1]))?;
+                            return Ok(IpAddr::V4(dec.into()));
+                        }
                     }
+
+                    debug!("failed to get fabric address from existing lease file '{:?}'", lease_path);
                 }
-
-                debug!("failed to get fabric address from existing lease file '{:?}'", lease_path);
             }
-        }
 
-        Err("failed to retrieve fabric address".into())
+            // sleep for a bit
+            thread::sleep(Duration::from_millis(500));
+        }
+        // Err("failed to retrieve fabric address".into())
     }
 
     fn is_fabric_compatible(&self, version: &str) -> Result<()> {
