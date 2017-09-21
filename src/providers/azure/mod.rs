@@ -41,31 +41,31 @@ Content-Transfer-Encoding: base64
 
 ";
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone, Default)]
 struct GoalState {
     #[serde(rename = "Container")]
     pub container: Container
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone, Default)]
 struct Container {
     #[serde(rename = "RoleInstanceList")]
     pub role_instance_list: RoleInstanceList
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone, Default)]
 struct RoleInstanceList {
-    #[serde(rename = "RoleInstance")]
+    #[serde(rename = "RoleInstance", default)]
     pub role_instances: Vec<RoleInstance>
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 struct RoleInstance {
     #[serde(rename = "Configuration")]
     pub configuration: Configuration
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 struct Configuration {
     #[serde(rename = "Certificates", default)]
     pub certificates: String,
@@ -73,25 +73,25 @@ struct Configuration {
     pub shared_config: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 struct CertificatesFile {
     #[serde(rename = "Data", default)]
     pub data: String
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 struct Versions {
     #[serde(rename = "Supported")]
     pub supported: Supported
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 struct Supported {
     #[serde(rename = "Version", default)]
     pub versions: Vec<String>
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 struct SharedConfig {
     #[serde(rename = "Incarnation")]
     pub incarnation: Incarnation,
@@ -99,18 +99,18 @@ struct SharedConfig {
     pub instances: Instances,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 struct Incarnation {
     pub instance: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 struct Instances {
     #[serde(rename = "Instance", default)]
     pub instances: Vec<Instance>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 struct Instance {
     pub id: String,
     pub address: String,
@@ -118,13 +118,13 @@ struct Instance {
     pub input_endpoints: InputEndpoints,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 struct InputEndpoints {
     #[serde(rename = "Endpoint", default)]
     pub endpoints: Vec<Endpoint>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 struct Endpoint {
     #[serde(rename = "loadBalancedPublicAddress", default)]
     pub load_balanced_public_address: String,
@@ -136,9 +136,11 @@ struct Attributes {
     pub dynamic_ipv4: Option<IpAddr>,
 }
 
+#[derive(Debug, Clone)]
 struct Azure {
     client: retry::Client,
     endpoint: IpAddr,
+    goal_state: GoalState,
 }
 
 impl Azure {
@@ -148,13 +150,26 @@ impl Azure {
         let client = retry::Client::new()?
             .header(MSAgentName(MS_AGENT_NAME.to_owned()))
             .header(MSVersion(MS_VERSION.to_owned()));
-        let azure = Azure {
+
+        let mut azure = Azure {
             client: client,
             endpoint: addr,
+            goal_state: GoalState::default(),
         };
+
+        // make sure the metadata service is compatible with our version
         azure.is_fabric_compatible(MS_VERSION)
             .chain_err(|| "failed version compatibility check")?;
+
+        // populate goalstate
+        azure.goal_state = azure.get_goal_state()?;
         Ok(azure)
+    }
+
+    fn get_goal_state(&self) -> Result<GoalState> {
+        self.client.get(retry::Xml, format!("http://{}/machine/?comp=goalstate", self.endpoint)).send()
+            .chain_err(|| "failed to get goal state")?
+        .ok_or_else(|| "failed to get goal state: not found response".into())
     }
 
     fn get_fabric_address() -> Result<IpAddr> {
@@ -180,17 +195,9 @@ impl Azure {
         }
     }
 
-    fn get_goal_state(&self) -> Result<GoalState> {
-        self.client.get(retry::Xml, format!("http://{}/machine/?comp=goalstate", self.endpoint)).send()
-            .chain_err(|| "failed to get goal state")?
-            .ok_or_else(|| "failed to get goal state: not found response".into())
-    }
-
     fn get_certs_endpoint(&self) -> Result<String> {
-        let goalstate = self.get_goal_state()?;
-
         // grab the certificates endpoint from the xml and return it
-        let cert_endpoint: &str = &goalstate.container.role_instance_list.role_instances[0].configuration.certificates;
+        let cert_endpoint: &str = &self.goal_state.container.role_instance_list.role_instances[0].configuration.certificates;
         Ok(String::from(cert_endpoint))
     }
 
@@ -243,9 +250,7 @@ impl Azure {
     }
 
     fn get_attributes(&self) -> Result<Attributes> {
-        let goalstate = self.get_goal_state()?;
-
-        let endpoint = &goalstate.container.role_instance_list.role_instances[0].configuration.shared_config;
+        let endpoint = &self.goal_state.container.role_instance_list.role_instances[0].configuration.shared_config;
 
         let shared_config: SharedConfig = self.client.get(retry::Xml, endpoint.to_string()).send()
             .chain_err(|| "failed to get shared configuration")?
