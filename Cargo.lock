@@ -1208,7 +1208,7 @@ dependencies = [
 [[package]]
 name = "update-ssh-keys"
 version = "0.1.0"
-source = "git+https://github.com/sdemos/update-ssh-keys-rs#4d2668e08e8fd55ffbfe1bc63bd60c868fb251db"
+source = "git+https://github.com/sdemos/update-ssh-keys-rs#2fa0c4f51bdd9deb0237fd3425d8477d3f17dee6"
 dependencies = [
  "clap 2.26.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "error-chain 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)",
