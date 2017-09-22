@@ -93,6 +93,7 @@ pub fn fetch_metadata(provider: &str) -> Result<Metadata> {
         "ec2" => ec2::fetch_metadata(),
         "gce" => gce::fetch_metadata(),
         "openstack" => openstack::fetch_metadata(),
+        "oracle-oci" => oracle::fetch_metadata(),
         "packet" => packet::fetch_metadata(),
         "vagrant-virtualbox" => vagrant_virtualbox::fetch_metadata(),
         _ => Err(errors::ErrorKind::UnknownProvider(provider.to_owned()).into()),
