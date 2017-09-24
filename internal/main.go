@@ -27,6 +27,7 @@ import (
 	"github.com/coreos/coreos-metadata/internal/providers"
 	"github.com/coreos/coreos-metadata/internal/providers/azure"
 	"github.com/coreos/coreos-metadata/internal/providers/cloudStackConfigDrive"
+	"github.com/coreos/coreos-metadata/internal/providers/cloudStackMetadata"
 	"github.com/coreos/coreos-metadata/internal/providers/digitalocean"
 	"github.com/coreos/coreos-metadata/internal/providers/ec2"
 	"github.com/coreos/coreos-metadata/internal/providers/gce"
@@ -154,6 +155,8 @@ func getMetadataProvider(providerName string) (func() (providers.Metadata, error
 		return vagrant_virtualbox.FetchMetadata, nil
 	case "cloudstack-configdrive":
 		return cloudStackConfigDrive.FetchMetadata, nil
+	case "cloudstack-metadata":
+		return cloudStackMetadata.FetchMetadata, nil
 	case "oracle-oci":
 		return oracleoci.FetchMetadata, nil
 	default:
