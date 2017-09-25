@@ -31,6 +31,9 @@ hostname = "0.1"
 version = "*"
 features = ["max_level_trace"]
 
+[dev-dependencies]
+mockito = "0.9"
+
 [features]
 default = []
 lints = ["clippy"]

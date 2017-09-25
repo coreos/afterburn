@@ -14,14 +14,20 @@
 
 //! aws ec2 metadata fetcher
 //!
+use errors::*;
+use metadata::Metadata;
 use retry;
 
-use metadata::Metadata;
+#[cfg(test)]
+mod mock_tests;
+#[cfg(test)]
+use self::mock_tests::URL;
 
-use errors::*;
+#[cfg(not(test))]
+const URL: &'static str = "http://169.254.169.254/2009-04-04";
 
 fn url_for_key(key: &str) -> String {
-    format!("http://169.254.169.254/2009-04-04/{}", key)
+    format!("{}/{}", URL, key)
 }
 
 #[allow(non_snake_case)]

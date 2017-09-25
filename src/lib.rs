@@ -18,6 +18,8 @@
 #[macro_use]
 extern crate hyper;
 extern crate reqwest;
+#[cfg(test)]
+extern crate mockito;
 
 extern crate base64;
 
