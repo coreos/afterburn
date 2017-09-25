@@ -25,6 +25,7 @@
 
 pub mod azure;
 pub mod digitalocean;
+pub mod cloudstack;
 pub mod ec2;
 pub mod gce;
 pub mod openstack;

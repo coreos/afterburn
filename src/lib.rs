@@ -89,6 +89,7 @@ use errors::*;
 pub fn fetch_metadata(provider: &str) -> Result<Metadata> {
     match provider {
         "azure" => azure::fetch_metadata(),
+        "cloudstack-metadata" => cloudstack::network::fetch_metadata(),
         "digitalocean" => digitalocean::fetch_metadata(),
         "ec2" => ec2::fetch_metadata(),
         "gce" => gce::fetch_metadata(),
