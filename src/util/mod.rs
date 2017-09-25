@@ -14,18 +14,38 @@
 
 //! utility functions
 
+use std::io::{Read, BufRead, BufReader};
+use errors::*;
+
+fn key_lookup_line(delim: char, key: &str, line: &str) -> Option<String> {
+    match line.find(delim) {
+        Some(index) => {
+            let (k, val) = line.split_at(index+1);
+            if k != format!("{}{}", key, delim) {
+                return None
+            }
+            return Some(val.to_owned())
+        }
+        None => None,
+    }
+}
+
+pub fn key_lookup_reader<R: Read>(delim: char, key: &str, reader: R) -> Result<Option<String>> {
+    let contents = BufReader::new(reader);
+
+    for l in contents.lines() {
+        let l = l?;
+        if let Some(v) = key_lookup_line(delim, key, &l) {
+            return Ok(Some(v));
+        }
+    }
+    Ok(None)
+}
+
 pub fn key_lookup(delim: char, key: &str, contents: &str) -> Option<String> {
     for l in contents.lines() {
-        match l.find(delim) {
-            Some(index) => {
-                let l = l.to_owned();
-                let (k, val) = l.split_at(index+1);
-                if k != format!("{}{}", key, delim) {
-                    continue
-                }
-                return Some(val.to_owned())
-            }
-            None => continue,
+        if let Some(v) = key_lookup_line(delim, key, l) {
+            return Some(v)
         }
     }
     None

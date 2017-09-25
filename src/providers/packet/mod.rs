@@ -20,7 +20,6 @@ use errors::*;
 
 use retry;
 use std::fs::File;
-use std::io::Read;
 use std::str::FromStr;
 
 use util;
@@ -102,11 +101,8 @@ pub fn fetch_metadata() -> Result<Metadata> {
 }
 
 fn get_dns_servers() -> Result<Vec<IpAddr>> {
-    let mut state = String::new();
-    let mut f = File::open("/run/systemd/netif/state")?;
-    f.read_to_string(&mut state)?;
-
-    let ip_strings = util::key_lookup('=', "DNS", &state)
+    let f = File::open("/run/systemd/netif/state")?;
+    let ip_strings = util::key_lookup_reader('=', "DNS", f)?
         .ok_or("DNS not found in netif state file")?;
     let mut addrs = Vec::new();
     for ip_string in ip_strings.split(' ') {
