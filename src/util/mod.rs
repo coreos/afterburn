@@ -14,7 +14,12 @@
 
 //! utility functions
 
+use pnet;
 use std::io::{Read, BufRead, BufReader};
+use std::fs::File;
+use std::path::Path;
+use std::time::Duration;
+use std::thread;
 use errors::*;
 
 fn key_lookup_line(delim: char, key: &str, line: &str) -> Option<String> {
@@ -22,9 +27,10 @@ fn key_lookup_line(delim: char, key: &str, line: &str) -> Option<String> {
         Some(index) => {
             let (k, val) = line.split_at(index+1);
             if k != format!("{}{}", key, delim) {
-                return None
+                None
+            } else {
+                Some(val.to_owned())
             }
-            return Some(val.to_owned())
         }
         None => None,
     }
@@ -49,6 +55,37 @@ pub fn key_lookup(delim: char, key: &str, contents: &str) -> Option<String> {
         }
     }
     None
+}
+
+pub fn dns_lease_key_lookup(key: &str) -> Result<String> {
+    let interfaces = pnet::datalink::interfaces();
+    trace!("interfaces - {:?}", interfaces);
+
+    // if we don't find the dhcp lease, keep trying
+    // TODO(sdemos): eventually this should be a backoff timer instead of
+    // looping forever.
+    loop {
+        for interface in interfaces.clone() {
+            trace!("looking at interface {:?}", interface);
+            let lease_path = format!("/run/systemd/netif/leases/{}", interface.index);
+            let lease_path = Path::new(&lease_path);
+            if lease_path.exists() {
+                debug!("found lease file - {:?}", lease_path);
+                let lease = File::open(&lease_path)
+                    .chain_err(|| format!("failed to open lease file ({:?})", lease_path))?;
+
+                if let Some(v) = key_lookup_reader('=', key, lease)? {
+                    return Ok(v);
+                }
+
+                debug!("failed to get value from existing lease file '{:?}'", lease_path);
+            }
+        }
+
+        // sleep for a bit
+        thread::sleep(Duration::from_millis(500));
+    }
+    // Err("failed to retrieve fabric address".into())
 }
 
 #[cfg(test)]
