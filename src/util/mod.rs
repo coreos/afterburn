@@ -19,8 +19,8 @@ use std::io::{Read, BufRead, BufReader};
 use std::fs::File;
 use std::path::Path;
 use std::time::Duration;
-use std::thread;
 use errors::*;
+use retry;
 
 fn key_lookup_line(delim: char, key: &str, line: &str) -> Option<String> {
     match line.find(delim) {
@@ -61,31 +61,29 @@ pub fn dns_lease_key_lookup(key: &str) -> Result<String> {
     let interfaces = pnet::datalink::interfaces();
     trace!("interfaces - {:?}", interfaces);
 
-    // if we don't find the dhcp lease, keep trying
-    // TODO(sdemos): eventually this should be a backoff timer instead of
-    // looping forever.
-    loop {
-        for interface in interfaces.clone() {
-            trace!("looking at interface {:?}", interface);
-            let lease_path = format!("/run/systemd/netif/leases/{}", interface.index);
-            let lease_path = Path::new(&lease_path);
-            if lease_path.exists() {
-                debug!("found lease file - {:?}", lease_path);
-                let lease = File::open(&lease_path)
-                    .chain_err(|| format!("failed to open lease file ({:?})", lease_path))?;
+    retry::Retry::new()
+        .initial_backoff(Duration::from_millis(50))
+        .max_backoff(Duration::from_millis(500))
+        .max_attempts(60)
+        .retry(|_| {
+            for interface in interfaces.clone() {
+                trace!("looking at interface {:?}", interface);
+                let lease_path = format!("/run/systemd/netif/leases/{}", interface.index);
+                let lease_path = Path::new(&lease_path);
+                if lease_path.exists() {
+                    debug!("found lease file - {:?}", lease_path);
+                    let lease = File::open(&lease_path)
+                        .chain_err(|| format!("failed to open lease file ({:?})", lease_path))?;
 
-                if let Some(v) = key_lookup_reader('=', key, lease)? {
-                    return Ok(v);
+                    if let Some(v) = key_lookup_reader('=', key, lease)? {
+                        return Ok(v);
+                    }
+
+                    debug!("failed to get value from existing lease file '{:?}'", lease_path);
                 }
-
-                debug!("failed to get value from existing lease file '{:?}'", lease_path);
             }
-        }
-
-        // sleep for a bit
-        thread::sleep(Duration::from_millis(500));
-    }
-    // Err("failed to retrieve fabric address".into())
+            Err("failed to retrieve fabric address".into())
+        })
 }
 
 #[cfg(test)]
