@@ -45,6 +45,8 @@ extern crate update_ssh_keys;
 
 extern crate users;
 extern crate hostname;
+extern crate tempdir;
+extern crate nix;
 
 extern crate ipnetwork;
 
@@ -90,6 +92,7 @@ pub fn fetch_metadata(provider: &str) -> Result<Metadata> {
     match provider {
         "azure" => azure::fetch_metadata(),
         "cloudstack-metadata" => cloudstack::network::fetch_metadata(),
+        "cloudstack-configdrive" => cloudstack::configdrive::fetch_metadata(),
         "digitalocean" => digitalocean::fetch_metadata(),
         "ec2" => ec2::fetch_metadata(),
         "gce" => gce::fetch_metadata(),
