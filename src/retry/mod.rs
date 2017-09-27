@@ -12,114 +12,36 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! retry
-//!
-//! this is an abstraction over the regular http get request. it allows you to
-//! have a request retry until it succeeds, with a configurable number of
-//! of attempts and a backoff strategy. It also takes care of automatically
-//! deserializing responses and handles headers in a sane way.
+//! retry is a generic function that retrys functions until they succeed.
 
-use std::io::Read;
+use errors::*;
 use std::time::Duration;
 use std::thread;
 
-use reqwest;
-use reqwest::header;
-use reqwest::header::ContentType;
-use reqwest::{Method,Request};
+pub mod raw_deserializer;
+mod client;
+pub use self::client::*;
 
-use serde;
-use serde_xml_rs;
-use serde_json;
-
-mod raw_deserializer;
-
-use errors::*;
-
-pub fn default_initial_backoff() -> Duration { Duration::new(1,0) }
-pub fn default_max_backoff() -> Duration { Duration::new(5,0) }
-pub fn default_max_attempts() -> u32 { 10 }
-
-pub trait Deserializer {
-    fn deserialize<T, R>(&self, R) -> Result<T>
-        where T: for<'de> serde::Deserialize<'de>, R: Read;
-    fn content_type(&self) -> ContentType;
-}
-
-#[derive(Debug, Clone, Copy)]
-pub struct Xml;
-
-impl Deserializer for Xml {
-    fn deserialize<T, R>(&self, r: R) -> Result<T>
-        where T: for<'de> serde::Deserialize<'de>, R: Read
-    {
-        serde_xml_rs::deserialize(r)
-            .chain_err(|| "failed xml deserialization")
-    }
-    fn content_type(&self) -> ContentType {
-        ContentType("text/xml; charset=utf-8".parse().unwrap())
-    }
-}
-
-#[derive(Debug, Clone, Copy)]
-pub struct Json;
-
-impl Deserializer for Json {
-    fn deserialize<T, R>(&self, r: R) -> Result<T>
-        where T: serde::de::DeserializeOwned, R: Read
-    {
-        serde_json::from_reader(r)
-            .chain_err(|| "failed json deserialization")
-    }
-    fn content_type(&self) -> ContentType {
-        ContentType("text/json; charset=utf-8".parse().unwrap())
-    }
-}
-
-#[derive(Debug, Clone, Copy)]
-pub struct Raw;
-
-impl Deserializer for Raw {
-    fn deserialize<T, R>(&self, r: R) -> Result<T>
-        where T: for<'de> serde::Deserialize<'de>, R: Read
-    {
-        raw_deserializer::from_reader(r)
-            .chain_err(|| "failed raw deserialization")
-    }
-    fn content_type(&self) -> ContentType {
-        ContentType("text/plain; charset=utf-8".parse().unwrap())
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct Client {
-    client: reqwest::Client,
-    headers: header::Headers,
+#[derive(Clone, Debug)]
+pub struct Retry {
     initial_backoff: Duration,
     max_backoff: Duration,
     max_attempts: u32,
-    return_on_404: bool,
 }
 
-impl Client {
-    pub fn new() -> Result<Self> {
-        let client = reqwest::Client::new()
-            .chain_err(|| "failed to initialize client")?;
-        Ok(Client{
-            client,
-            headers: header::Headers::new(),
-            initial_backoff: default_initial_backoff(),
-            max_backoff:  default_max_backoff(),
-            max_attempts: default_max_attempts(),
-            return_on_404: false,
-        })
+impl ::std::default::Default for Retry {
+    fn default() -> Self {
+        Retry {
+            initial_backoff: Duration::new(1,0),
+            max_backoff: Duration::new(5,0),
+            max_attempts: 10,
+        }
     }
+}
 
-    pub fn header<H>(mut self, h: H) -> Self
-        where H: header::Header
-    {
-        self.headers.set(h);
-        self
+impl Retry {
+    pub fn new() -> Self {
+        Retry::default()
     }
 
     pub fn initial_backoff(mut self, initial_backoff: Duration) -> Self {
@@ -132,125 +54,38 @@ impl Client {
         self
     }
 
-    /// max_attempts will panic if the argument is greater than 500
     pub fn max_attempts(mut self, max_attempts: u32) -> Self {
-        if max_attempts > 500 {
-            // Picking 500 as a max_attempts number arbitrarily, to prevent the mutually recursive
-            // functions dispatch_request and wait_then_retry from blowing up the stack
-            panic!("max_attempts cannot be greater than 500")
-        } else {
-            self.max_attempts = max_attempts;
-            self
-        }
-    }
-
-    pub fn return_on_404(mut self, return_on_404: bool) -> Self {
-        self.return_on_404 = return_on_404;
+        self.max_attempts = max_attempts;
         self
     }
 
-    pub fn get<D>(&self, d: D, url: String) -> RequestBuilder<D>
-        where D: Deserializer
+    pub fn retry<F, R>(self, try: F) -> Result<R>
+        where F: Fn(u32) -> Result<R>
     {
-        RequestBuilder{
-            url,
-            d,
-            client: self.client.clone(),
-            headers: self.headers.clone(),
-            initial_backoff: self.initial_backoff,
-            max_backoff: self.max_backoff,
-            max_attempts: self.max_attempts,
-            return_on_404: self.return_on_404,
-        }
-    }
-}
+        let mut delay = self.initial_backoff;
+        let mut attempts = 0;
 
-pub struct RequestBuilder<D>
-    where D: Deserializer
-{
-    url: String,
-    d: D,
-    client: reqwest::Client,
-    headers: header::Headers,
-    initial_backoff: Duration,
-    max_backoff: Duration,
-    max_attempts: u32,
-    return_on_404: bool,
-}
+        loop {
+            let res = try(attempts);
 
-impl<D> RequestBuilder<D>
-    where D: Deserializer
-{
-
-    pub fn header<H>(mut self, h: H) -> Self
-        where H: header::Header
-    {
-        self.headers.set(h);
-        self
-    }
-
-    pub fn send<T>(&self) -> Result<Option<T>>
-        where T: for<'de> serde::Deserialize<'de>
-    {
-        let url = reqwest::Url::parse(self.url.as_str())
-            .chain_err(|| "failed to parse uri")?;
-        let mut req = Request::new(Method::Get, url);
-        req.headers_mut().extend(self.headers.iter());
-        req.headers_mut().set(self.d.content_type());
-        self.dispatch_request(req, self.initial_backoff, 0)
-    }
-
-    fn dispatch_request<T>(&self, req: Request, delay: Duration, num_attempts: u32) -> Result<Option<T>>
-        where T: for<'de> serde::Deserialize<'de>
-    {
-        info!("Fetching {}: Attempt#{}", req.url(), num_attempts + 1);
-
-        match self.client.execute(clone_request(&req)) {
-            Ok(resp) => {
-                match (resp.status(), self.return_on_404) {
-                    (reqwest::StatusCode::Ok,_) => {
-                        info!("Fetch successful");
-                        self.d.deserialize(resp)
-                            .map(Some)
-                            .chain_err(|| "failed to deserialize data")
-                    }
-                    (reqwest::StatusCode::NotFound,true) => {
-                        info!("Fetch failed with 404: resource not found");
-                        Ok(None)
-                    }
-                    (s,_) => {
-                        info!("Failed to fetch: {}", s);
-                        self.wait_then_retry(req, delay, num_attempts)
-                    }
-                }
+            // if the result is ok, we don't need to try again
+            if res.is_ok() {
+                break res;
             }
-            Err(e) => {
-                info!("Failed to fetch: {}", e);
-                self.wait_then_retry(req, delay, num_attempts)
-            }
-        }
-    }
 
-    fn wait_then_retry<T>(&self, req: Request, delay: Duration, num_attempts: u32) -> Result<Option<T>>
-        where T: for<'de> serde::Deserialize<'de>
-    {
-        thread::sleep(delay);
-        let delay = if self.max_backoff != Duration::new(0,0) && delay * 2 > self.max_backoff {
+            // otherwise, perform the retry-backoff logic
+            attempts += 1;
+            if attempts == self.max_attempts {
+                break res.map_err(|e| Error::with_chain(e, "timed out"));
+            }
+
+            thread::sleep(delay);
+
+            delay = if self.max_backoff != Duration::new(0,0) && delay * 2 > self.max_backoff {
                 self.max_backoff
             } else {
                 delay * 2
             };
-        let num_attempts = num_attempts + 1;
-        if num_attempts == self.max_attempts {
-            Err(format!("Timed out while fetching {}", req.url()).into())
-        } else {
-            self.dispatch_request(req, delay, num_attempts)
         }
     }
-}
-
-fn clone_request(req: &Request) -> Request {
-    let mut newreq = Request::new(req.method().clone(), req.url().clone());
-    newreq.headers_mut().extend(req.headers().iter());
-    newreq
 }
