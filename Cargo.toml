@@ -3,6 +3,10 @@ name = "coreos-metadata"
 version = "0.1.0"
 authors = ["Stephen Demos <stephen.demos@coreos.com>"]
 
+[[bin]]
+name = "coreos-metadata"
+path = "src/bin/coreos-metadata.rs"
+
 [dependencies]
 clap = "*"
 users = "*"
