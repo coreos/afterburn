@@ -30,6 +30,8 @@ update-ssh-keys = { git = "https://github.com/sdemos/update-ssh-keys-rs" }
 ipnetwork = "0.12"
 clippy = { version = "*", optional = true }
 hostname = "0.1"
+tempdir = "0.3"
+nix = "0.9"
 
 [dependencies.slog]
 version = "*"
