@@ -136,7 +136,7 @@ impl Metadata {
         // find the ssh keys user and open their ssh authorized keys directory
         let user = users::get_user_by_name(&ssh_keys_user)
             .ok_or_else(|| format!("could not find user with username {:?}", ssh_keys_user))?;
-        let mut authorized_keys_dir = AuthorizedKeys::open(user, true)
+        let mut authorized_keys_dir = AuthorizedKeys::open(user, true, None)
             .chain_err(|| format!("failed to open authorzied keys directory for user '{}'", ssh_keys_user))?;
 
         // add the ssh keys to the directory

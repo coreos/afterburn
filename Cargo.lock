@@ -26,7 +26,7 @@ dependencies = [
  "slog-scope 4.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "slog-term 2.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "tempdir 0.3.5 (registry+https://github.com/rust-lang/crates.io-index)",
- "update-ssh-keys 0.1.0 (git+https://github.com/sdemos/update-ssh-keys-rs)",
+ "update-ssh-keys 0.1.0 (git+https://github.com/coreos/update-ssh-keys?tag=v0.1.0)",
  "users 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -1317,7 +1317,7 @@ dependencies = [
 [[package]]
 name = "update-ssh-keys"
 version = "0.1.0"
-source = "git+https://github.com/sdemos/update-ssh-keys-rs#3e42c7a12d37e48356cc313db7b779f88e0f2c98"
+source = "git+https://github.com/coreos/update-ssh-keys?tag=v0.1.0#fcbbf62deb7bbe1df527d71c8b6c0231cb1090cb"
 dependencies = [
  "clap 2.26.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "error-chain 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1557,7 +1557,7 @@ dependencies = [
 "checksum unicode-xid 0.0.3 (registry+https://github.com/rust-lang/crates.io-index)" = "36dff09cafb4ec7c8cf0023eb0b686cb6ce65499116a12201c9e11840ca01beb"
 "checksum unicode-xid 0.0.4 (registry+https://github.com/rust-lang/crates.io-index)" = "8c1f860d7d29cf02cb2f3f359fd35991af3d30bac52c57d265a3c461074cb4dc"
 "checksum unreachable 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)" = "382810877fe448991dfc7f0dd6e3ae5d58088fd0ea5e35189655f84e6814fa56"
-"checksum update-ssh-keys 0.1.0 (git+https://github.com/sdemos/update-ssh-keys-rs)" = "<none>"
+"checksum update-ssh-keys 0.1.0 (git+https://github.com/coreos/update-ssh-keys?tag=v0.1.0)" = "<none>"
 "checksum url 1.5.1 (registry+https://github.com/rust-lang/crates.io-index)" = "eeb819346883532a271eb626deb43c4a1bb4c4dd47c519bd78137c3e72a4fe27"
 "checksum users 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)" = "99ab1b53affc9f75f57da4a8b051a188e84d20d43bea0dd9bd8db71eebbca6da"
 "checksum utf8-ranges 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)" = "662fab6525a98beff2921d7f61a39e7d59e0b425ebc7d0d9e66d316e55124122"

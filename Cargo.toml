@@ -26,7 +26,7 @@ reqwest = "0.7"
 hyper = "0.11"
 error-chain = { version = "0.11", default-features = false }
 openssh-keys = "0.1"
-update-ssh-keys = { git = "https://github.com/sdemos/update-ssh-keys-rs" }
+update-ssh-keys = { git = "https://github.com/coreos/update-ssh-keys", tag = "v0.1.0" }
 ipnetwork = "0.12"
 clippy = { version = "*", optional = true }
 hostname = "0.1"
