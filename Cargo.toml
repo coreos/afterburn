@@ -8,11 +8,11 @@ name = "coreos-metadata"
 path = "src/bin/coreos-metadata.rs"
 
 [dependencies]
-clap = "*"
-users = "*"
-slog-term = "*"
-slog-async = "*"
-slog-scope = "*"
+clap = "2.26"
+users = "0.6"
+slog-term = "2.2"
+slog-async = "2.1"
+slog-scope = "4.0"
 mime = "0.3"
 serde = "1.0"
 serde_derive = "1.0"
@@ -34,7 +34,7 @@ tempdir = "0.3"
 nix = "0.9"
 
 [dependencies.slog]
-version = "*"
+version = "2.0"
 features = ["max_level_trace"]
 
 [dev-dependencies]
