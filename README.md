@@ -7,6 +7,7 @@ This is a small utility, typically used in conjunction with [Ignition][ignition]
 The supported cloud providers and their respective metadata are as follows:
 
   - azure
+    - SSH Keys
     - Attributes
       - COREOS_AZURE_IPV4_DYNAMIC
       - COREOS_AZURE_IPV4_VIRTUAL
@@ -38,6 +39,7 @@ The supported cloud providers and their respective metadata are as follows:
       - COREOS_GCE_IP_LOCAL_0
   - packet
     - SSH Keys
+    - Network Configs
     - Attributes
       - COREOS_PACKET_HOSTNAME
       - COREOS_PACKET_IPV4_PUBLIC_0

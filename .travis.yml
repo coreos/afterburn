@@ -1,12 +1,8 @@
-language: go
+language: rust
+rust:
+  - stable
+  - beta
+  - nightly
 matrix:
-  include:
-    - go: 1.5
-      env: GO15VENDOREXPERIMENT=1
-    - go: 1.6
-
-install:
-  -
-
-script:
-  - ./test
+  allow_failures:
+    - rust: nightly
