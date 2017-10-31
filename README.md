@@ -78,5 +78,11 @@ The supported cloud providers and their respective metadata are as follows:
     - Attributes
       - COREOS_VAGRANT_VIRTUALBOX_PRIVATE_IPV4
       - COREOS_VAGRANT_VIRTUALBOX_HOSTNAME
+  - oracle cloud
+    - SSH Keys
+    - Attributes
+      - COREOS_ORACLE_OCI_DISPLAY_NAME
+      - COREOS_ORACLE_OCI_INSTANCE_ID
+      - COREOS_ORACLE_OCI_REGION
 
 [ignition]: https://github.com/coreos/ignition
