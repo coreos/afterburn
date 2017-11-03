@@ -11,6 +11,28 @@ The supported cloud providers and their respective metadata are as follows:
     - Attributes
       - COREOS_AZURE_IPV4_DYNAMIC
       - COREOS_AZURE_IPV4_VIRTUAL
+  - cloudstack-configdrive
+    - SSH Keys
+    - Attributes
+      - COREOS_CLOUDSTACK_AVAILABILITY_ZONE
+      - COREOS_CLOUDSTACK_INSTANCE_ID
+      - COREOS_CLOUDSTACK_SERVICE_OFFERING
+      - COREOS_CLOUDSTACK_CLOUD_IDENTIFIER
+      - COREOS_CLOUDSTACK_LOCAL_HOSTNAME
+      - COREOS_CLOUDSTACK_VM_ID
+  - cloudstack-metadata
+    - SSH Keys
+    - Attributes
+      - COREOS_CLOUDSTACK_AVAILABILITY_ZONE
+      - COREOS_CLOUDSTACK_CLOUD_IDENTIFIER
+      - COREOS_CLOUDSTACK_HOSTNAME
+      - COREOS_CLOUDSTACK_INSTANCE_ID
+      - COREOS_CLOUDSTACK_IPV4_LOCAL
+      - COREOS_CLOUDSTACK_IPV4_PUBLIC
+      - COREOS_CLOUDSTACK_LOCAL_HOSTNAME
+      - COREOS_CLOUDSTACK_PUBLIC_HOSTNAME
+      - COREOS_CLOUDSTACK_SERVICE_OFFERING
+      - COREOS_CLOUDSTACK_VM_ID
   - digitalocean
     - SSH Keys
     - Network Configs
@@ -37,6 +59,19 @@ The supported cloud providers and their respective metadata are as follows:
       - COREOS_GCE_HOSTNAME
       - COREOS_GCE_IP_EXTERNAL_0
       - COREOS_GCE_IP_LOCAL_0
+  - openstack-metadata
+    - SSH Keys
+    - Attributes
+      - COREOS_OPENSTACK_HOSTNAME
+      - COREOS_OPENSTACK_IPV4_LOCAL
+      - COREOS_OPENSTACK_IPV4_PUBLIC
+      - COREOS_OPENSTACK_INSTANCE_ID
+  - oracle-oci
+    - SSH Keys
+    - Attributes
+      - COREOS_ORACLE_OCI_DISPLAY_NAME
+      - COREOS_ORACLE_OCI_INSTANCE_ID
+      - COREOS_ORACLE_OCI_REGION
   - packet
     - SSH Keys
     - Network Configs
@@ -45,44 +80,9 @@ The supported cloud providers and their respective metadata are as follows:
       - COREOS_PACKET_IPV4_PUBLIC_0
       - COREOS_PACKET_IPV4_PRIVATE_0
       - COREOS_PACKET_IPV6_PUBLIC_0
-  - openstack-metadata
-    - SSH Keys
-    - Attributes
-      - COREOS_OPENSTACK_HOSTNAME
-      - COREOS_OPENSTACK_IPV4_LOCAL
-      - COREOS_OPENSTACK_IPV4_PUBLIC
-      - COREOS_OPENSTACK_INSTANCE_ID
-  - cloudstack-configdrive
-    - SSH Keys
-    - Attributes
-      - COREOS_CLOUDSTACK_AVAILABILITY_ZONE
-      - COREOS_CLOUDSTACK_INSTANCE_ID
-      - COREOS_CLOUDSTACK_SERVICE_OFFERING
-      - COREOS_CLOUDSTACK_CLOUD_IDENTIFIER
-      - COREOS_CLOUDSTACK_LOCAL_HOSTNAME
-      - COREOS_CLOUDSTACK_VM_ID
-  - cloudstack-metadata
-    - SSH Keys
-    - Attributes
-      - COREOS_CLOUDSTACK_AVAILABILITY_ZONE
-      - COREOS_CLOUDSTACK_CLOUD_IDENTIFIER
-      - COREOS_CLOUDSTACK_HOSTNAME
-      - COREOS_CLOUDSTACK_INSTANCE_ID
-      - COREOS_CLOUDSTACK_IPV4_LOCAL
-      - COREOS_CLOUDSTACK_IPV4_PUBLIC
-      - COREOS_CLOUDSTACK_LOCAL_HOSTNAME
-      - COREOS_CLOUDSTACK_PUBLIC_HOSTNAME
-      - COREOS_CLOUDSTACK_SERVICE_OFFERING
-      - COREOS_CLOUDSTACK_VM_ID
   - vagrant-virtualbox
     - Attributes
       - COREOS_VAGRANT_VIRTUALBOX_PRIVATE_IPV4
       - COREOS_VAGRANT_VIRTUALBOX_HOSTNAME
-  - oracle cloud
-    - SSH Keys
-    - Attributes
-      - COREOS_ORACLE_OCI_DISPLAY_NAME
-      - COREOS_ORACLE_OCI_INSTANCE_ID
-      - COREOS_ORACLE_OCI_REGION
 
 [ignition]: https://github.com/coreos/ignition
