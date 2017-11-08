@@ -1,6 +1,6 @@
 [package]
 name = "coreos-metadata"
-version = "1.0.1"
+version = "1.0.2"
 authors = ["Stephen Demos <stephen.demos@coreos.com>"]
 
 [[bin]]
