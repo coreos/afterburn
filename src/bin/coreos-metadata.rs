@@ -28,6 +28,7 @@ extern crate slog_scope;
 
 extern crate coreos_metadata;
 
+use std::env;
 use std::fs::File;
 use std::io::prelude::*;
 use clap::{Arg, App};
@@ -96,7 +97,26 @@ fn run() -> Result<()> {
 }
 
 fn init() -> Result<Config> {
+    // do some pre-processing on the command line arguments so that we support
+    // golang-style arguments for backwards compatibility. since we have a
+    // rather restricted set of flags, all without short options, we can make
+    // a lot of assumptions about what we are seeing.
+    let args = env::args().map(|arg| {
+        if arg.starts_with("-") && !arg.starts_with("--") && arg.len() > 2 {
+            format!("-{}", arg)
+        } else {
+            arg
+        }
+    });
+
     // setup cli
+    // WARNING: if additional arguments are added, one of two things needs to
+    // happen:
+    //   1. don't add a shortflag
+    //   2. modify the preprocessing logic above to be smarter about where it
+    //      prepends the hyphens
+    // the preprocessing will probably convert any short flags it finds into
+    // long ones
     let matches = App::new("coreos-metadata")
         .version(crate_version!())
         .arg(Arg::with_name("attributes")
@@ -122,7 +142,7 @@ fn init() -> Result<Config> {
              .long("ssh-keys")
              .help("Update SSH keys for the given user")
              .takes_value(true))
-        .get_matches();
+        .get_matches_from(args);
 
     // return configuration
     Ok(Config {
