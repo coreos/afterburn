@@ -121,7 +121,7 @@ fn parse_attrs(data: &Metadata) -> Result<Vec<(String,String)>> {
         for a in ifaces {
             if a.ipv4.is_some() {
                 attrs.push((
-                    format!("DIGITALOCEAN_IPV4_PRIVATE_{}", public_counter),
+                    format!("DIGITALOCEAN_IPV4_PRIVATE_{}", private_counter),
                     format!("{}", a.ipv4.unwrap().ip_address)
                 ));
             }
