@@ -92,48 +92,46 @@ fn parse_attrs(data: &Metadata) -> Result<Vec<(String,String)>> {
     attrs.push(("DIGITALOCEAN_HOSTNAME".to_owned(), data.hostname.clone()));
     attrs.push(("DIGITALOCEAN_REGION".to_owned(), data.region.clone()));
 
-    let mut public_counter = 0;
-    let mut private_counter = 0;
-    if let Some(ifaces) = data.interfaces.public.clone() {
-        for a in ifaces {
-            if a.ipv4.is_some() {
+    if let &Some(ref ifaces) = &data.interfaces.public {
+        for (i, ref a) in ifaces.iter().enumerate() {
+            if let Some(ref v4) = a.ipv4 {
                 attrs.push((
-                    format!("DIGITALOCEAN_IPV4_PUBLIC_{}", public_counter),
-                    format!("{}", a.ipv4.unwrap().ip_address)
+                    format!("DIGITALOCEAN_IPV4_PUBLIC_{}", i),
+                    format!("{}", v4.ip_address)
                 ));
             }
-            if a.ipv6.is_some() {
+            if let Some(ref v6) = a.ipv6 {
                 attrs.push((
-                    format!("DIGITALOCEAN_IPV6_PUBLIC_{}", public_counter),
-                    format!("{}", a.ipv6.unwrap().ip_address)
+                    format!("DIGITALOCEAN_IPV6_PUBLIC_{}", i),
+                    format!("{}", v6.ip_address)
                 ));
             }
-            if a.anchor_ipv4.is_some() {
+            if let Some(ref anchor_v4) = a.anchor_ipv4 {
                 attrs.push((
-                    format!("DIGITALOCEAN_IPV4_ANCHOR_{}", public_counter),
-                    format!("{}", a.anchor_ipv4.unwrap().ip_address)
+                    format!("DIGITALOCEAN_IPV4_ANCHOR_{}", i),
+                    format!("{}", anchor_v4.ip_address)
                 ));
             }
-            public_counter += 1;
         }
     }
-    if let Some(ifaces) = data.interfaces.private.clone() {
-        for a in ifaces {
-            if a.ipv4.is_some() {
+
+    if let &Some(ref ifaces) = &data.interfaces.private {
+        for (i, ref a) in ifaces.iter().enumerate() {
+            if let Some(ref v4) = a.ipv4 {
                 attrs.push((
-                    format!("DIGITALOCEAN_IPV4_PRIVATE_{}", private_counter),
-                    format!("{}", a.ipv4.unwrap().ip_address)
+                    format!("DIGITALOCEAN_IPV4_PRIVATE_{}", i),
+                    format!("{}", v4.ip_address)
                 ));
             }
-            if a.ipv6.is_some() {
+            if let Some(ref v6) = a.ipv6 {
                 attrs.push((
-                    format!("DIGITALOCEAN_IPV6_PRIVATE_{}", private_counter),
-                    format!("{}", a.ipv6.unwrap().ip_address)
+                    format!("DIGITALOCEAN_IPV6_PRIVATE_{}", i),
+                    format!("{}", v6.ip_address)
                 ));
             }
-            private_counter += 1;
         }
     }
+
     Ok(attrs)
 }
 
