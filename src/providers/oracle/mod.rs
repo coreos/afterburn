@@ -25,6 +25,7 @@ struct InstanceData {
 
 #[derive(Debug, Deserialize, Clone)]
 struct Metadata {
+    #[serde(default)]
     ssh_authorized_keys: String,
 }
 
