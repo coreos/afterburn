@@ -1,4 +1,4 @@
-//! oracle metadata fetcher
+//! oracle-oci metadata fetcher
 
 use retry;
 use metadata;
@@ -31,11 +31,11 @@ struct Metadata {
 
 pub fn fetch_metadata() -> Result<metadata::Metadata> {
     let client = retry::Client::new()
-        .chain_err(|| "oracle: failed to create http client")?;
+        .chain_err(|| "oracle-oci: failed to create http client")?;
 
     let data: InstanceData = client.get(retry::Json, "http://169.254.169.254/opc/v1/instance/".into()).send()
-        .chain_err(|| "oracle: failed to get instance metadata from metadata service")?
-        .ok_or_else(|| "oracle: failed to get instance metadata from metadata service: no response")?;
+        .chain_err(|| "oracle-oci: failed to get instance metadata from metadata service")?
+        .ok_or_else(|| "oracle-oci: failed to get instance metadata from metadata service: no response")?;
 
     let ssh_keys = PublicKey::read_keys(data.metadata.ssh_authorized_keys.as_bytes())?;
 
