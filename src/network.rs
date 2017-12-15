@@ -51,7 +51,7 @@ pub fn bonding_mode_to_string(mode: &u32) -> Result<String> {
     Err(format!("no such bonding mode: {}", mode).into())
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct NetworkRoute {
     pub destination: IpNetwork,
     pub gateway: IpAddr,
@@ -63,7 +63,7 @@ pub struct NetworkRoute {
 /// so we just panic! if it's not what we expected.
 /// I guess that there aren't really type systems with inclusive disjunction
 /// so it's not really that big of a deal.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Interface {
     pub name: Option<String>,
     pub mac_address: Option<MacAddr>,
@@ -74,13 +74,13 @@ pub struct Interface {
     pub bond: Option<String>,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Section {
     pub name: String,
     pub attributes: Vec<(String, String)>,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Device {
     pub name: String,
     pub kind: String,
