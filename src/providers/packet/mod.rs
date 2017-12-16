@@ -132,6 +132,9 @@ fn parse_network(netinfo: &PacketNetworkInfo) -> Result<(Vec<Interface>,Vec<Devi
             nameservers: Vec::new(),
             ip_addresses: Vec::new(),
             routes: Vec::new(),
+            // the interface should be unmanaged if it doesn't have a bond
+            // section
+            unmanaged: i.bond.is_none(),
         });
 
         // if there is a bond key, make sure we have a bond device for it
@@ -144,6 +147,7 @@ fn parse_network(netinfo: &PacketNetworkInfo) -> Result<(Vec<Interface>,Vec<Devi
                 bond: None,
                 ip_addresses: Vec::new(),
                 routes: Vec::new(),
+                unmanaged: false,
             };
             if !bonds.iter().any(|&(_, ref b): &(MacAddr, Interface)| &bond == b) {
                 bonds.push((mac, bond));
