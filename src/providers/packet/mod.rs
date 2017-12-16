@@ -102,8 +102,10 @@ pub fn fetch_metadata() -> Result<Metadata> {
 }
 
 fn get_dns_servers() -> Result<Vec<IpAddr>> {
-    let f = File::open("/run/systemd/netif/state")?;
-    let ip_strings = util::key_lookup_reader('=', "DNS", f)?
+    let f = File::open("/run/systemd/netif/state")
+        .chain_err(|| "failed to open /run/systemd/netif/state")?;
+    let ip_strings = util::key_lookup_reader('=', "DNS", f)
+        .chain_err(|| "failed to parse /run/systemd/netif/state")?
         .ok_or("DNS not found in netif state file")?;
     let mut addrs = Vec::new();
     for ip_string in ip_strings.split(' ') {
