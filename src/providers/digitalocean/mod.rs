@@ -166,6 +166,7 @@ fn parse_interfaces(data: &Metadata, interfaces: Vec<Interface>) -> Result<Vec<n
             bond: None,
             name: None,
             priority: None,
+            unmanaged: false,
         });
     }
     let mut iface_configs = Vec::new();

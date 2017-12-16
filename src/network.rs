@@ -51,7 +51,7 @@ pub fn bonding_mode_to_string(mode: &u32) -> Result<String> {
     Err(format!("no such bonding mode: {}", mode).into())
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct NetworkRoute {
     pub destination: IpNetwork,
     pub gateway: IpAddr,
@@ -63,7 +63,7 @@ pub struct NetworkRoute {
 /// so we just panic! if it's not what we expected.
 /// I guess that there aren't really type systems with inclusive disjunction
 /// so it's not really that big of a deal.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Interface {
     pub name: Option<String>,
     pub mac_address: Option<MacAddr>,
@@ -72,15 +72,16 @@ pub struct Interface {
     pub ip_addresses: Vec<IpNetwork>,
     pub routes: Vec<NetworkRoute>,
     pub bond: Option<String>,
+    pub unmanaged: bool,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Section {
     pub name: String,
     pub attributes: Vec<(String, String)>,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Device {
     pub name: String,
     pub kind: String,
@@ -115,6 +116,11 @@ impl Interface {
             config.push_str(&format!("DNS={}\n", ns))
         }
         self.bond.clone().map(|bond| config.push_str(&format!("Bond={}\n", bond)));
+
+        // [Link] section
+        if self.unmanaged {
+            config.push_str("\n[Link]\nUnmanaged=yes\n");
+        }
 
         // [Address] sections
         for addr in &self.ip_addresses {
@@ -178,6 +184,7 @@ mod tests {
                 ip_addresses: vec![],
                 routes: vec![],
                 bond: None,
+                unmanaged: false,
             }, "20-lo.network"),
             (Interface {
                 name: Some(String::from("lo")),
@@ -187,6 +194,7 @@ mod tests {
                 ip_addresses: vec![],
                 routes: vec![],
                 bond: None,
+                unmanaged: false,
             }, "10-lo.network"),
             (Interface {
                 name: None,
@@ -196,6 +204,7 @@ mod tests {
                 ip_addresses: vec![],
                 routes: vec![],
                 bond: None,
+                unmanaged: false,
             }, "20-00:00:00:00:00:00.network"),
             (Interface {
                 name: Some(String::from("lo")),
@@ -205,6 +214,7 @@ mod tests {
                 ip_addresses: vec![],
                 routes: vec![],
                 bond: None,
+                unmanaged: false,
             }, "20-lo.network"),
         ];
 
@@ -224,6 +234,7 @@ mod tests {
             ip_addresses: vec![],
             routes: vec![],
             bond: None,
+            unmanaged: false,
         };
         let _name = i.unit_name();
     }
@@ -283,6 +294,7 @@ mod tests {
                     }
                 ],
                 bond: Some(String::from("james")),
+                unmanaged: false,
             }, "[Match]
 Name=lo
 MACAddress=00:00:00:00:00:00
@@ -313,6 +325,7 @@ Gateway=127.0.0.1
                 ip_addresses: vec![],
                 routes: vec![],
                 bond: None,
+                unmanaged: false,
             }, "[Match]
 
 [Network]
