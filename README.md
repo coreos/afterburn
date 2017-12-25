@@ -59,6 +59,10 @@ The supported cloud providers and their respective metadata are as follows:
       - COREOS_GCE_HOSTNAME
       - COREOS_GCE_IP_EXTERNAL_0
       - COREOS_GCE_IP_LOCAL_0
+  - libvirt
+    - Attributes
+      - LIBVIRT_HOSTNAME
+      - LIBVIRT_PRIVATE_IPV4
   - openstack-metadata
     - SSH Keys
     - Attributes
