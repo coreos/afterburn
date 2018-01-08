@@ -96,6 +96,7 @@ pub fn fetch_metadata(provider: &str) -> Result<Metadata> {
         "digitalocean" => digitalocean::fetch_metadata(),
         "ec2" => ec2::fetch_metadata(),
         "gce" => gce::fetch_metadata(),
+        "libvirt" => libvirt::fetch_metadata(),
         "openstack-metadata" => openstack::network::fetch_metadata(),
         "oracle-oci" => oracle::oci::fetch_metadata(),
         "packet" => packet::fetch_metadata(),

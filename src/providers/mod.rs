@@ -28,6 +28,7 @@ pub mod digitalocean;
 pub mod cloudstack;
 pub mod ec2;
 pub mod gce;
+pub mod libvirt;
 pub mod openstack;
 pub mod oracle;
 pub mod packet;
