@@ -1,6 +1,7 @@
 # CoreOS Metadata
 
-This is a small utility, typically used in conjunction with [Ignition][ignition], which reads metadata from a given cloud-provider and applies it to the system. This can include adding SSH keys and writing cloud-specific attributes into an environment file. This file can then be consumed by systemd service units via `EnvironmentFile=`.
+This is a small utility, typically used in conjunction with [Ignition][ignition], which reads metadata from a given cloud-provider and applies it to the system.
+This can include adding SSH keys and writing cloud-specific attributes into an environment file (e.g. `/run/metadata/coreos`), which can then be consumed by systemd service units via `EnvironmentFile=`.
 
 ## Support
 
@@ -85,4 +86,16 @@ The supported cloud providers and their respective metadata are as follows:
       - COREOS_VAGRANT_VIRTUALBOX_PRIVATE_IPV4
       - COREOS_VAGRANT_VIRTUALBOX_HOSTNAME
 
+Additionally, some attribute names are reserved for usage by [custom metadata providers][custom-metadata].
+These can be safely used by external providers on a platform not supported by coreos-metadata:
+
+  - custom
+    - Attributes
+      - COREOS_CUSTOM_HOSTNAME
+      - COREOS_CUSTOM_PUBLIC_IPV4
+      - COREOS_CUSTOM_PRIVATE_IPV4
+      - COREOS_CUSTOM_PUBLIC_IPV6
+      - COREOS_CUSTOM_PRIVATE_IPV6
+
 [ignition]: https://github.com/coreos/ignition
+[custom-metadata]: https://github.com/coreos/container-linux-config-transpiler/blob/v0.8.0/doc/dynamic-data.md#custom-metadata-providers
