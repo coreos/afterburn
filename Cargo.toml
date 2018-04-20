@@ -21,12 +21,12 @@ serde_json = "1.0"
 openssl = "0.9.17"
 base64 = "0.6"
 byteorder = "1.1"
-pnet = "0.20"
+pnet = "0.21"
 reqwest = "0.7"
 hyper = "0.11"
 error-chain = { version = "0.11", default-features = false }
 openssh-keys = "0.2"
-update-ssh-keys = { git = "https://github.com/coreos/update-ssh-keys", tag = "v0.1.1" }
+update-ssh-keys = { git = "https://github.com/coreos/update-ssh-keys", tag = "v0.1.2" }
 ipnetwork = "0.12"
 clippy = { version = "*", optional = true }
 hostname = "0.1"
