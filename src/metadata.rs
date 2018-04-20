@@ -19,7 +19,7 @@ use std::io::prelude::*;
 use std::collections::HashMap;
 use users;
 use openssh_keys::PublicKey;
-use update_ssh_keys::AuthorizedKeys;
+use update_ssh_keys::{AuthorizedKeys, AuthorizedKeyEntry};
 use network;
 
 use errors::*;
@@ -33,7 +33,7 @@ pub struct MetadataBuilder {
 pub struct Metadata {
     attributes: HashMap<String, String>,
     hostname: Option<String>,
-    ssh_keys: Vec<PublicKey>,
+    ssh_keys: Vec<AuthorizedKeyEntry>,
     network: Vec<network::Interface>,
     net_dev: Vec<network::Device>,
 }
@@ -84,13 +84,13 @@ impl MetadataBuilder {
     pub fn add_ssh_keys(mut self, ssh_keys: Vec<String>) -> Result<Self> {
         for key in ssh_keys {
             let key = PublicKey::parse(&key)?;
-            self.metadata.ssh_keys.push(key);
+            self.metadata.ssh_keys.push(AuthorizedKeyEntry::Valid{key});
         }
         Ok(self)
     }
 
-    pub fn add_publickeys(mut self, mut ssh_keys: Vec<PublicKey>) -> Self {
-        self.metadata.ssh_keys.append(&mut ssh_keys);
+    pub fn add_publickeys(mut self, ssh_keys: Vec<PublicKey>) -> Self {
+        self.metadata.ssh_keys.extend(ssh_keys.into_iter().map(|key| AuthorizedKeyEntry::Valid{key}));
         self
     }
 
