@@ -29,6 +29,5 @@ pub mod cloudstack;
 pub mod ec2;
 pub mod gce;
 pub mod openstack;
-pub mod oracle;
 pub mod packet;
 pub mod vagrant_virtualbox;
