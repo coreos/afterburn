@@ -14,8 +14,16 @@
 
 //! aws ec2 metadata fetcher
 //!
+
+use std::collections::HashMap;
+
+use openssh_keys::PublicKey;
+use update_ssh_keys::AuthorizedKeyEntry;
+
 use errors::*;
 use metadata::Metadata;
+use network;
+use providers::MetadataProvider;
 use retry;
 
 #[cfg(test)]
@@ -26,30 +34,122 @@ use self::mock_tests::URL;
 #[cfg(not(test))]
 const URL: &'static str = "http://169.254.169.254/2009-04-04";
 
-fn url_for_key(key: &str) -> String {
-    format!("{}/{}", URL, key)
-}
-
 #[allow(non_snake_case)]
 #[derive(Debug, Deserialize)]
 struct InstanceIdDoc {
     region: String,
 }
 
-pub fn fetch_metadata() -> Result<Metadata> {
-    let client = retry::Client::new()
-        .chain_err(|| "ec2: failed to create http client")?
-        .return_on_404(true);
+#[derive(Clone, Debug)]
+pub struct Ec2Provider {
+    client: retry::Client,
+}
 
-    let instance_id: Option<String> = client.get(retry::Raw, url_for_key("meta-data/instance-id")).send()?;
-    let public: Option<String> = client.get(retry::Raw, url_for_key("meta-data/public-ipv4")).send()?;
-    let local: Option<String> = client.get(retry::Raw, url_for_key("meta-data/local-ipv4")).send()?;
-    let hostname: Option<String> = client.get(retry::Raw, url_for_key("meta-data/hostname")).send()?;
-    let availability_zone: Option<String> = client.get(retry::Raw, url_for_key("meta-data/placement/availability-zone")).send()?;
-    let region: Option<String> = client.get(retry::Json, url_for_key("dynamic/instance-identity/document")).send()?
+impl Ec2Provider {
+    pub fn new() -> Result<Ec2Provider> {
+        let client = retry::Client::new()?
+            .return_on_404(true);
+
+        Ok(Ec2Provider { client })
+    }
+
+    fn endpoint_for(key: &str) -> String {
+        format!("{}/{}", URL, key)
+    }
+
+    fn fetch_ssh_keys(&self) -> Result<Vec<String>> {
+        let keydata: Option<String> = self.client
+            .get(retry::Raw, Ec2Provider::endpoint_for("meta-data/public-keys"))
+            .send()?;
+
+        let mut keys = Vec::new();
+        if let Some(keys_list) = keydata {
+            for l in keys_list.lines() {
+                let tokens: Vec<&str> = l.split('=').collect();
+                if tokens.len() != 2 {
+                    return Err("error parsing keyID".into());
+                }
+                let key: String = self.client
+                    .get(retry::Raw, Ec2Provider::endpoint_for(
+                        &format!("meta-data/public-keys/{}/openssh-key", tokens[0])
+                    ))
+                    .send()?
+                    .ok_or("missing ssh key")?;
+                keys.push(key)
+            }
+        }
+        Ok(keys)
+    }
+}
+
+impl MetadataProvider for Ec2Provider {
+    fn attributes(&self) -> Result<HashMap<String, String>> {
+        let mut out = HashMap::with_capacity(6);
+
+        let add_value = |map: &mut HashMap<_, _>, key: &str, name| -> Result<()> {
+            let value = self.client.get(retry::Raw, Ec2Provider::endpoint_for(name)).send()?;
+
+            if let Some(value) = value {
+                map.insert(key.to_string(), value);
+            }
+
+            Ok(())
+        };
+
+        add_value(&mut out, "EC2_INSTANCE_ID", "meta-data/instance-id")?;
+        add_value(&mut out, "EC2_IPV4_LOCAL", "meta-data/local-ipv4")?;
+        add_value(&mut out, "EC2_IPV4_PUBLIC", "meta-data/public-ipv4")?;
+        add_value(&mut out, "EC2_AVAILABILITY_ZONE", "meta-data/placement/availability-zone")?;
+        add_value(&mut out, "EC2_HOSTNAME", "meta-data/hostname")?;
+
+        let region = self.client
+            .get(retry::Json, Ec2Provider::endpoint_for("dynamic/instance-identity/document"))
+            .send()?
+            .map(|instance_id_doc: InstanceIdDoc| instance_id_doc.region);
+        if let Some(region) = region {
+            out.insert("EC2_REGION".to_string(), region);
+        }
+
+        Ok(out)
+    }
+
+    fn hostname(&self) -> Result<Option<String>> {
+        self.client.get(retry::Raw, Ec2Provider::endpoint_for("meta-data/hostname")).send()
+    }
+
+    fn ssh_keys(&self) -> Result<Vec<AuthorizedKeyEntry>> {
+        self.fetch_ssh_keys().map(|keys| {
+            keys.into_iter()
+                .map(|key| {
+                    let key = PublicKey::parse(&key)?;
+                    Ok(AuthorizedKeyEntry::Valid{key})
+                })
+                .collect::<Result<Vec<_>>>()
+        })?
+    }
+
+    fn networks(&self) -> Result<Vec<network::Interface>> {
+        Ok(vec![])
+    }
+
+    fn network_devices(&self) -> Result<Vec<network::Device>> {
+        Ok(vec![])
+    }
+}
+
+pub fn fetch_metadata() -> Result<Metadata> {
+    let provider = Ec2Provider::new()
+        .chain_err(|| "ec2: failed to create http client")?;
+
+    let instance_id: Option<String> = provider.client.get(retry::Raw, Ec2Provider::endpoint_for("meta-data/instance-id")).send()?;
+    let public: Option<String> = provider.client.get(retry::Raw, Ec2Provider::endpoint_for("meta-data/public-ipv4")).send()?;
+    let local: Option<String> = provider.client.get(retry::Raw, Ec2Provider::endpoint_for("meta-data/local-ipv4")).send()?;
+    let hostname: Option<String> = provider.client.get(retry::Raw, Ec2Provider::endpoint_for("meta-data/hostname")).send()?;
+    let availability_zone: Option<String> = provider.client.get(retry::Raw, Ec2Provider::endpoint_for("meta-data/placement/availability-zone")).send()?;
+    let region: Option<String> = provider.client.get(retry::Json, Ec2Provider::endpoint_for("dynamic/instance-identity/document")).send()?
         .map(|instance_id_doc: InstanceIdDoc| instance_id_doc.region);
 
-    let ssh_keys: Vec<String> = fetch_ssh_keys(&client)?;
+    let ssh_keys: Vec<String> = provider.fetch_ssh_keys()?;
 
     Ok(Metadata::builder()
         .add_attribute_if_exists("EC2_REGION".to_owned(), region)
@@ -63,19 +163,3 @@ pub fn fetch_metadata() -> Result<Metadata> {
         .build())
 }
 
-fn fetch_ssh_keys(client: &retry::Client) -> Result<Vec<String>> {
-    let keydata: Option<String> = client.get(retry::Raw, url_for_key("meta-data/public-keys")).send()?;
-    let mut keys = Vec::new();
-    if let Some(keys_list) = keydata {
-        for l in keys_list.lines() {
-            let tokens: Vec<&str> = l.split('=').collect();
-            if tokens.len() != 2 {
-                return Err("error parsing keyID".into());
-            }
-            let key: String = client.get(retry::Raw, url_for_key(&format!("meta-data/public-keys/{}/openssh-key", tokens[0]))).send()?
-                    .ok_or("missing ssh key")?;
-            keys.push(key)
-        }
-    }
-    Ok(keys)
-}

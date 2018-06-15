@@ -16,14 +16,19 @@
 
 mod crypto;
 
+use std::collections::HashMap;
+use std::net::{IpAddr, SocketAddr};
+
+use openssh_keys::PublicKey;
+use update_ssh_keys::AuthorizedKeyEntry;
+
 use self::crypto::x509;
 use errors::*;
 use metadata::Metadata;
+use network;
+use providers::MetadataProvider;
 use retry;
 use util;
-use openssh_keys::PublicKey;
-
-use std::net::{IpAddr, SocketAddr};
 
 header! {(MSAgentName, "x-ms-agent-name") => [String]}
 header! {(MSVersion, "x-ms-version") => [String]}
@@ -137,14 +142,14 @@ struct Attributes {
 }
 
 #[derive(Debug, Clone)]
-struct Azure {
+pub struct Azure {
     client: retry::Client,
     endpoint: IpAddr,
     goal_state: GoalState,
 }
 
 impl Azure {
-    fn new() -> Result<Self> {
+    pub fn new() -> Result<Azure> {
         let addr = Azure::get_fabric_address()
             .chain_err(|| "failed to get fabric address")?;
         let client = retry::Client::new()?
@@ -272,6 +277,40 @@ impl Azure {
         }
 
         Ok(attributes)
+    }
+}
+
+impl MetadataProvider for Azure {
+    fn attributes(&self) -> Result<HashMap<String, String>> {
+        let attributes = self.get_attributes()?;
+        let mut out = HashMap::with_capacity(2);
+
+        if let Some(virtual_ipv4) = attributes.virtual_ipv4 {
+            out.insert("AZURE_IPV4_VIRTUAL".to_string(), virtual_ipv4.to_string());
+        }
+
+        if let Some(dynamic_ipv4) = attributes.dynamic_ipv4 {
+            out.insert("AZURE_IPV4_DYNAMIC".to_string(), dynamic_ipv4.to_string());
+        }
+
+        Ok(out)
+    }
+
+    fn hostname(&self) -> Result<Option<String>> {
+        Ok(None)
+    }
+
+    fn ssh_keys(&self) -> Result<Vec<AuthorizedKeyEntry>> {
+        let key = self.get_ssh_pubkey()?;
+        Ok(vec![AuthorizedKeyEntry::Valid{key}])
+    }
+
+    fn networks(&self) -> Result<Vec<network::Interface>> {
+        Ok(vec![])
+    }
+
+    fn network_devices(&self) -> Result<Vec<network::Device>> {
+        Ok(vec![])
     }
 }
 
