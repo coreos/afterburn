@@ -52,7 +52,6 @@ extern crate ipnetwork;
 
 
 mod providers;
-mod metadata;
 mod network;
 mod retry;
 mod util;
@@ -81,7 +80,6 @@ pub mod errors {
 }
 
 use providers::*;
-use metadata::Metadata;
 
 use errors::*;
 
