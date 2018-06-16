@@ -85,20 +85,24 @@ use metadata::Metadata;
 
 use errors::*;
 
+macro_rules! box_result {
+    ($exp:expr) => (Ok(Box::new($exp?)))
+}
+
 /// `fetch_metadata` is the generic, top-level function that is used by the main
 /// function to fetch metadata. The configured provider is passed in and this
 /// function dispatches the call to the correct provider-specific fetch function
-pub fn fetch_metadata(provider: &str) -> Result<Metadata> {
+pub fn fetch_metadata(provider: &str) -> Result<Box<providers::MetadataProvider>> {
     match provider {
-        "azure" => azure::fetch_metadata(),
-        "cloudstack-metadata" => cloudstack::network::fetch_metadata(),
-        "cloudstack-configdrive" => cloudstack::configdrive::fetch_metadata(),
-        "digitalocean" => digitalocean::fetch_metadata(),
-        "ec2" => ec2::fetch_metadata(),
-        "gce" => gce::fetch_metadata(),
-        "openstack-metadata" => openstack::network::fetch_metadata(),
-        "packet" => packet::fetch_metadata(),
-        "vagrant-virtualbox" => vagrant_virtualbox::fetch_metadata(),
+        "azure" => box_result!(azure::Azure::new()),
+        "cloudstack-metadata" => box_result!(cloudstack::network::CloudstackNetwork::new()),
+        "cloudstack-configdrive" => box_result!(cloudstack::configdrive::ConfigDrive::new()),
+        "digitalocean" => box_result!(digitalocean::DigitalOceanProvider::new()),
+        "ec2" => box_result!(ec2::Ec2Provider::new()),
+        "gce" => box_result!(gce::GceProvider::new()),
+        "openstack-metadata" => box_result!(openstack::network::OpenstackProvider::new()),
+        "packet" => box_result!(packet::PacketProvider::new()),
+        "vagrant-virtualbox" => box_result!(vagrant_virtualbox::VagrantVirtualboxProvider::new()),
         _ => Err(errors::ErrorKind::UnknownProvider(provider.to_owned()).into()),
     }
 }
