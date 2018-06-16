@@ -24,7 +24,6 @@ use pnet::util::MacAddr;
 use update_ssh_keys::AuthorizedKeyEntry;
 
 use errors::*;
-use metadata::Metadata;
 use network::{self, Interface, Device, Section, NetworkRoute};
 use providers::MetadataProvider;
 use retry;
@@ -282,27 +281,3 @@ impl MetadataProvider for PacketProvider {
         Ok(devices)
     }
 }
-
-pub fn fetch_metadata() -> Result<Metadata> {
-    let provider = PacketProvider::new()?;
-
-    let (interfaces,network_devices) = provider.parse_network()?;
-
-    let attrs = provider.get_attrs()?;
-
-    let mut m = Metadata::builder()
-        .add_ssh_keys(provider.data.ssh_keys)?
-        .set_hostname(provider.data.hostname);
-
-    for (key,val) in attrs {
-        m = m.add_attribute(key,val);
-    }
-    for iface in interfaces {
-        m = m.add_network_interface(iface);
-    }
-    for netdev in network_devices {
-        m = m.add_network_device(netdev);
-    }
-    Ok(m.build())
-}
-

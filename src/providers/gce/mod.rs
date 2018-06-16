@@ -20,22 +20,12 @@ use openssh_keys::PublicKey;
 use update_ssh_keys::AuthorizedKeyEntry;
 
 use errors::*;
-use metadata::Metadata;
 use network;
 use providers::MetadataProvider;
 use retry;
 
 header! {(MetadataFlavor, "Metadata-Flavor") => [String]}
 const GOOGLE: &str = "Google";
-
-// Google's metadata service returns a 200 success even if there is no resource. If an empty body
-// was returned, it means there was no result
-fn empty_to_none(s: Option<String>) -> Option<String> {
-    match s {
-        Some(s) => if &s == "" { None } else { Some(s) },
-        x => x,
-    }
-}
 
 #[derive(Clone, Debug)]
 pub struct GceProvider {
@@ -143,22 +133,3 @@ impl MetadataProvider for GceProvider {
         Ok(vec![])
     }
 }
-
-pub fn fetch_metadata() -> Result<Metadata> {
-    let provider = GceProvider::new()?;
-
-    let public: Option<String> = provider.client.get(retry::Raw, GceProvider::endpoint_for("instance/network-interfaces/0/access-configs/0/external-ip")).send()?;
-    let local: Option<String> = provider.client.get(retry::Raw, GceProvider::endpoint_for("instance/network-interfaces/0/ip")).send()?;
-    let hostname: Option<String> = provider.client.get(retry::Raw, GceProvider::endpoint_for("instance/hostname")).send()?;
-
-    let ssh_keys = provider.fetch_all_ssh_keys()?;
-
-    Ok(Metadata::builder()
-        .add_attribute_if_exists("GCE_IP_LOCAL_0".to_owned(), empty_to_none(local))
-        .add_attribute_if_exists("GCE_IP_EXTERNAL_0".to_owned(), empty_to_none(public))
-        .add_attribute_if_exists("GCE_HOSTNAME".to_owned(), empty_to_none(hostname.clone()))
-        .set_hostname_if_exists(hostname)
-        .add_ssh_keys(ssh_keys)?
-        .build())
-}
-

@@ -6,7 +6,6 @@ use openssh_keys::PublicKey;
 use update_ssh_keys::AuthorizedKeyEntry;
 
 use errors::*;
-use metadata::Metadata;
 use network;
 use providers::MetadataProvider;
 use retry;
@@ -93,20 +92,3 @@ impl MetadataProvider for OpenstackProvider {
         Ok(vec![])
     }
 }
-
-pub fn fetch_metadata() -> Result<Metadata> {
-    let provider = OpenstackProvider::new()
-        .chain_err(|| "openstack: failed to create http client")?;
-
-    let hostname: Option<String> = provider.client.get(retry::Raw, OpenstackProvider::endpoint_for("hostname")).send()?;
-
-    Ok(Metadata::builder()
-        .add_attribute_if_exists("OPENSTACK_INSTANCE_ID".to_owned(), provider.client.get(retry::Raw, OpenstackProvider::endpoint_for("instance-id")).send()?)
-        .add_attribute_if_exists("OPENSTACK_IPV4_LOCAL".to_owned(), provider.client.get(retry::Raw, OpenstackProvider::endpoint_for("local-ipv4")).send()?)
-        .add_attribute_if_exists("OPENSTACK_IPV4_PUBLIC".to_owned(), provider.client.get(retry::Raw, OpenstackProvider::endpoint_for("public-ipv4")).send()?)
-        .add_attribute_if_exists("OPENSTACK_HOSTNAME".to_owned(), hostname.clone())
-        .set_hostname_if_exists(hostname)
-        .add_ssh_keys(provider.fetch_keys()?)?
-        .build())
-}
-

@@ -21,7 +21,6 @@ use openssh_keys::PublicKey;
 use update_ssh_keys::AuthorizedKeyEntry;
 
 use errors::*;
-use metadata::Metadata;
 use network;
 use providers::MetadataProvider;
 use retry;
@@ -136,30 +135,3 @@ impl MetadataProvider for Ec2Provider {
         Ok(vec![])
     }
 }
-
-pub fn fetch_metadata() -> Result<Metadata> {
-    let provider = Ec2Provider::new()
-        .chain_err(|| "ec2: failed to create http client")?;
-
-    let instance_id: Option<String> = provider.client.get(retry::Raw, Ec2Provider::endpoint_for("meta-data/instance-id")).send()?;
-    let public: Option<String> = provider.client.get(retry::Raw, Ec2Provider::endpoint_for("meta-data/public-ipv4")).send()?;
-    let local: Option<String> = provider.client.get(retry::Raw, Ec2Provider::endpoint_for("meta-data/local-ipv4")).send()?;
-    let hostname: Option<String> = provider.client.get(retry::Raw, Ec2Provider::endpoint_for("meta-data/hostname")).send()?;
-    let availability_zone: Option<String> = provider.client.get(retry::Raw, Ec2Provider::endpoint_for("meta-data/placement/availability-zone")).send()?;
-    let region: Option<String> = provider.client.get(retry::Json, Ec2Provider::endpoint_for("dynamic/instance-identity/document")).send()?
-        .map(|instance_id_doc: InstanceIdDoc| instance_id_doc.region);
-
-    let ssh_keys: Vec<String> = provider.fetch_ssh_keys()?;
-
-    Ok(Metadata::builder()
-        .add_attribute_if_exists("EC2_REGION".to_owned(), region)
-        .add_attribute_if_exists("EC2_INSTANCE_ID".to_owned(), instance_id)
-        .add_attribute_if_exists("EC2_IPV4_PUBLIC".to_owned(), public)
-        .add_attribute_if_exists("EC2_IPV4_LOCAL".to_owned(), local)
-        .add_attribute_if_exists("EC2_HOSTNAME".to_owned(), hostname.clone())
-        .add_attribute_if_exists("EC2_AVAILABILITY_ZONE".to_owned(), availability_zone)
-        .set_hostname_if_exists(hostname)
-        .add_ssh_keys(ssh_keys)?
-        .build())
-}
-

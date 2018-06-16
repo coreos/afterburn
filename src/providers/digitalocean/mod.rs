@@ -25,7 +25,6 @@ use pnet::util::MacAddr;
 use update_ssh_keys::AuthorizedKeyEntry;
 
 use errors::*;
-use metadata;
 use network;
 use providers::MetadataProvider;
 use retry;
@@ -266,25 +265,4 @@ impl MetadataProvider for DigitalOceanProvider {
     fn network_devices(&self) -> Result<Vec<network::Device>> {
         Ok(vec![])
     }
-}
-
-pub fn fetch_metadata() -> Result<metadata::Metadata> {
-    let client = retry::Client::new()?;
-    let data: DigitalOceanProvider = client.get(retry::Json, "http://169.254.169.254/metadata/v1.json".to_owned()).send()?
-        .ok_or("not found")?;
-
-    let attrs = data.parse_attrs()?;
-    let interfaces = data.parse_network()?;
-
-    let mut m = metadata::Metadata::builder()
-        .add_ssh_keys(data.public_keys)?
-        .set_hostname(data.hostname);
-
-    for (key,val) in attrs {
-        m = m.add_attribute(key,val);
-    }
-    for iface in interfaces {
-        m = m.add_network_interface(iface);
-    }
-    Ok(m.build())
 }

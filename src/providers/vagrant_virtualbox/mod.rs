@@ -24,7 +24,6 @@ use pnet;
 use update_ssh_keys::AuthorizedKeyEntry;
 
 use errors::*;
-use metadata::Metadata;
 use network;
 use providers::MetadataProvider;
 
@@ -93,15 +92,3 @@ impl MetadataProvider for VagrantVirtualboxProvider {
         Ok(vec![])
     }
 }
-
-pub fn fetch_metadata() -> Result<Metadata> {
-    let h = hostname::get_hostname().ok_or("unable to get hostname")?;
-    let ip = VagrantVirtualboxProvider::get_ip()?;
-
-    Ok(Metadata::builder()
-       .add_attribute("VAGRANT_VIRTUALBOX_PRIVATE_IPV4".to_owned(), ip)
-       .add_attribute("VAGRANT_VIRTUALBOX_HOSTNAME".to_owned(), h.clone())
-       .set_hostname(h)
-       .build())
-}
-

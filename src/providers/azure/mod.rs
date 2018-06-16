@@ -24,7 +24,6 @@ use update_ssh_keys::AuthorizedKeyEntry;
 
 use self::crypto::x509;
 use errors::*;
-use metadata::Metadata;
 use network;
 use providers::MetadataProvider;
 use retry;
@@ -312,21 +311,4 @@ impl MetadataProvider for Azure {
     fn network_devices(&self) -> Result<Vec<network::Device>> {
         Ok(vec![])
     }
-}
-
-pub fn fetch_metadata() -> Result<Metadata> {
-    let provider = Azure::new()
-        .chain_err(|| "azure: failed create metadata client")?;
-
-    let ssh_pubkey = provider.get_ssh_pubkey()
-        .chain_err(|| "azure: failed to get ssh pubkey")?;
-
-    let attributes = provider.get_attributes()
-        .chain_err(|| "azure: failed to get attributes")?;
-
-    Ok(Metadata::builder()
-       .add_publickeys(vec![ssh_pubkey])
-       .add_attribute_if_exists("AZURE_IPV4_DYNAMIC".to_string(), attributes.dynamic_ipv4.map(|x| x.to_string()))
-       .add_attribute_if_exists("AZURE_IPV4_VIRTUAL".to_string(), attributes.virtual_ipv4.map(|x| x.to_string()))
-       .build())
 }

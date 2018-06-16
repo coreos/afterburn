@@ -11,7 +11,6 @@ use tempdir::TempDir;
 use update_ssh_keys::AuthorizedKeyEntry;
 
 use errors::*;
-use metadata::Metadata;
 use network;
 use providers::MetadataProvider;
 
@@ -146,18 +145,4 @@ impl ::std::ops::Drop for ConfigDrive {
             ConfigDrive::unmount(&self.path).unwrap();
         }
     }
-}
-
-pub fn fetch_metadata() -> Result<Metadata> {
-    let drive = ConfigDrive::new()?;
-
-    Ok(Metadata::builder()
-       .add_publickeys(drive.fetch_publickeys()?)
-       .add_attribute_if_exists("CLOUDSTACK_AVAILABILITY_ZONE".into(), drive.fetch_value("availability_zone")?)
-       .add_attribute_if_exists("CLOUDSTACK_INSTANCE_ID".into(), drive.fetch_value("instance_id")?)
-       .add_attribute_if_exists("CLOUDSTACK_SERVICE_OFFERING".into(), drive.fetch_value("service_offering")?)
-       .add_attribute_if_exists("CLOUDSTACK_CLOUD_IDENTIFIER".into(), drive.fetch_value("cloud_identifier")?)
-       .add_attribute_if_exists("CLOUDSTACK_LOCAL_HOSTNAME".into(), drive.fetch_value("local_hostname")?)
-       .add_attribute_if_exists("CLOUDSTACK_VM_ID".into(), drive.fetch_value("vm_id")?)
-       .build())
 }
