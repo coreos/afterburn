@@ -12,23 +12,24 @@ fn test_ec2_basic() {
         .unwrap()
         .max_attempts(1)
         .return_on_404(true);
+    let provider = ec2::Ec2Provider { client };
 
-    ec2::fetch_ssh_keys(&client).unwrap_err();
+    provider.fetch_ssh_keys().unwrap_err();
 
     let _m = mockito::mock("GET", ep)
         .with_status(503)
         .create();
-    ec2::fetch_ssh_keys(&client).unwrap_err();
+    provider.fetch_ssh_keys().unwrap_err();
 
     let _m = mockito::mock("GET", ep)
         .with_status(200)
         .create();
-    let v = ec2::fetch_ssh_keys(&client).unwrap();
+    let v = provider.fetch_ssh_keys().unwrap();
     assert_eq!(v.len(), 0);
 
     let _m = mockito::mock("GET", ep)
         .with_status(404)
         .create();
-    let v = ec2::fetch_ssh_keys(&client).unwrap();
+    let v = provider.fetch_ssh_keys().unwrap();
     assert_eq!(v.len(), 0);
 }
