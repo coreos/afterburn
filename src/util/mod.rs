@@ -36,7 +36,7 @@ fn key_lookup_line(delim: char, key: &str, line: &str) -> Option<String> {
     }
 }
 
-pub fn key_lookup_reader<R: Read>(delim: char, key: &str, reader: R) -> Result<Option<String>> {
+pub fn key_lookup<R: Read>(delim: char, key: &str, reader: R) -> Result<Option<String>> {
     let contents = BufReader::new(reader);
 
     for l in contents.lines() {
@@ -46,15 +46,6 @@ pub fn key_lookup_reader<R: Read>(delim: char, key: &str, reader: R) -> Result<O
         }
     }
     Ok(None)
-}
-
-pub fn key_lookup(delim: char, key: &str, contents: &str) -> Option<String> {
-    for l in contents.lines() {
-        if let Some(v) = key_lookup_line(delim, key, l) {
-            return Some(v)
-        }
-    }
-    None
 }
 
 pub fn dns_lease_key_lookup(key: &str) -> Result<String> {
@@ -75,7 +66,7 @@ pub fn dns_lease_key_lookup(key: &str) -> Result<String> {
                     let lease = File::open(&lease_path)
                         .chain_err(|| format!("failed to open lease file ({:?})", lease_path))?;
 
-                    if let Some(v) = key_lookup_reader('=', key, lease)? {
+                    if let Some(v) = key_lookup('=', key, lease)? {
                         return Ok(v);
                     }
 
@@ -88,6 +79,7 @@ pub fn dns_lease_key_lookup(key: &str) -> Result<String> {
 
 #[cfg(test)]
 mod tests {
+    use std::io::Cursor;
     use super::*;
     #[test]
     fn key_lookup_test() {
@@ -100,8 +92,8 @@ mod tests {
             (' ', "foo", "\n\n\n\n\n\n\n \n", None),
         ];
         for (delim, key, contents, expected_val) in tests {
-            let val = key_lookup(delim, key, contents);
-            assert_eq!(val, expected_val);
+            let val = key_lookup(delim, key, Cursor::new(contents));
+            assert_eq!(val.unwrap(), expected_val);
         }
     }
 }
