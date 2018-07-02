@@ -1,26 +1,31 @@
 //! configdrive metadata fetcher for cloudstack
 
-use errors::*;
-use metadata::Metadata;
-use nix::mount;
-use openssh_keys::PublicKey;
-use std::path::{Path, PathBuf};
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::Read;
+use std::path::{Path, PathBuf};
+
+use nix::mount;
+use openssh_keys::PublicKey;
 use tempdir::TempDir;
+use update_ssh_keys::AuthorizedKeyEntry;
+
+use errors::*;
+use network;
+use providers::MetadataProvider;
 
 const CONFIG_DRIVE_LABEL_1: &'static str = "config-2";
 const CONFIG_DRIVE_LABEL_2: &'static str = "CONFIG-2";
 
 #[derive(Debug)]
-struct ConfigDrive {
+pub struct ConfigDrive {
     temp_dir: Option<TempDir>,
     target: PathBuf,
     path: PathBuf,
 }
 
 impl ConfigDrive {
-    fn new() -> Result<Self> {
+    pub fn new() -> Result<Self> {
         // maybe its already mounted
         let path = Path::new("/media/ConfigDrive/cloudstack/metadata/");
         if path.exists() {
@@ -34,8 +39,16 @@ impl ConfigDrive {
         // if not try and mount with each of the labels
         let target = TempDir::new("coreos-metadata")
             .chain_err(|| "failed to create temporary directory")?;
-        mount_ro(&Path::new("/dev/disk/by-label/").join(CONFIG_DRIVE_LABEL_1), target.path(), "iso9660")
-            .or_else(|_| mount_ro(&Path::new("/dev/disk/by-label/").join(CONFIG_DRIVE_LABEL_2), target.path(), "iso9660"))?;
+        ConfigDrive::mount_ro(
+            &Path::new("/dev/disk/by-label/").join(CONFIG_DRIVE_LABEL_1),
+            target.path(),
+            "iso9660"
+        )
+        .or_else(|_| ConfigDrive::mount_ro(
+            &Path::new("/dev/disk/by-label/").join(CONFIG_DRIVE_LABEL_2),
+            target.path(),
+            "iso9660")
+        )?;
 
         Ok(ConfigDrive {
             path: target.path().join("cloudstack").join("metadata"),
@@ -69,36 +82,67 @@ impl ConfigDrive {
         PublicKey::read_keys(file)
             .chain_err(|| "failed to read public keys from config drive file")
     }
+
+    fn mount_ro(source: &Path, target: &Path, fstype: &str) -> Result<()> {
+        mount::mount(Some(source), target, Some(fstype), mount::MS_RDONLY, None::<&str>)
+            .chain_err(|| format!("failed to read-only mount source '{:?}' to target '{:?}' with filetype '{}'", source, target, fstype))
+    }
+
+    fn unmount(target: &Path) -> Result<()> {
+        mount::umount(target)
+            .chain_err(|| format!("failed to unmount target '{:?}'", target))
+    }
+}
+
+impl MetadataProvider for ConfigDrive {
+    fn attributes(&self) -> Result<HashMap<String, String>> {
+        let mut out = HashMap::with_capacity(6);
+        let add_value = |map: &mut HashMap<_, _>, key: &str, name| -> Result<()> {
+            let value = self.fetch_value(name)?;
+
+            if let Some(value) = value {
+                map.insert(key.to_string(), value);
+            }
+
+            Ok(())
+        };
+
+        add_value(&mut out, "CLOUDSTACK_AVAILABILITY_ZONE", "availability_zone")?;
+        add_value(&mut out, "CLOUDSTACK_CLOUD_IDENTIFIER", "cloud_identifier")?;
+        add_value(&mut out, "CLOUDSTACK_INSTANCE_ID", "instance_id")?;
+        add_value(&mut out, "CLOUDSTACK_LOCAL_HOSTNAME", "local_hostname")?;
+        add_value(&mut out, "CLOUDSTACK_SERVICE_OFFERING", "service_offering")?;
+        add_value(&mut out, "CLOUDSTACK_VM_ID", "vm_id")?;
+
+        Ok(out)
+    }
+
+    fn hostname(&self) -> Result<Option<String>> {
+        Ok(None)
+    }
+
+    fn ssh_keys(&self) -> Result<Vec<AuthorizedKeyEntry>> {
+        let keys = self.fetch_publickeys()?
+            .into_iter()
+            .map(|key| AuthorizedKeyEntry::Valid{key})
+            .collect::<Vec<_>>();
+
+        Ok(keys)
+    }
+
+    fn networks(&self) -> Result<Vec<network::Interface>> {
+        Ok(vec![])
+    }
+
+    fn network_devices(&self) -> Result<Vec<network::Device>> {
+        Ok(vec![])
+    }
 }
 
 impl ::std::ops::Drop for ConfigDrive {
     fn drop(&mut self) {
         if self.temp_dir.is_some() {
-            unmount(&self.path).unwrap();
+            ConfigDrive::unmount(&self.path).unwrap();
         }
     }
-}
-
-fn mount_ro(source: &Path, target: &Path, fstype: &str) -> Result<()> {
-    mount::mount(Some(source), target, Some(fstype), mount::MS_RDONLY, None::<&str>)
-        .chain_err(|| format!("failed to read-only mount source '{:?}' to target '{:?}' with filetype '{}'", source, target, fstype))
-}
-
-fn unmount(target: &Path) -> Result<()> {
-    mount::umount(target)
-        .chain_err(|| format!("failed to unmount target '{:?}'", target))
-}
-
-pub fn fetch_metadata() -> Result<Metadata> {
-    let drive = ConfigDrive::new()?;
-
-    Ok(Metadata::builder()
-       .add_publickeys(drive.fetch_publickeys()?)
-       .add_attribute_if_exists("CLOUDSTACK_AVAILABILITY_ZONE".into(), drive.fetch_value("availability_zone")?)
-       .add_attribute_if_exists("CLOUDSTACK_INSTANCE_ID".into(), drive.fetch_value("instance_id")?)
-       .add_attribute_if_exists("CLOUDSTACK_SERVICE_OFFERING".into(), drive.fetch_value("service_offering")?)
-       .add_attribute_if_exists("CLOUDSTACK_CLOUD_IDENTIFIER".into(), drive.fetch_value("cloud_identifier")?)
-       .add_attribute_if_exists("CLOUDSTACK_LOCAL_HOSTNAME".into(), drive.fetch_value("local_hostname")?)
-       .add_attribute_if_exists("CLOUDSTACK_VM_ID".into(), drive.fetch_value("vm_id")?)
-       .build())
 }
