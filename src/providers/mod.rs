@@ -72,20 +72,26 @@ pub trait MetadataProvider {
     }
 
     fn write_ssh_keys(&self, ssh_keys_user: String) -> Result<()> {
-        // find the ssh keys user and open their ssh authorized keys directory
-        let user = users::get_user_by_name(&ssh_keys_user)
-            .ok_or_else(|| format!("could not find user with username {:?}", ssh_keys_user))?;
-        let mut authorized_keys_dir = AuthorizedKeys::open(user, true, None)
-            .chain_err(|| format!("failed to open authorzied keys directory for user '{}'", ssh_keys_user))?;
+        let ssh_keys = self.ssh_keys()?;
 
-        // add the ssh keys to the directory
-        authorized_keys_dir.add_keys("coreos-metadata", self.ssh_keys()?, true, true)?;
+        if !ssh_keys.is_empty() {
+            // find the ssh keys user and open their ssh authorized keys directory
+            let user = users::get_user_by_name(&ssh_keys_user)
+                .ok_or_else(|| format!("could not find user with username {:?}", ssh_keys_user))?;
+            let mut authorized_keys_dir = AuthorizedKeys::open(user, true, None)
+                .chain_err(|| format!("failed to open authorized keys directory for user '{}'", ssh_keys_user))?;
 
-        // write the changes and sync the directory
-        authorized_keys_dir.write()
-            .chain_err(|| "failed to update authorized keys directory")?;
-        authorized_keys_dir.sync()
-            .chain_err(|| "failed to update authorized keys")
+            // add the ssh keys to the directory
+            authorized_keys_dir.add_keys("coreos-metadata", ssh_keys, true, true)?;
+
+            // write the changes and sync the directory
+            authorized_keys_dir.write()
+                .chain_err(|| "failed to update authorized keys directory")?;
+            authorized_keys_dir.sync()
+                .chain_err(|| "failed to update authorized keys")?;
+        }
+
+        Ok(())
     }
 
     fn write_hostname(&self, hostname_file_path: String) -> Result<()> {
