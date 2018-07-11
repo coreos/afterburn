@@ -137,7 +137,7 @@ impl Metadata {
         let user = users::get_user_by_name(&ssh_keys_user)
             .ok_or_else(|| format!("could not find user with username {:?}", ssh_keys_user))?;
         let mut authorized_keys_dir = AuthorizedKeys::open(user, true, None)
-            .chain_err(|| format!("failed to open authorzied keys directory for user '{}'", ssh_keys_user))?;
+            .chain_err(|| format!("failed to open authorized keys directory for user '{}'", ssh_keys_user))?;
 
         // add the ssh keys to the directory
         authorized_keys_dir.add_keys("coreos-metadata", self.ssh_keys.clone(), true, true)?;
