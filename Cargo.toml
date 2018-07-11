@@ -24,9 +24,9 @@ byteorder = "1.1"
 pnet = "0.21"
 reqwest = "0.7"
 hyper = "0.11"
-error-chain = { version = "0.11", default-features = false }
-openssh-keys = "0.2"
-update-ssh-keys = { git = "https://github.com/coreos/update-ssh-keys", tag = "v0.1.2" }
+error-chain = { version = "0.12", default-features = false }
+openssh-keys = "0.3"
+update-ssh-keys = { git = "https://github.com/coreos/update-ssh-keys", tag = "v0.2.0" }
 ipnetwork = "0.12"
 clippy = { version = "*", optional = true }
 hostname = "0.1"
