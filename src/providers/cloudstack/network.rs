@@ -13,7 +13,7 @@ use providers::MetadataProvider;
 use retry;
 use util;
 
-const SERVER_ADDRESS: &'static str = "SERVER_ADDRESS";
+const SERVER_ADDRESS: &str = "SERVER_ADDRESS";
 
 #[derive(Clone, Debug)]
 pub struct CloudstackNetwork {

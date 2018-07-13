@@ -156,7 +156,7 @@ impl Azure {
             .header(MSVersion(MS_VERSION.to_owned()));
 
         let mut azure = Azure {
-            client: client,
+            client,
             endpoint: addr,
             goal_state: GoalState::default(),
         };

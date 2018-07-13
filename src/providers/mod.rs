@@ -65,7 +65,7 @@ pub trait MetadataProvider {
     fn write_attributes(&self, attributes_file_path: String) -> Result<()> {
         let mut attributes_file = create_file(&attributes_file_path)?;
         for (k,v) in self.attributes()? {
-            write!(&mut attributes_file, "COREOS_{}={}\n", k, v)
+            writeln!(&mut attributes_file, "COREOS_{}={}", k, v)
                 .chain_err(|| format!("failed to write attributes to file {:?}", attributes_file))?;
         }
         Ok(())
@@ -98,7 +98,7 @@ pub trait MetadataProvider {
         match self.hostname()? {
             Some(ref hostname) => {
                 let mut hostname_file = create_file(&hostname_file_path)?;
-                write!(&mut hostname_file, "{}\n", hostname)
+                writeln!(&mut hostname_file, "{}", hostname)
                     .chain_err(|| format!("failed to write hostname {:?} to file {:?}", hostname, hostname_file))
             }
             None => Ok(())

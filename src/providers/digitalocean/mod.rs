@@ -82,7 +82,7 @@ impl DigitalOceanProvider {
         attrs.push(("DIGITALOCEAN_HOSTNAME".to_owned(), self.hostname.clone()));
         attrs.push(("DIGITALOCEAN_REGION".to_owned(), self.region.clone()));
 
-        if let &Some(ref ifaces) = &self.interfaces.public {
+        if let Some(ref ifaces) = self.interfaces.public {
             for (i, ref a) in ifaces.iter().enumerate() {
                 if let Some(ref v4) = a.ipv4 {
                     attrs.push((
@@ -105,7 +105,7 @@ impl DigitalOceanProvider {
             }
         }
 
-        if let &Some(ref ifaces) = &self.interfaces.private {
+        if let Some(ref ifaces) = self.interfaces.private {
             for (i, ref a) in ifaces.iter().enumerate() {
                 if let Some(ref v4) = a.ipv4 {
                     attrs.push((
@@ -152,7 +152,7 @@ impl DigitalOceanProvider {
                 mac_address: Some(mac),
                 nameservers: self.dns.nameservers.clone(),
                 ip_addresses: addrs,
-                routes: routes,
+                routes,
                 bond: None,
                 name: None,
                 priority: None,

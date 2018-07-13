@@ -34,8 +34,8 @@ use slog::Drain;
 use coreos_metadata::fetch_metadata;
 use coreos_metadata::errors::*;
 
-const CMDLINE_PATH: &'static str = "/proc/cmdline";
-const CMDLINE_OEM_FLAG:&'static str = "coreos.oem.id";
+const CMDLINE_PATH: &str = "/proc/cmdline";
+const CMDLINE_OEM_FLAG: &str = "coreos.oem.id";
 
 #[derive(Debug)]
 struct Config {
@@ -99,7 +99,7 @@ fn init() -> Result<Config> {
     // rather restricted set of flags, all without short options, we can make
     // a lot of assumptions about what we are seeing.
     let args = env::args().map(|arg| {
-        if arg.starts_with("-") && !arg.starts_with("--") && arg.len() > 2 {
+        if arg.starts_with('-') && !arg.starts_with("--") && arg.len() > 2 {
             format!("-{}", arg)
         } else {
             arg

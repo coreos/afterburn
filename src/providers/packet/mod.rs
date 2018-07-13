@@ -220,7 +220,7 @@ impl PacketProvider {
             ("MIIMonitorSec".to_owned(), ".1".to_owned()),
             ("UpDelaySec".to_owned(), ".2".to_owned()),
             ("DownDelaySec".to_owned(), ".2".to_owned()),
-            ("Mode".to_owned(), network::bonding_mode_to_string(&netinfo.bonding.mode)?),
+            ("Mode".to_owned(), network::bonding_mode_to_string(netinfo.bonding.mode)?),
         ];
         if netinfo.bonding.mode == network::BONDING_MODE_LACP {
             attrs.push(("LACPTransmitRate".to_owned(), "fast".to_owned()));

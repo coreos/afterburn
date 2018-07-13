@@ -31,7 +31,7 @@ mod mock_tests;
 use self::mock_tests::URL;
 
 #[cfg(not(test))]
-const URL: &'static str = "http://169.254.169.254/2009-04-04";
+const URL: &str = "http://169.254.169.254/2009-04-04";
 
 #[allow(non_snake_case)]
 #[derive(Debug, Deserialize)]
