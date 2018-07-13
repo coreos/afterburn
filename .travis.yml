@@ -23,5 +23,5 @@ before_script:
 script:
   - cargo test
   - bash -c 'if [[ "$TRAVIS_RUST_VERSION" == "$CLIPPY_RUST_VERSION" ]]; then
-      cargo clippy;
+      cargo clippy -- -D warnings;
     fi'
