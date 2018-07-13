@@ -28,7 +28,6 @@ error-chain = { version = "0.12", default-features = false }
 openssh-keys = "0.3"
 update-ssh-keys = { git = "https://github.com/coreos/update-ssh-keys", tag = "v0.2.0" }
 ipnetwork = "0.12"
-clippy = { version = "*", optional = true }
 hostname = "0.1"
 tempdir = "0.3"
 nix = "0.9"
@@ -39,7 +38,3 @@ features = ["max_level_trace", "release_max_level_info"]
 
 [dev-dependencies]
 mockito = "0.9"
-
-[features]
-default = []
-lints = ["clippy"]
