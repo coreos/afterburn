@@ -33,8 +33,8 @@ pub struct Config {
 impl Config {
     pub fn new(rsa_bits: u32, expire_in_days: u32) -> Self {
         Config {
-            rsa_bits: rsa_bits,
-            expire_in_days: expire_in_days,
+            rsa_bits,
+            expire_in_days,
         }
     }
 }

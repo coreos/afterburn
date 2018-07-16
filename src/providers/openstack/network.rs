@@ -10,7 +10,7 @@ use network;
 use providers::MetadataProvider;
 use retry;
 
-const URL: &'static str = "http://169.254.169.254/latest/meta-data";
+const URL: &str = "http://169.254.169.254/latest/meta-data";
 
 #[derive(Clone, Debug)]
 pub struct OpenstackProvider {

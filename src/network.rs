@@ -42,9 +42,9 @@ const BONDING_MODES: [(u32,&str); 7] = [
     (BONDING_MODE_BALANCE_ALB,"balance-alb"),
 ];
 
-pub fn bonding_mode_to_string(mode: &u32) -> Result<String> {
+pub fn bonding_mode_to_string(mode: u32) -> Result<String> {
     for &(m,s) in &BONDING_MODES {
-        if m == *mode {
+        if m == mode {
             return Ok(s.to_owned())
         }
     }
@@ -107,15 +107,21 @@ impl Interface {
 
         // [Match] section
         config.push_str("[Match]\n");
-        self.name.clone().map(|name| config.push_str(&format!("Name={}\n", name)));
-        self.mac_address.map(|mac| config.push_str(&format!("MACAddress={}\n", mac)));
+        if let Some(name) = self.name.clone() {
+            config.push_str(&format!("Name={}\n", name));
+        }
+        if let Some(mac) = self.mac_address {
+            config.push_str(&format!("MACAddress={}\n", mac));
+        }
 
         // [Network] section
         config.push_str("\n[Network]\n");
         for ns in &self.nameservers {
             config.push_str(&format!("DNS={}\n", ns))
         }
-        self.bond.clone().map(|bond| config.push_str(&format!("Bond={}\n", bond)));
+        if let Some(bond) = self.bond.clone() {
+            config.push_str(&format!("Bond={}\n", bond));
+        }
 
         // [Link] section
         if self.unmanaged {

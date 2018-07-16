@@ -14,8 +14,8 @@ use errors::*;
 use network;
 use providers::MetadataProvider;
 
-const CONFIG_DRIVE_LABEL_1: &'static str = "config-2";
-const CONFIG_DRIVE_LABEL_2: &'static str = "CONFIG-2";
+const CONFIG_DRIVE_LABEL_1: &str = "config-2";
+const CONFIG_DRIVE_LABEL_2: &str = "CONFIG-2";
 
 #[derive(Debug)]
 pub struct ConfigDrive {

@@ -95,7 +95,7 @@ impl MetadataProvider for GceProvider {
             let value: Option<String> = self.client.get(retry::Raw, GceProvider::endpoint_for(name)).send()?;
 
             if let Some(value) = value {
-                if value.len() > 0 {
+                if !value.is_empty() {
                     map.insert(key.to_string(), value);
                 }
             }
