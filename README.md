@@ -52,6 +52,7 @@ The supported cloud providers and their respective metadata are as follows:
     - SSH Keys
     - Attributes
       - COREOS_EC2_HOSTNAME
+      - COREOS_EC2_PUBLIC_HOSTNAME
       - COREOS_EC2_IPV4_LOCAL
       - COREOS_EC2_IPV4_PUBLIC
       - COREOS_EC2_AVAILABILITY_ZONE
