@@ -100,6 +100,7 @@ impl MetadataProvider for Ec2Provider {
         add_value(&mut out, "EC2_IPV4_PUBLIC", "meta-data/public-ipv4")?;
         add_value(&mut out, "EC2_AVAILABILITY_ZONE", "meta-data/placement/availability-zone")?;
         add_value(&mut out, "EC2_HOSTNAME", "meta-data/hostname")?;
+        add_value(&mut out, "EC2_PUBLIC_HOSTNAME", "meta-data/public-hostname")?;
 
         let region = self.client
             .get(retry::Json, Ec2Provider::endpoint_for("dynamic/instance-identity/document"))
