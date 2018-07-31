@@ -182,7 +182,7 @@ dependencies = [
  "slog-scope 4.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "slog-term 2.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "tempdir 0.3.7 (registry+https://github.com/rust-lang/crates.io-index)",
- "update-ssh-keys 0.2.0 (git+https://github.com/coreos/update-ssh-keys?tag=v0.2.0)",
+ "update-ssh-keys 0.2.1 (git+https://github.com/coreos/update-ssh-keys?tag=v0.2.1)",
  "users 0.6.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -1372,8 +1372,8 @@ dependencies = [
 
 [[package]]
 name = "update-ssh-keys"
-version = "0.2.0"
-source = "git+https://github.com/coreos/update-ssh-keys?tag=v0.2.0#88e7d1c6b0acf3f7a585a6db98b4b225f65daaaa"
+version = "0.2.1"
+source = "git+https://github.com/coreos/update-ssh-keys?tag=v0.2.1#bad90e3943ba7e66f812a35abb4405986d8fd045"
 dependencies = [
  "clap 2.31.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "error-chain 0.12.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1638,7 +1638,7 @@ dependencies = [
 "checksum unicode-xid 0.0.3 (registry+https://github.com/rust-lang/crates.io-index)" = "36dff09cafb4ec7c8cf0023eb0b686cb6ce65499116a12201c9e11840ca01beb"
 "checksum unicode-xid 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "fc72304796d0818e357ead4e000d19c9c174ab23dc11093ac919054d20a6a7fc"
 "checksum unreachable 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)" = "382810877fe448991dfc7f0dd6e3ae5d58088fd0ea5e35189655f84e6814fa56"
-"checksum update-ssh-keys 0.2.0 (git+https://github.com/coreos/update-ssh-keys?tag=v0.2.0)" = "<none>"
+"checksum update-ssh-keys 0.2.1 (git+https://github.com/coreos/update-ssh-keys?tag=v0.2.1)" = "<none>"
 "checksum url 1.7.0 (registry+https://github.com/rust-lang/crates.io-index)" = "f808aadd8cfec6ef90e4a14eb46f24511824d1ac596b9682703c87056c8678b7"
 "checksum users 0.6.1 (registry+https://github.com/rust-lang/crates.io-index)" = "a098d836637f965bbe0df8f744088318c43b685ffd46b676ed21036b7c94bae6"
 "checksum utf8-ranges 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)" = "662fab6525a98beff2921d7f61a39e7d59e0b425ebc7d0d9e66d316e55124122"
