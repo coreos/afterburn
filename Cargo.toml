@@ -7,6 +7,9 @@ authors = ["Stephen Demos <stephen.demos@coreos.com>"]
 name = "coreos-metadata"
 path = "src/bin/coreos-metadata.rs"
 
+[profile.release]
+lto = true
+
 [dependencies]
 clap = "2.26"
 users = "0.6"
