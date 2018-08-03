@@ -66,6 +66,7 @@ pub mod errors {
             Io(::std::io::Error);
             Reqwest(::reqwest::Error);
             Hyper(::hyper::error::Error);
+            OpensslStack(::openssl::error::ErrorStack);
         }
         errors {
             UnknownProvider(p: String) {

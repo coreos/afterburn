@@ -65,9 +65,13 @@ pub fn generate_cert(config: &Config) -> Result<(X509, PKey)> {
 
     // call fails without expiration dates
     // I guess they are important anyway, but still
-    x509builder.set_not_before(&Asn1Time::days_from_now(0).unwrap())
+    let not_before = Asn1Time::days_from_now(0)
+        .chain_err(|| "failed to parse 'notBefore' timestamp")?;
+    let not_after = Asn1Time::days_from_now(config.expire_in_days)
+        .chain_err(|| "failed to parse 'notAfter' timestamp")?;
+    x509builder.set_not_before(&not_before)
         .chain_err(|| "failed to set x509 start date")?;
-    x509builder.set_not_after(&Asn1Time::days_from_now(config.expire_in_days).unwrap())
+    x509builder.set_not_after(&not_after)
         .chain_err(|| "failed to set x509 expiration date")?;
 
     // add the issuer and subject name
