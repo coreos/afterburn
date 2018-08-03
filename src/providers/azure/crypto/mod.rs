@@ -63,16 +63,22 @@ pub fn p12_to_ssh_pubkey(p12_der: &[u8]) -> Result<PublicKey> {
     // PKCS12 has three parts. A pkey, a main x509 cert, and a list of other
     // x509 certs. The list of other x509 certs is called the chain. there is
     // only one cert in this chain, and it is the ssh public key.
-    let ssh_pubkey_pem = p12.chain.get(0).unwrap();
-    // .chain_err(|| "failed to get cert from pkcs12 chain")?;
-    let ssh_pubkey_pem = ssh_pubkey_pem.public_key() // get the public key from the x509 cert
+    let ssh_pem = p12.chain.get(0)
+        .ok_or_else(|| ErrorKind::from("failed to get cert from pkcs12 chain"))?;
+    // get the public key from the x509 cert
+    let ssh_pubkey_pem = ssh_pem.public_key()
         .chain_err(|| "failed to get public key from cert")?;
-    let ssh_pubkey_pem = ssh_pubkey_pem.rsa()        // get the rsa contents from the pkey struct
+    // get the rsa contents from the pkey struct
+    let ssh_pubkey_rsa = ssh_pubkey_pem.rsa()
         .chain_err(|| "failed to get rsa contents from pkey")?;
 
     // convert the openssl Rsa public key to an OpenSSH public key in string format
-    let e = ssh_pubkey_pem.e().unwrap().to_vec();
-    let n = ssh_pubkey_pem.n().unwrap().to_vec();
+    let e = ssh_pubkey_rsa.e()
+        .ok_or_else(|| ErrorKind::from("failed to get RSA component 'e' from pubkey"))?
+        .to_vec();
+    let n = ssh_pubkey_rsa.n()
+        .ok_or_else(|| ErrorKind::from("failed to get RSA component 'n' from pubkey"))?
+        .to_vec();
     let ssh_pubkey = PublicKey::from_rsa(e, n);
 
     Ok(ssh_pubkey)
