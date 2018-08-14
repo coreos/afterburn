@@ -46,10 +46,20 @@ impl GceProvider {
     }
 
     fn fetch_all_ssh_keys(&self) -> Result<Vec<String>> {
+        // The Google metadata API has a total of 4 endpoints to retrieve SSH keys from:
+        // First, there are instance-level and project-level SSH keys.
+        // Additionally, there are two attributes on both levels where these are stored, one called
+        // `sshKeys`, and one called `ssh-keys`. The former is considered deprecated on both levels
+        // but it can still be found in some setups, therefore we have to handle that.
+        // https://cloud.google.com/compute/docs/instances/adding-removing-ssh-keys
+
+        // Instance-level, old endpoint
+        // If there are any of these, don't do anything else.
         let keys = self.fetch_ssh_keys("instance/attributes/sshKeys")?;
         if !keys.is_empty() {
             return Ok(keys);
         }
+        // Instance-level, new endpoint
         let mut keys = self.fetch_ssh_keys("instance/attributes/ssh-keys")?;
 
         let block_project_keys: Option<String> = self.client
@@ -61,7 +71,10 @@ impl GceProvider {
             return Ok(keys);
         }
 
+        // Project-level, old endpoint
         keys.append(&mut self.fetch_ssh_keys("project/attributes/sshKeys")?);
+        // Project-level, new endpoint
+        keys.append(&mut self.fetch_ssh_keys("project/attributes/ssh-keys")?);
 
         Ok(keys)
     }
