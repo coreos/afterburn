@@ -1,7 +1,11 @@
 [package]
 name = "coreos-metadata"
-version = "2.0.0"
-authors = ["Stephen Demos <stephen.demos@coreos.com>"]
+repository = "https://github.com/coreos/coreos-metadata"
+license = "Apache-2.0"
+authors = [ "Stephen Demos <stephen.demos@coreos.com>",
+            "Luca Bruno <lucab@debian.org>" ]
+description = "A simple cloud-provider metadata agent"
+version = "2.0.1-alpha.0"
 
 [[bin]]
 name = "coreos-metadata"
@@ -41,3 +45,13 @@ features = ["max_level_trace", "release_max_level_info"]
 
 [dev-dependencies]
 mockito = "0.9"
+
+[package.metadata.release]
+sign-commit = true
+upload-doc = false
+disable-push = true
+disable-publish = true
+pre-release-commit-message = "cargo: coreos-metadata release {{version}}"
+pro-release-commit-message = "cargo: version bump to {{version}}"
+tag-message = "coreos-metadata v{{version}}"
+tag-prefix = "v"
