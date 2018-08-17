@@ -12,27 +12,53 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+extern crate base64;
 #[macro_use]
 extern crate clap;
 #[macro_use]
 extern crate error_chain;
 #[macro_use]
+extern crate hyper;
+extern crate hostname;
+extern crate ipnetwork;
+extern crate nix;
+extern crate openssh_keys;
+extern crate openssl;
+extern crate pnet;
+extern crate reqwest;
+#[macro_use]
+extern crate serde_derive;
+extern crate serde;
+extern crate serde_json;
+extern crate serde_xml_rs;
+#[macro_use]
 extern crate slog;
-extern crate slog_term;
 extern crate slog_async;
+extern crate slog_term;
 #[macro_use]
 extern crate slog_scope;
+extern crate tempdir;
+extern crate update_ssh_keys;
+extern crate users;
 
-extern crate coreos_metadata;
+#[cfg(test)]
+extern crate mockito;
 
+mod errors;
+mod metadata;
+mod network;
+mod providers;
+mod retry;
+mod util;
+
+use clap::{App, Arg};
+use slog::Drain;
 use std::env;
 use std::fs::File;
 use std::io::prelude::*;
-use clap::{Arg, App};
-use slog::Drain;
 
-use coreos_metadata::fetch_metadata;
-use coreos_metadata::errors::*;
+use errors::*;
+use metadata::fetch_metadata;
 
 const CMDLINE_PATH: &str = "/proc/cmdline";
 const CMDLINE_OEM_FLAG: &str = "coreos.oem.id";
