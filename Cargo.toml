@@ -16,7 +16,7 @@ lto = true
 
 [dependencies]
 clap = "2.26"
-users = "0.6"
+users = "0.7"
 slog-term = "2.2"
 slog-async = "2.1"
 slog-scope = "4.0"
