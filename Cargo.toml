@@ -33,7 +33,7 @@ reqwest = "0.7"
 hyper = "0.11"
 error-chain = { version = "0.12", default-features = false }
 openssh-keys = "0.3"
-update-ssh-keys = { git = "https://github.com/coreos/update-ssh-keys", tag = "v0.2.1" }
+update-ssh-keys = "0.3.0"
 ipnetwork = "0.12"
 hostname = "0.1"
 tempdir = "0.3"
