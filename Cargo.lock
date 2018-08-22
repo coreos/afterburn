@@ -157,7 +157,7 @@ dependencies = [
 
 [[package]]
 name = "coreos-metadata"
-version = "2.0.1-alpha.0"
+version = "3.0.0-alpha.0"
 dependencies = [
  "base64 0.9.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "byteorder 1.2.4 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -182,8 +182,8 @@ dependencies = [
  "slog-scope 4.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "slog-term 2.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "tempdir 0.3.7 (registry+https://github.com/rust-lang/crates.io-index)",
- "update-ssh-keys 0.2.1 (git+https://github.com/coreos/update-ssh-keys?tag=v0.2.1)",
- "users 0.6.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "update-ssh-keys 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "users 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -1370,14 +1370,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "update-ssh-keys"
-version = "0.2.1"
-source = "git+https://github.com/coreos/update-ssh-keys?tag=v0.2.1#bad90e3943ba7e66f812a35abb4405986d8fd045"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "clap 2.32.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "error-chain 0.12.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "fs2 0.4.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "openssh-keys 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "users 0.6.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "users 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -1392,7 +1392,7 @@ dependencies = [
 
 [[package]]
 name = "users"
-version = "0.6.1"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "libc 0.2.43 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1645,9 +1645,9 @@ dependencies = [
 "checksum unicode-width 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)" = "882386231c45df4700b275c7ff55b6f3698780a650026380e72dabe76fa46526"
 "checksum unicode-xid 0.0.3 (registry+https://github.com/rust-lang/crates.io-index)" = "36dff09cafb4ec7c8cf0023eb0b686cb6ce65499116a12201c9e11840ca01beb"
 "checksum unicode-xid 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "fc72304796d0818e357ead4e000d19c9c174ab23dc11093ac919054d20a6a7fc"
-"checksum update-ssh-keys 0.2.1 (git+https://github.com/coreos/update-ssh-keys?tag=v0.2.1)" = "<none>"
+"checksum update-ssh-keys 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)" = "0d1ddf1318e41d5976b0a1e23a8190a3551443b0670d243340501cfa2f905623"
 "checksum url 1.7.1 (registry+https://github.com/rust-lang/crates.io-index)" = "2a321979c09843d272956e73700d12c4e7d3d92b2ee112b31548aef0d4efc5a6"
-"checksum users 0.6.1 (registry+https://github.com/rust-lang/crates.io-index)" = "a098d836637f965bbe0df8f744088318c43b685ffd46b676ed21036b7c94bae6"
+"checksum users 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)" = "caa2760fcc10a6ae2c2a35d41c5d69827e4663f0d3889ecfb4d60b343f4139df"
 "checksum utf8-ranges 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)" = "662fab6525a98beff2921d7f61a39e7d59e0b425ebc7d0d9e66d316e55124122"
 "checksum vcpkg 0.2.5 (registry+https://github.com/rust-lang/crates.io-index)" = "a51475940ea5ed2f7ba8e7b867c42d6cb7f06fafb9c1673ed8e768c675c771cc"
 "checksum vec_map 0.8.1 (registry+https://github.com/rust-lang/crates.io-index)" = "05c78687fb1a80548ae3250346c3db86a80a7cdd77bda190189f2d0a0987c81a"
