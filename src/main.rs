@@ -54,8 +54,6 @@ mod util;
 use clap::{App, Arg};
 use slog::Drain;
 use std::env;
-use std::fs::File;
-use std::io::prelude::*;
 
 use errors::*;
 use metadata::fetch_metadata;
@@ -172,7 +170,7 @@ fn init() -> Result<Config> {
         provider: match matches.value_of("provider") {
             Some(provider) => String::from(provider),
             None => if matches.is_present("cmdline") {
-                get_oem()?
+                util::get_oem(CMDLINE_PATH, CMDLINE_OEM_FLAG)?
             } else {
                 return Err("Must set either --provider or --cmdline".into());
             }
@@ -182,29 +180,4 @@ fn init() -> Result<Config> {
         hostname_file: matches.value_of("hostname").map(String::from),
         network_units_dir: matches.value_of("network-units").map(String::from),
     })
-}
-
-fn get_oem() -> Result<String> {
-    // open the cmdline file
-    let mut file = File::open(CMDLINE_PATH)
-        .chain_err(|| format!("Failed to open cmdline file ({})", CMDLINE_PATH))?;
-
-    // read the contents
-    let mut contents = String::new();
-    file.read_to_string(&mut contents)
-        .chain_err(|| format!("Failed to read cmdline file ({})", CMDLINE_PATH))?;
-
-    // split the contents into elements
-    let params: Vec<Vec<&str>> = contents.split(' ')
-        .map(|s| s.split('=').collect())
-        .collect();
-
-    // find the oem flag
-    for p in params {
-        if p.len() > 1 && p[0] == CMDLINE_OEM_FLAG {
-            return Ok(String::from(p[1]));
-        }
-    }
-
-    Err(format!("Couldn't find '{}' flag in cmdline file ({})", CMDLINE_OEM_FLAG, CMDLINE_PATH).into())
 }
