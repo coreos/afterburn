@@ -22,6 +22,9 @@ use std::time::Duration;
 use errors::*;
 use retry;
 
+mod cmdline;
+pub use self::cmdline::get_oem;
+
 fn key_lookup_line(delim: char, key: &str, line: &str) -> Option<String> {
     match line.find(delim) {
         Some(index) => {
