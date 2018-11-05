@@ -21,7 +21,7 @@ clap = "2.26"
 error-chain = { version = "0.12", default-features = false }
 hostname = "0.1"
 hyper = "0.11"
-ipnetwork = "0.12"
+ipnetwork = "^0.13.1"
 mime = "0.3"
 nix = "^0.11.0"
 openssh-keys = "0.3"
