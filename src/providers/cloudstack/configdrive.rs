@@ -84,7 +84,7 @@ impl ConfigDrive {
     }
 
     fn mount_ro(source: &Path, target: &Path, fstype: &str) -> Result<()> {
-        mount::mount(Some(source), target, Some(fstype), mount::MS_RDONLY, None::<&str>)
+        mount::mount(Some(source), target, Some(fstype), mount::MsFlags::MS_RDONLY, None::<&str>)
             .chain_err(|| format!("failed to read-only mount source '{:?}' to target '{:?}' with filetype '{}'", source, target, fstype))
     }
 
