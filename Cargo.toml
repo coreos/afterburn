@@ -5,7 +5,7 @@ license = "Apache-2.0"
 authors = [ "Stephen Demos <stephen.demos@coreos.com>",
             "Luca Bruno <lucab@debian.org>" ]
 description = "A simple cloud-provider metadata agent"
-version = "3.0.2-alpha.0"
+version = "3.0.3-alpha.0"
 
 [[bin]]
 name = "coreos-metadata"
