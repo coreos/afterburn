@@ -12,7 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! packet metadata fetcher
+//! Metadata fetcher for Packet.net.
+//!
+//! Metadata JSON schema is described in their
+//! [knowledge base](https://help.packet.net/article/37-metadata).
 
 use std::collections::HashMap;
 use std::fs::File;
@@ -181,39 +184,35 @@ impl PacketProvider {
             }
         }
 
-        // according to the folks from packet, all the addresses given to us in the
+        // According to the folks from packet, all the addresses given to us in the
         // network section should be attached to the first bond we find in the list
-        // of interfaces. we should always have at least one bond listed, but if we
+        // of interfaces. We should always have at least one bond listed, but if we
         // don't find any, we just print out a scary warning and don't attach the
         // addresses to anything.
-        if bonds.is_empty() {
+        if let Some((_mac, ref mut first_bond)) = bonds.get_mut(0) {
+            for a in netinfo.addresses.clone() {
+                let prefix = ipnetwork::ip_mask_to_prefix(a.netmask)
+                    .chain_err(|| "invalid network mask")?;
+                first_bond.ip_addresses.push(IpNetwork::new(a.address, prefix)
+                                        .chain_err(|| "invalid IP address or prefix")?);
+                let dest = match (a.public, a.address) {
+                    (false, IpAddr::V4(_)) =>
+                        IpNetwork::V4(Ipv4Network::new(Ipv4Addr::new(10,0,0,0),8).unwrap()),
+                    (true, IpAddr::V4(_)) =>
+                        IpNetwork::V4(Ipv4Network::new(Ipv4Addr::new(0,0,0,0),0).unwrap()),
+                    (_, IpAddr::V6(_)) =>
+                        IpNetwork::V6(Ipv6Network::new(Ipv6Addr::new(0,0,0,0,0,0,0,0),0).unwrap()),
+                };
+                first_bond.routes.push(NetworkRoute {
+                    destination: dest,
+                    gateway: a.gateway,
+                });
+            }
+        } else {
             warn!("no bond interfaces. addresses are left unassigned.");
             // the rest of the function operates on bonds, so just return
             return Ok((interfaces, vec![]));
         }
-
-        // remove panics if the index is out of bounds, but we know that there is at
-        // least one bond in the vector because we return if it's empty
-        let (first_mac, mut first_bond) = bonds.remove(0);
-        for a in netinfo.addresses.clone() {
-            let prefix = ipnetwork::ip_mask_to_prefix(a.netmask)
-                .chain_err(|| "invalid network mask")?;
-            first_bond.ip_addresses.push(IpNetwork::new(a.address, prefix)
-                                    .chain_err(|| "invalid IP address or prefix")?);
-            let dest = match (a.public,a.address) {
-                (false,IpAddr::V4(_)) =>
-                    IpNetwork::V4(Ipv4Network::new(Ipv4Addr::new(10,0,0,0),8).unwrap()),
-                (true,IpAddr::V4(_)) =>
-                    IpNetwork::V4(Ipv4Network::new(Ipv4Addr::new(0,0,0,0),0).unwrap()),
-                (_,IpAddr::V6(_)) =>
-                    IpNetwork::V6(Ipv6Network::new(Ipv6Addr::new(0,0,0,0,0,0,0,0),0).unwrap()),
-            };
-            first_bond.routes.push(NetworkRoute {
-                destination: dest,
-                gateway: a.gateway,
-            });
-        }
-        bonds.push((first_mac, first_bond));
 
         let mut attrs = vec![
             ("TransmitHashPolicy".to_owned(), "layer3+4".to_owned()),
@@ -226,7 +225,7 @@ impl PacketProvider {
             attrs.push(("LACPTransmitRate".to_owned(), "fast".to_owned()));
         }
 
-        let mut network_devices = vec![];
+        let mut network_devices = Vec::with_capacity(bonds.len());
         for (mac, bond) in bonds {
             network_devices.push(Device {
                 name: bond.name.clone()
