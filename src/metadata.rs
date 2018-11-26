@@ -32,6 +32,7 @@ pub fn fetch_metadata(provider: &str) -> errors::Result<Box<MetadataProvider>> {
         "digitalocean" => box_result!(digitalocean::DigitalOceanProvider::new()),
         "ec2" => box_result!(ec2::Ec2Provider::new()),
         "gce" => box_result!(gce::GceProvider::new()),
+        "hcloud" => box_result!(hcloud::HetznerCloudProvider::new()),
         "openstack-metadata" => box_result!(openstack::network::OpenstackProvider::new()),
         "packet" => box_result!(packet::PacketProvider::new()),
         "vagrant-virtualbox" => box_result!(vagrant_virtualbox::VagrantVirtualboxProvider::new()),

@@ -28,6 +28,7 @@ pub mod digitalocean;
 pub mod cloudstack;
 pub mod ec2;
 pub mod gce;
+pub mod hcloud;
 pub mod openstack;
 pub mod packet;
 pub mod vagrant_virtualbox;
