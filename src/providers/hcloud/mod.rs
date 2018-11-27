@@ -26,7 +26,6 @@ use providers::MetadataProvider;
 use retry;
 use serde_json;
 
-#[cfg(not(test))]
 const URL: &str = "http://169.254.169.254/2009-04-04";
 
 #[allow(non_snake_case)]
