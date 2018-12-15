@@ -20,6 +20,7 @@ use std::collections::HashMap;
 use std::net::{IpAddr, SocketAddr};
 
 use openssh_keys::PublicKey;
+use reqwest::header::{HeaderName, HeaderValue};
 use update_ssh_keys::AuthorizedKeyEntry;
 
 use self::crypto::x509;
@@ -29,10 +30,10 @@ use providers::MetadataProvider;
 use retry;
 use util;
 
-header! {(MSAgentName, "x-ms-agent-name") => [String]}
-header! {(MSVersion, "x-ms-version") => [String]}
-header! {(MSCipherName, "x-ms-cipher-name") => [String]}
-header! {(MSCert, "x-ms-guest-agent-public-x509-cert") => [String]}
+static HDR_AGENT_NAME: &str = "x-ms-agent-name";
+static HDR_VERSION: &str = "x-ms-version";
+static HDR_CIPHER_NAME: &str = "x-ms-cipher-name";
+static HDR_CERT: &str = "x-ms-guest-agent-public-x509-cert";
 
 const OPTION_245: &str = "OPTION_245";
 const MS_AGENT_NAME: &str = "com.coreos.metadata";
@@ -152,8 +153,10 @@ impl Azure {
         let addr = Azure::get_fabric_address()
             .chain_err(|| "failed to get fabric address")?;
         let client = retry::Client::new()?
-            .header(MSAgentName(MS_AGENT_NAME.to_owned()))
-            .header(MSVersion(MS_VERSION.to_owned()));
+            .header(HeaderName::from_static(HDR_AGENT_NAME),
+                    HeaderValue::from_static(MS_AGENT_NAME))
+            .header(HeaderName::from_static(HDR_VERSION),
+                    HeaderValue::from_static(MS_VERSION));
 
         let mut azure = Azure {
             client,
@@ -211,8 +214,10 @@ impl Azure {
             .chain_err(|| "failed to get certs endpoint")?;
 
         let certs: CertificatesFile = self.client.get(retry::Xml, endpoint)
-            .header(MSCipherName("DES_EDE3_CBC".to_owned()))
-            .header(MSCert(mangled_pem))
+            .header(HeaderName::from_static(HDR_CIPHER_NAME),
+                    HeaderValue::from_static("DES_EDE3_CBC"))
+            .header(HeaderName::from_static(HDR_CERT),
+                    HeaderValue::from_str(&mangled_pem)?)
             .send()
             .chain_err(|| "failed to get certificates")?
             .ok_or_else(|| "failed to get certificates: not found")?;
