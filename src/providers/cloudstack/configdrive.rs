@@ -25,7 +25,7 @@ pub struct ConfigDrive {
 }
 
 impl ConfigDrive {
-    pub fn new() -> Result<Self> {
+    pub fn try_new() -> Result<Self> {
         // maybe its already mounted
         let path = Path::new("/media/ConfigDrive/cloudstack/metadata/");
         if path.exists() {

@@ -85,8 +85,8 @@ pub struct PacketProvider {
 }
 
 impl PacketProvider {
-    pub fn new() -> Result<PacketProvider> {
-        let client = retry::Client::new()?;
+    pub fn try_new() -> Result<PacketProvider> {
+        let client = retry::Client::try_new()?;
 
         let data: PacketData = client
             .get(retry::Json, "http://metadata.packet.net/metadata".to_string())

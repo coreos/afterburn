@@ -149,10 +149,10 @@ pub struct Azure {
 }
 
 impl Azure {
-    pub fn new() -> Result<Azure> {
+    pub fn try_new() -> Result<Azure> {
         let addr = Azure::get_fabric_address()
             .chain_err(|| "failed to get fabric address")?;
-        let client = retry::Client::new()?
+        let client = retry::Client::try_new()?
             .header(HeaderName::from_static(HDR_AGENT_NAME),
                     HeaderValue::from_static(MS_AGENT_NAME))
             .header(HeaderName::from_static(HDR_VERSION),
@@ -208,7 +208,7 @@ impl Azure {
         Ok(String::from(cert_endpoint))
     }
 
-    fn get_certs(&self, mangled_pem: String) -> Result<String> {
+    fn get_certs<S: AsRef<str>>(&self, mangled_pem: S) -> Result<String> {
         // get the certificates
         let endpoint = self.get_certs_endpoint()
             .chain_err(|| "failed to get certs endpoint")?;
@@ -217,7 +217,7 @@ impl Azure {
             .header(HeaderName::from_static(HDR_CIPHER_NAME),
                     HeaderValue::from_static("DES_EDE3_CBC"))
             .header(HeaderName::from_static(HDR_CERT),
-                    HeaderValue::from_str(&mangled_pem)?)
+                    HeaderValue::from_str(mangled_pem.as_ref())?)
             .send()
             .chain_err(|| "failed to get certificates")?
             .ok_or_else(|| "failed to get certificates: not found")?;

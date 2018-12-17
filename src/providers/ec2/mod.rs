@@ -45,8 +45,8 @@ pub struct Ec2Provider {
 }
 
 impl Ec2Provider {
-    pub fn new() -> Result<Ec2Provider> {
-        let client = retry::Client::new()?
+    pub fn try_new() -> Result<Ec2Provider> {
+        let client = retry::Client::try_new()?
             .return_on_404(true);
 
         Ok(Ec2Provider { client })

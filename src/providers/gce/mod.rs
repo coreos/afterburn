@@ -33,8 +33,8 @@ pub struct GceProvider {
 }
 
 impl GceProvider {
-    pub fn new() -> Result<GceProvider> {
-        let client = retry::Client::new()?
+    pub fn try_new() -> Result<GceProvider> {
+        let client = retry::Client::try_new()?
             .header(HeaderName::from_static(HDR_METADATA_FLAVOR),
                     HeaderValue::from_static("Google"))
             .return_on_404(true);

@@ -94,7 +94,7 @@ pub struct Client {
 }
 
 impl Client {
-    pub fn new() -> Result<Self> {
+    pub fn try_new() -> Result<Self> {
         let client = reqwest::Client::builder()
             .build()
             .chain_err(|| "failed to initialize client")?;
