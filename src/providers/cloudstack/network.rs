@@ -22,9 +22,9 @@ pub struct CloudstackNetwork {
 }
 
 impl CloudstackNetwork {
-    pub fn new() -> Result<CloudstackNetwork> {
+    pub fn try_new() -> Result<CloudstackNetwork> {
         let server_address = CloudstackNetwork::get_dhcp_server_address()?;
-        let client = retry::Client::new()?
+        let client = retry::Client::try_new()?
             .initial_backoff(Duration::from_secs(1))
             .max_backoff(Duration::from_secs(5))
             .max_attempts(10);

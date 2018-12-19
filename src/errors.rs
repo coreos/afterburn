@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use reqwest::header;
+
 error_chain!{
     links {
         PublicKey(::openssh_keys::errors::Error, ::openssh_keys::errors::ErrorKind);
@@ -23,8 +25,8 @@ error_chain!{
         Base64Decode(::base64::DecodeError);
         Io(::std::io::Error);
         Reqwest(::reqwest::Error);
-        Hyper(::hyper::error::Error);
         OpensslStack(::openssl::error::ErrorStack);
+        HeaderValue(header::InvalidHeaderValue);
     }
     errors {
         UnknownProvider(p: String) {

@@ -20,6 +20,7 @@ use std::collections::HashMap;
 use std::net::{IpAddr, SocketAddr};
 
 use openssh_keys::PublicKey;
+use reqwest::header::{HeaderName, HeaderValue};
 use update_ssh_keys::AuthorizedKeyEntry;
 
 use self::crypto::x509;
@@ -29,10 +30,10 @@ use providers::MetadataProvider;
 use retry;
 use util;
 
-header! {(MSAgentName, "x-ms-agent-name") => [String]}
-header! {(MSVersion, "x-ms-version") => [String]}
-header! {(MSCipherName, "x-ms-cipher-name") => [String]}
-header! {(MSCert, "x-ms-guest-agent-public-x509-cert") => [String]}
+static HDR_AGENT_NAME: &str = "x-ms-agent-name";
+static HDR_VERSION: &str = "x-ms-version";
+static HDR_CIPHER_NAME: &str = "x-ms-cipher-name";
+static HDR_CERT: &str = "x-ms-guest-agent-public-x509-cert";
 
 const OPTION_245: &str = "OPTION_245";
 const MS_AGENT_NAME: &str = "com.coreos.metadata";
@@ -148,12 +149,14 @@ pub struct Azure {
 }
 
 impl Azure {
-    pub fn new() -> Result<Azure> {
+    pub fn try_new() -> Result<Azure> {
         let addr = Azure::get_fabric_address()
             .chain_err(|| "failed to get fabric address")?;
-        let client = retry::Client::new()?
-            .header(MSAgentName(MS_AGENT_NAME.to_owned()))
-            .header(MSVersion(MS_VERSION.to_owned()));
+        let client = retry::Client::try_new()?
+            .header(HeaderName::from_static(HDR_AGENT_NAME),
+                    HeaderValue::from_static(MS_AGENT_NAME))
+            .header(HeaderName::from_static(HDR_VERSION),
+                    HeaderValue::from_static(MS_VERSION));
 
         let mut azure = Azure {
             client,
@@ -205,14 +208,16 @@ impl Azure {
         Ok(String::from(cert_endpoint))
     }
 
-    fn get_certs(&self, mangled_pem: String) -> Result<String> {
+    fn get_certs<S: AsRef<str>>(&self, mangled_pem: S) -> Result<String> {
         // get the certificates
         let endpoint = self.get_certs_endpoint()
             .chain_err(|| "failed to get certs endpoint")?;
 
         let certs: CertificatesFile = self.client.get(retry::Xml, endpoint)
-            .header(MSCipherName("DES_EDE3_CBC".to_owned()))
-            .header(MSCert(mangled_pem))
+            .header(HeaderName::from_static(HDR_CIPHER_NAME),
+                    HeaderValue::from_static("DES_EDE3_CBC"))
+            .header(HeaderName::from_static(HDR_CERT),
+                    HeaderValue::from_str(mangled_pem.as_ref())?)
             .send()
             .chain_err(|| "failed to get certificates")?
             .ok_or_else(|| "failed to get certificates: not found")?;

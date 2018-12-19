@@ -7,7 +7,7 @@ pub(crate) const URL: &'static str = ::mockito::SERVER_URL;
 #[test]
 fn test_ec2_basic() {
     let ep = "/meta-data/public-keys";
-    let client = ::retry::Client::new()
+    let client = ::retry::Client::try_new()
         .chain_err(|| "failed to create http client")
         .unwrap()
         .max_attempts(1)

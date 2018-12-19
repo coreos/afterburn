@@ -31,8 +31,8 @@ use providers::MetadataProvider;
 pub struct VagrantVirtualboxProvider;
 
 impl VagrantVirtualboxProvider {
-    pub fn new() -> Result<VagrantVirtualboxProvider> {
-        Ok(VagrantVirtualboxProvider)
+    pub fn new() -> VagrantVirtualboxProvider {
+        VagrantVirtualboxProvider
     }
 
     fn get_ip() -> Result<String> {
