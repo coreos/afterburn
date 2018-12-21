@@ -101,4 +101,9 @@ impl MetadataProvider for CloudstackNetwork {
     fn network_devices(&self) -> Result<Vec<network::Device>> {
         Ok(vec![])
     }
+
+    fn boot_checkin(&self) -> Result<()> {
+        warn!("boot check-in requested, but not supported on this platform");
+        Ok(())
+    }
 }

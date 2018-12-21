@@ -28,14 +28,15 @@ use errors::*;
 use network;
 use providers::MetadataProvider;
 use retry;
-use util;
+
+#[cfg(test)]
+mod mock_tests;
 
 static HDR_AGENT_NAME: &str = "x-ms-agent-name";
 static HDR_VERSION: &str = "x-ms-version";
 static HDR_CIPHER_NAME: &str = "x-ms-cipher-name";
 static HDR_CERT: &str = "x-ms-guest-agent-public-x509-cert";
 
-const OPTION_245: &str = "OPTION_245";
 const MS_AGENT_NAME: &str = "com.coreos.metadata";
 const MS_VERSION: &str = "2012-11-30";
 const SMIME_HEADER: &str = "\
@@ -46,6 +47,28 @@ Content-Transfer-Encoding: base64
 
 ";
 
+macro_rules! ready_state {
+    ($container:expr, $instance:expr) => {
+        format!(r#"<?xml version="1.0" encoding="utf-8"?>
+<Health xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <GoalStateIncarnation>1</GoalStateIncarnation>
+  <Container>
+    <ContainerId>{}</ContainerId>
+    <RoleInstanceList>
+      <Role>
+        <InstanceId>{}</InstanceId>
+        <Health>
+          <State>Ready</State>
+        </Health>
+      </Role>
+    </RoleInstanceList>
+  </Container>
+</Health>
+"#,
+                $container, $instance)
+    }
+}
+
 #[derive(Debug, Deserialize, Clone, Default)]
 struct GoalState {
     #[serde(rename = "Container")]
@@ -54,8 +77,10 @@ struct GoalState {
 
 #[derive(Debug, Deserialize, Clone, Default)]
 struct Container {
+    #[serde(rename = "ContainerId")]
+    pub container_id: String,
     #[serde(rename = "RoleInstanceList")]
-    pub role_instance_list: RoleInstanceList
+    pub role_instance_list: RoleInstanceList,
 }
 
 #[derive(Debug, Deserialize, Clone, Default)]
@@ -67,7 +92,9 @@ struct RoleInstanceList {
 #[derive(Debug, Deserialize, Clone)]
 struct RoleInstance {
     #[serde(rename = "Configuration")]
-    pub configuration: Configuration
+    pub configuration: Configuration,
+    #[serde(rename = "InstanceId")]
+    pub instance_id: String,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -174,13 +201,14 @@ impl Azure {
     }
 
     fn get_goal_state(&self) -> Result<GoalState> {
-        self.client.get(retry::Xml, format!("http://{}/machine/?comp=goalstate", self.endpoint)).send()
+        self.client.get(retry::Xml, format!("{}/machine/?comp=goalstate", self.fabric_base_url())).send()
             .chain_err(|| "failed to get goal state")?
         .ok_or_else(|| "failed to get goal state: not found response".into())
     }
 
+    #[cfg(not(test))]
     fn get_fabric_address() -> Result<IpAddr> {
-        let v = util::dns_lease_key_lookup(OPTION_245)?;
+        let v = ::util::dns_lease_key_lookup("OPTION_245")?;
         // value is an 8 digit hex value. convert it to u32 and
         // then parse that into an ip. Ipv4Addr::from(u32)
         // performs conversion from big-endian
@@ -190,8 +218,24 @@ impl Azure {
         Ok(IpAddr::V4(dec.into()))
     }
 
+    #[cfg(not(test))]
+    fn fabric_base_url(&self) -> String {
+        format!("http://{}", self.endpoint)
+    }
+
+    #[cfg(test)]
+    fn get_fabric_address() -> Result<IpAddr> {
+        use std::net::Ipv4Addr;
+        Ok(IpAddr::from(Ipv4Addr::new(127, 0, 0, 1)))
+    }
+
+    #[cfg(test)]
+    fn fabric_base_url(&self) -> String {
+        ::mockito::server_url().to_string()
+    }
+
     fn is_fabric_compatible(&self, version: &str) -> Result<()> {
-        let versions: Versions = self.client.get(retry::Xml, format!("http://{}/?comp=versions", self.endpoint)).send()
+        let versions: Versions = self.client.get(retry::Xml, format!("{}/?comp=versions", self.fabric_base_url())).send()
             .chain_err(|| "failed to get versions")?
             .ok_or_else(|| "failed to get versions: not found")?;
 
@@ -282,6 +326,20 @@ impl Azure {
 
         Ok(attributes)
     }
+
+    /// Return this instance `ContainerId`.
+    pub(crate) fn container_id(&self) -> &str {
+        &self.goal_state.container.container_id
+    }
+
+    /// Return this instance `InstanceId`.
+    pub(crate) fn instance_id(&self) -> Result<&str> {
+        Ok(&self.goal_state.container
+           .role_instance_list
+           .role_instances.get(0)
+           .ok_or_else(|| "empty RoleInstanceList".to_string())?
+           .instance_id)
+    }
 }
 
 impl MetadataProvider for Azure {
@@ -315,5 +373,13 @@ impl MetadataProvider for Azure {
 
     fn network_devices(&self) -> Result<Vec<network::Device>> {
         Ok(vec![])
+    }
+
+    fn boot_checkin(&self) -> Result<()> {
+        let body = ready_state!(self.container_id(), self.instance_id()?);
+        let url = self.fabric_base_url() + "/machine/?comp=health";
+        self.client.post(retry::Xml, url, body.into())
+            .dispatch_post()?;
+        Ok(())
     }
 }
