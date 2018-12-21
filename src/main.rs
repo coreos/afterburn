@@ -27,6 +27,7 @@ extern crate reqwest;
 #[macro_use]
 extern crate serde_derive;
 extern crate serde;
+#[cfg_attr(test, macro_use)]
 extern crate serde_json;
 extern crate serde_xml_rs;
 #[macro_use]
@@ -63,6 +64,7 @@ const CMDLINE_OEM_FLAG: &str = "coreos.oem.id";
 struct Config {
     provider: String,
     attributes_file: Option<String>,
+    check_in: bool,
     ssh_keys_user: Option<String>,
     hostname_file: Option<String>,
     network_units_dir: Option<String>,
@@ -110,6 +112,12 @@ fn run() -> Result<()> {
         .map_or(Ok(()), |x| metadata.write_network_units(x))
         .chain_err(|| "writing network units")?;
 
+    // perform boot check-in.
+    if config.check_in {
+        metadata.boot_checkin()
+            .chain_err(|| "checking-in instance boot to cloud provider")?;
+    }
+
     debug!("Done!");
 
     Ok(())
@@ -142,6 +150,9 @@ fn init() -> Result<Config> {
              .long("attributes")
              .help("The file into which the metadata attributes are written")
              .takes_value(true))
+        .arg(Arg::with_name("check-in")
+             .long("check-in")
+             .help("Check-in this instance boot with the cloud provider"))
         .arg(Arg::with_name("cmdline")
              .long("cmdline")
              .help("Read the cloud provider from the kernel cmdline"))
@@ -174,6 +185,7 @@ fn init() -> Result<Config> {
             }
         },
         attributes_file: matches.value_of("attributes").map(String::from),
+        check_in: matches.is_present("check-in"),
         ssh_keys_user: matches.value_of("ssh-keys").map(String::from),
         hostname_file: matches.value_of("hostname").map(String::from),
         network_units_dir: matches.value_of("network-units").map(String::from),

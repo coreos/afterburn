@@ -19,6 +19,7 @@
 //! of attempts and a backoff strategy. It also takes care of automatically
 //! deserializing responses and handles headers in a sane way.
 
+use std::borrow::Cow;
 use std::io::Read;
 use std::time::Duration;
 
@@ -138,6 +139,21 @@ impl Client {
     {
         RequestBuilder{
             url,
+            body: None,
+            d,
+            client: self.client.clone(),
+            headers: self.headers.clone(),
+            retry: self.retry.clone(),
+            return_on_404: self.return_on_404,
+        }
+    }
+
+    pub fn post<D>(&self, d: D, url: String, body: Cow<str>) -> RequestBuilder<D>
+        where D: Deserializer
+    {
+        RequestBuilder{
+            url,
+            body: Some(body.into_owned()),
             d,
             client: self.client.clone(),
             headers: self.headers.clone(),
@@ -151,6 +167,7 @@ pub struct RequestBuilder<D>
     where D: Deserializer
 {
     url: String,
+    body: Option<String>,
     d: D,
     client: reqwest::Client,
     headers: header::HeaderMap,
@@ -180,6 +197,34 @@ impl<D> RequestBuilder<D>
         self.retry.clone().retry(|attempt| {
             info!("Fetching {}: Attempt #{}", req.url(), attempt + 1);
             self.dispatch_request(&req)
+        })
+    }
+
+    pub fn dispatch_post(self) -> Result<reqwest::StatusCode>
+    {
+        let url = reqwest::Url::parse(self.url.as_str())
+            .chain_err(|| "failed to parse uri")?;
+
+        self.retry.clone().retry(|attempt| {
+            let mut builder = reqwest::Client::new()
+                .post(url.clone())
+                .headers(self.headers.clone())
+                .header(header::CONTENT_TYPE, self.d.content_type());
+            if let Some(ref content) = self.body {
+                builder = builder.body(content.clone());
+            };
+            let req = builder.build()
+                .chain_err(|| "failed to build POST request")?;
+
+            info!("Posting {}: Attempt #{}", req.url(), attempt + 1);
+            let status = self.client.execute(req)
+                .chain_err(|| "failed to POST request")?
+                .status();
+            if status.is_success() {
+                Ok(status)
+            } else {
+                Err(format!("POST failed: {}", status).into())
+            }
         })
     }
 
@@ -213,7 +258,8 @@ impl<D> RequestBuilder<D>
     }
 }
 
-/// Reqwests Request struct doesn't implement copy, so we have to do it here
+/// Reqwests Request struct doesn't implement `Clone`,
+/// so we have to do it here.
 fn clone_request(req: &Request) -> Request {
     let mut newreq = Request::new(req.method().clone(), req.url().clone());
     newreq.headers_mut().extend(req.headers().clone().into_iter());

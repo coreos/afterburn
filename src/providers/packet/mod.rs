@@ -24,6 +24,7 @@ use std::str::FromStr;
 
 use openssh_keys::PublicKey;
 use pnet::util::MacAddr;
+use serde_json;
 use update_ssh_keys::AuthorizedKeyEntry;
 
 use errors::*;
@@ -33,6 +34,9 @@ use retry;
 use util;
 
 use ipnetwork::{self, IpNetwork, Ipv4Network, Ipv6Network};
+
+#[cfg(test)]
+mod mock_tests;
 
 #[derive(Clone, Debug, Deserialize)]
 struct PacketData {
@@ -77,6 +81,15 @@ struct PacketAddressInfo {
     address: IpAddr,
     netmask: IpAddr,
     gateway: IpAddr,
+}
+
+/// Custom user-state that can be posted on instance
+/// boot to Packet phone-home events endpoint.
+#[derive(Clone, Debug, Serialize)]
+pub(crate) struct PacketUserState {
+    state: String,
+    code: u16,
+    message: String,
 }
 
 #[derive(Clone, Debug)]
@@ -278,5 +291,19 @@ impl MetadataProvider for PacketProvider {
         let (_interfaces, devices) = self.parse_network()?;
 
         Ok(devices)
+    }
+
+    fn boot_checkin(&self) -> Result<()> {
+        let user_state = PacketUserState {
+            state: "succeeded".into(),
+            code: 1042,
+            message: "coreos-metadata: boot check-in".into(),
+        };
+        let client = retry::Client::try_new()?;
+        let url = self.data.phone_home_url.clone() + "/events";
+        let body = serde_json::to_string(&user_state)?;
+        client.post(retry::Json, url, body.into())
+            .dispatch_post()?;
+        Ok(())
     }
 }
