@@ -40,8 +40,8 @@ pub struct HetznerCloudProvider {
 }
 
 impl HetznerCloudProvider {
-    pub fn new() -> Result<HetznerCloudProvider> {
-        let client = retry::Client::new()?
+    pub fn try_new() -> Result<HetznerCloudProvider> {
+        let client = retry::Client::try_new()?
             .return_on_404(true);
 
         Ok(HetznerCloudProvider { client })

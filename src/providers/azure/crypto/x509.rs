@@ -16,7 +16,7 @@
 
 use openssl::x509::{X509, X509Name};
 use openssl::rsa::Rsa;
-use openssl::pkey::PKey;
+use openssl::pkey::{PKey, Private};
 use openssl::hash::MessageDigest;
 use openssl::asn1::Asn1Time;
 use openssl::bn;
@@ -39,7 +39,7 @@ impl Config {
     }
 }
 
-pub fn generate_cert(config: &Config) -> Result<(X509, PKey)> {
+pub fn generate_cert(config: &Config) -> Result<(X509, PKey<Private>)> {
     // generate an rsa public/private keypair
     let rsa = Rsa::generate(config.rsa_bits)
         .chain_err(|| "failed to generate rsa keypair")?;
@@ -56,7 +56,7 @@ pub fn generate_cert(config: &Config) -> Result<(X509, PKey)> {
     // set the serial number to some big random positive integer
     let mut serial = bn::BigNum::new()
         .chain_err(|| "failed to make new bignum")?;
-    serial.rand(32, bn::MSB_ONE, false)
+    serial.rand(32, bn::MsbOption::ONE, false)
         .chain_err(|| "failed to generate random bignum")?;
     let serial = serial.to_asn1_integer()
         .chain_err(|| "failed to get asn1 integer from bignum")?;

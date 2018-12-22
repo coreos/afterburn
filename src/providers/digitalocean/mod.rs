@@ -68,8 +68,8 @@ pub struct DigitalOceanProvider {
 }
 
 impl DigitalOceanProvider {
-    pub fn new() -> Result<DigitalOceanProvider> {
-        let client = retry::Client::new()?;
+    pub fn try_new() -> Result<DigitalOceanProvider> {
+        let client = retry::Client::try_new()?;
         let data: DigitalOceanProvider = client.get(retry::Json, "http://169.254.169.254/metadata/v1.json".to_owned()).send()?
             .ok_or("not found")?;
 

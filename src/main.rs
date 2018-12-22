@@ -17,8 +17,6 @@ extern crate base64;
 extern crate clap;
 #[macro_use]
 extern crate error_chain;
-#[macro_use]
-extern crate hyper;
 extern crate hostname;
 extern crate ipnetwork;
 extern crate nix;

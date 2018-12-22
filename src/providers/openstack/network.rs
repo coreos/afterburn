@@ -18,8 +18,8 @@ pub struct OpenstackProvider {
 }
 
 impl OpenstackProvider {
-    pub fn new() -> Result<OpenstackProvider> {
-        let client = retry::Client::new()?;
+    pub fn try_new() -> Result<OpenstackProvider> {
+        let client = retry::Client::try_new()?;
         Ok(OpenstackProvider { client })
     }
 

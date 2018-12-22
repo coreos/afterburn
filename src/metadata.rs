@@ -13,29 +13,39 @@
 // limitations under the License.
 
 use errors;
-use providers::*;
+use providers;
+use providers::azure::Azure;
+use providers::cloudstack::configdrive::ConfigDrive;
+use providers::cloudstack::network::CloudstackNetwork;
+use providers::digitalocean::DigitalOceanProvider;
+use providers::ec2::Ec2Provider;
+use providers::gce::GceProvider;
+use providers::hcloud::HetznerCloudProvider;
+use providers::openstack::network::OpenstackProvider;
+use providers::packet::PacketProvider;
+use providers::vagrant_virtualbox::VagrantVirtualboxProvider;
 
 macro_rules! box_result {
     ($exp:expr) => {
-        Ok(Box::new($exp?))
+        Ok(Box::new($exp))
     };
 }
 
 /// `fetch_metadata` is the generic, top-level function that is used by the main
 /// function to fetch metadata. The configured provider is passed in and this
 /// function dispatches the call to the correct provider-specific fetch function
-pub fn fetch_metadata(provider: &str) -> errors::Result<Box<MetadataProvider>> {
+pub fn fetch_metadata(provider: &str) -> errors::Result<Box<providers::MetadataProvider>> {
     match provider {
-        "azure" => box_result!(azure::Azure::new()),
-        "cloudstack-metadata" => box_result!(cloudstack::network::CloudstackNetwork::new()),
-        "cloudstack-configdrive" => box_result!(cloudstack::configdrive::ConfigDrive::new()),
-        "digitalocean" => box_result!(digitalocean::DigitalOceanProvider::new()),
-        "ec2" => box_result!(ec2::Ec2Provider::new()),
-        "gce" => box_result!(gce::GceProvider::new()),
-        "hcloud" => box_result!(hcloud::HetznerCloudProvider::new()),
-        "openstack-metadata" => box_result!(openstack::network::OpenstackProvider::new()),
-        "packet" => box_result!(packet::PacketProvider::new()),
-        "vagrant-virtualbox" => box_result!(vagrant_virtualbox::VagrantVirtualboxProvider::new()),
+        "azure" => box_result!(Azure::try_new()?),
+        "cloudstack-metadata" => box_result!(CloudstackNetwork::try_new()?),
+        "cloudstack-configdrive" => box_result!(ConfigDrive::try_new()?),
+        "digitalocean" => box_result!(DigitalOceanProvider::try_new()?),
+        "ec2" => box_result!(Ec2Provider::try_new()?),
+        "gce" => box_result!(GceProvider::try_new()?),
+        "hcloud" => box_result!(HetznerCloudProvider::try_new()?),
+        "openstack-metadata" => box_result!(OpenstackProvider::try_new()?),
+        "packet" => box_result!(PacketProvider::try_new()?),
+        "vagrant-virtualbox" => box_result!(VagrantVirtualboxProvider::new()),
         _ => Err(errors::ErrorKind::UnknownProvider(provider.to_owned()).into()),
     }
 }

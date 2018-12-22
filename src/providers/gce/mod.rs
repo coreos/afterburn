@@ -17,6 +17,7 @@
 use std::collections::HashMap;
 
 use openssh_keys::PublicKey;
+use reqwest::header::{HeaderName, HeaderValue};
 use update_ssh_keys::AuthorizedKeyEntry;
 
 use errors::*;
@@ -24,8 +25,7 @@ use network;
 use providers::MetadataProvider;
 use retry;
 
-header! {(MetadataFlavor, "Metadata-Flavor") => [String]}
-const GOOGLE: &str = "Google";
+static HDR_METADATA_FLAVOR: &str = "Metadata-Flavor";
 
 #[derive(Clone, Debug)]
 pub struct GceProvider {
@@ -33,9 +33,10 @@ pub struct GceProvider {
 }
 
 impl GceProvider {
-    pub fn new() -> Result<GceProvider> {
-        let client = retry::Client::new()?
-            .header(MetadataFlavor(GOOGLE.to_owned()))
+    pub fn try_new() -> Result<GceProvider> {
+        let client = retry::Client::try_new()?
+            .header(HeaderName::from_static(HDR_METADATA_FLAVOR),
+                    HeaderValue::from_static("Google"))
             .return_on_404(true);
 
         Ok(GceProvider { client })
