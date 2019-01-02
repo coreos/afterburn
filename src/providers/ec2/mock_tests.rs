@@ -2,8 +2,6 @@ use mockito;
 use errors::*;
 use providers::ec2;
 
-pub(crate) const URL: &'static str = ::mockito::SERVER_URL;
-
 #[test]
 fn test_ec2_basic() {
     let ep = "/meta-data/public-keys";

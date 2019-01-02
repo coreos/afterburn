@@ -17,6 +17,8 @@
 
 use std::collections::HashMap;
 
+#[cfg(test)]
+use mockito;
 use openssh_keys::PublicKey;
 use update_ssh_keys::AuthorizedKeyEntry;
 
@@ -27,11 +29,6 @@ use retry;
 
 #[cfg(test)]
 mod mock_tests;
-#[cfg(test)]
-use self::mock_tests::URL;
-
-#[cfg(not(test))]
-const URL: &str = "http://169.254.169.254/2009-04-04";
 
 #[allow(non_snake_case)]
 #[derive(Debug, Deserialize)]
@@ -52,7 +49,15 @@ impl Ec2Provider {
         Ok(Ec2Provider { client })
     }
 
+    #[cfg(test)]
     fn endpoint_for(key: &str) -> String {
+        let url = mockito::server_url();
+        format!("{}/{}", url, key)
+    }
+
+    #[cfg(not(test))]
+    fn endpoint_for(key: &str) -> String {
+        const URL: &str = "http://169.254.169.254/2009-04-04";
         format!("{}/{}", URL, key)
     }
 
