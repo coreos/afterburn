@@ -46,6 +46,10 @@ Content-Transfer-Encoding: base64
 
 ";
 
+/// This is a known working wireserver endpoint within Azure.
+/// See: https://blogs.msdn.microsoft.com/mast/2015/05/18/what-is-the-ip-address-168-63-129-16/
+const FALLBACK_WIRESERVER_ADDR: [u8; 4] = [168, 63, 129, 16]; // for grep: 168.63.129.16
+
 #[derive(Debug, Deserialize, Clone, Default)]
 struct GoalState {
     #[serde(rename = "Container")]
@@ -150,8 +154,7 @@ pub struct Azure {
 
 impl Azure {
     pub fn try_new() -> Result<Azure> {
-        let addr = Azure::get_fabric_address()
-            .chain_err(|| "failed to get fabric address")?;
+        let addr = Azure::get_fabric_address();
         let client = retry::Client::try_new()?
             .header(HeaderName::from_static(HDR_AGENT_NAME),
                     HeaderValue::from_static(MS_AGENT_NAME))
@@ -179,7 +182,16 @@ impl Azure {
         .ok_or_else(|| "failed to get goal state: not found response".into())
     }
 
-    fn get_fabric_address() -> Result<IpAddr> {
+    fn get_fabric_address() -> IpAddr {
+        // try to fetch from dhcp, else use fallback; this is similar to what WALinuxAgent does
+        Azure::get_fabric_address_from_dhcp().unwrap_or_else(|e| {
+            warn!("Failed to get fabric address from DHCP: {}", e);
+            info!("Using fallback address");
+            IpAddr::from(FALLBACK_WIRESERVER_ADDR)
+        })
+    }
+
+    fn get_fabric_address_from_dhcp() -> Result<IpAddr> {
         let v = util::dns_lease_key_lookup(OPTION_245)?;
         // value is an 8 digit hex value. convert it to u32 and
         // then parse that into an ip. Ipv4Addr::from(u32)
