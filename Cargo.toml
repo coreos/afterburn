@@ -22,7 +22,7 @@ error-chain = { version = "0.12", default-features = false }
 hostname = "0.1"
 ipnetwork = "^0.13.1"
 mime = "0.3"
-nix = "^0.12.0"
+nix = "^0.13.0"
 openssh-keys = "^0.4.1"
 openssl = "^0.10.15"
 pnet = "0.21"
