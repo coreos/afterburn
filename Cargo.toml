@@ -16,7 +16,7 @@ lto = true
 
 [dependencies]
 base64 = "^0.10.0"
-byteorder = "1.1"
+byteorder = "1.3"
 clap = "2.26"
 error-chain = { version = "0.12", default-features = false }
 hostname = "0.1"
