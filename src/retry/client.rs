@@ -192,7 +192,6 @@ impl<D> RequestBuilder<D>
             .chain_err(|| "failed to parse uri")?;
         let mut req = Request::new(Method::GET, url);
         req.headers_mut().extend(self.headers.clone().into_iter());
-        req.headers_mut().append(header::CONTENT_TYPE, self.d.content_type());
 
         self.retry.clone().retry(|attempt| {
             info!("Fetching {}: Attempt #{}", req.url(), attempt + 1);
