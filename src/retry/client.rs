@@ -67,7 +67,7 @@ impl Deserializer for Json {
             .chain_err(|| "failed json deserialization")
     }
     fn content_type(&self) -> header::HeaderValue {
-        header::HeaderValue::from_static("text/json; charset=utf-8")
+        header::HeaderValue::from_static("application/json")
     }
 }
 
