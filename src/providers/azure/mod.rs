@@ -392,7 +392,7 @@ impl MetadataProvider for Azure {
     fn boot_checkin(&self) -> Result<()> {
         let body = ready_state!(self.container_id(), self.instance_id()?);
         let url = self.fabric_base_url() + "/machine/?comp=health";
-        self.client.post(retry::Xml, url, body.into())
+        self.client.post(retry::Xml, url, Some(body.into()))
             .dispatch_post()?;
         Ok(())
     }

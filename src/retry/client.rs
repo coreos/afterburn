@@ -148,12 +148,12 @@ impl Client {
         }
     }
 
-    pub fn post<D>(&self, d: D, url: String, body: Cow<str>) -> RequestBuilder<D>
+    pub fn post<D>(&self, d: D, url: String, body: Option<Cow<str>>) -> RequestBuilder<D>
         where D: Deserializer
     {
         RequestBuilder{
             url,
-            body: Some(body.into_owned()),
+            body: body.map(|b| b.into_owned()),
             d,
             client: self.client.clone(),
             headers: self.headers.clone(),

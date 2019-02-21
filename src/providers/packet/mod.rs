@@ -302,7 +302,7 @@ impl MetadataProvider for PacketProvider {
         let client = retry::Client::try_new()?;
         let url = self.data.phone_home_url.clone() + "/events";
         let body = serde_json::to_string(&user_state)?;
-        client.post(retry::Json, url, body.into())
+        client.post(retry::Json, url, Some(body.into()))
             .dispatch_post()?;
         Ok(())
     }
