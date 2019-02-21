@@ -3,7 +3,6 @@ use providers::{packet, MetadataProvider};
 
 #[test]
 fn test_boot_checkin() {
-    let ep = "/events";
     let data = packet::PacketData {
         id: String::new(),
         hostname: String::new(),
@@ -22,14 +21,9 @@ fn test_boot_checkin() {
     };
     let provider = packet::PacketProvider { data };
 
-    let json_body = json!({
-        "state": "succeeded",
-        "code": 1042,
-        "message": "coreos-metadata: boot check-in",
-    });
-    let mock = mockito::mock("POST", ep)
-        .match_header("content-type", Matcher::Regex("text/json.*".to_string()))
-        .match_body(Matcher::Json(json_body))
+    let mock = mockito::mock("POST", "/")
+        .match_header("content-type", Matcher::Regex("application/json".to_string()))
+        .match_body("")
         .with_status(200)
         .create();
 

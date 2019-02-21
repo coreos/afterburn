@@ -27,7 +27,6 @@ extern crate reqwest;
 #[macro_use]
 extern crate serde_derive;
 extern crate serde;
-#[cfg_attr(test, macro_use)]
 extern crate serde_json;
 extern crate serde_xml_rs;
 #[macro_use]
