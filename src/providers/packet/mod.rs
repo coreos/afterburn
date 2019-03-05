@@ -34,6 +34,9 @@ use util;
 
 use ipnetwork::{self, IpNetwork, Ipv4Network, Ipv6Network};
 
+#[cfg(test)]
+mod mock_tests;
+
 #[derive(Clone, Debug, Deserialize)]
 struct PacketData {
     id: String,
@@ -278,5 +281,12 @@ impl MetadataProvider for PacketProvider {
         let (_interfaces, devices) = self.parse_network()?;
 
         Ok(devices)
+    }
+
+    fn boot_checkin(&self) -> Result<()> {
+        let client = retry::Client::try_new()?;
+        let url = self.data.phone_home_url.clone();
+        client.post(retry::Json, url, None).dispatch_post()?;
+        Ok(())
     }
 }

@@ -13,6 +13,7 @@
 // limitations under the License.
 
 use reqwest::header;
+use serde_json;
 
 error_chain!{
     links {
@@ -24,6 +25,7 @@ error_chain!{
         XmlDeserialize(::serde_xml_rs::Error);
         Base64Decode(::base64::DecodeError);
         Io(::std::io::Error);
+        Json(serde_json::Error);
         Reqwest(::reqwest::Error);
         OpensslStack(::openssl::error::ErrorStack);
         HeaderValue(header::InvalidHeaderValue);
