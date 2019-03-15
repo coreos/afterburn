@@ -25,7 +25,7 @@ use network;
 use providers::MetadataProvider;
 use retry;
 
-static HDR_METADATA_FLAVOR: &str = "Metadata-Flavor";
+static HDR_METADATA_FLAVOR: &str = "metadata-flavor";
 
 #[derive(Clone, Debug)]
 pub struct GceProvider {
