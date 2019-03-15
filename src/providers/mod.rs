@@ -37,6 +37,7 @@ use std::fs::{self, File};
 use std::io::prelude::*;
 use std::path::Path;
 
+use openssh_keys::PublicKey;
 use update_ssh_keys::{AuthorizedKeys, AuthorizedKeyEntry};
 use users;
 
@@ -58,7 +59,7 @@ fn create_file(filename: &str) -> Result<File> {
 pub trait MetadataProvider {
     fn attributes(&self) -> Result<HashMap<String, String>>;
     fn hostname(&self) -> Result<Option<String>>;
-    fn ssh_keys(&self) -> Result<Vec<AuthorizedKeyEntry>>;
+    fn ssh_keys(&self) -> Result<Vec<PublicKey>>;
     fn networks(&self) -> Result<Vec<network::Interface>>;
     fn network_devices(&self) -> Result<Vec<network::Device>>;
     fn boot_checkin(&self) -> Result<()>;
@@ -83,7 +84,11 @@ pub trait MetadataProvider {
                 .chain_err(|| format!("failed to open authorized keys directory for user '{}'", ssh_keys_user))?;
 
             // add the ssh keys to the directory
-            authorized_keys_dir.add_keys("coreos-metadata", ssh_keys, true, true)?;
+            let entries = ssh_keys
+                .into_iter()
+                .map(|key| AuthorizedKeyEntry::Valid{key})
+                .collect::<Vec<_>>();
+            authorized_keys_dir.add_keys("coreos-metadata", entries, true, true)?;
 
             // write the changes and sync the directory
             authorized_keys_dir.write()

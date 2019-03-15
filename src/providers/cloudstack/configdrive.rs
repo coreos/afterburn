@@ -8,7 +8,6 @@ use std::path::{Path, PathBuf};
 use nix::mount;
 use openssh_keys::PublicKey;
 use tempdir::TempDir;
-use update_ssh_keys::AuthorizedKeyEntry;
 
 use errors::*;
 use network;
@@ -121,13 +120,8 @@ impl MetadataProvider for ConfigDrive {
         Ok(None)
     }
 
-    fn ssh_keys(&self) -> Result<Vec<AuthorizedKeyEntry>> {
-        let keys = self.fetch_publickeys()?
-            .into_iter()
-            .map(|key| AuthorizedKeyEntry::Valid{key})
-            .collect::<Vec<_>>();
-
-        Ok(keys)
+    fn ssh_keys(&self) -> Result<Vec<PublicKey>> {
+        self.fetch_publickeys()
     }
 
     fn networks(&self) -> Result<Vec<network::Interface>> {

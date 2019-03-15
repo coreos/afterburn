@@ -5,7 +5,6 @@ use std::net::IpAddr;
 use std::time::Duration;
 
 use openssh_keys::PublicKey;
-use update_ssh_keys::AuthorizedKeyEntry;
 
 use errors::*;
 use network;
@@ -77,17 +76,13 @@ impl MetadataProvider for CloudstackNetwork {
         Ok(None)
     }
 
-    fn ssh_keys(&self) -> Result<Vec<AuthorizedKeyEntry>> {
+    fn ssh_keys(&self) -> Result<Vec<PublicKey>> {
         let keys: Option<String> = self.client
             .get(retry::Raw, self.endpoint_for("public-keys"))
             .send()?;
 
         if let Some(keys) = keys {
-            let keys = PublicKey::read_keys(keys.as_bytes())?
-                .into_iter()
-                .map(|key| AuthorizedKeyEntry::Valid{key})
-                .collect::<Vec<_>>();
-
+            let keys = PublicKey::read_keys(keys.as_bytes())?;
             Ok(keys)
         } else {
             Ok(vec![])

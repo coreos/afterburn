@@ -22,7 +22,6 @@ use ipnetwork;
 use ipnetwork::{IpNetwork,Ipv4Network,Ipv6Network};
 use openssh_keys::PublicKey;
 use pnet::util::MacAddr;
-use update_ssh_keys::AuthorizedKeyEntry;
 
 use errors::*;
 use network;
@@ -247,12 +246,12 @@ impl MetadataProvider for DigitalOceanProvider {
         Ok(Some(self.hostname.clone()))
     }
 
-    fn ssh_keys(&self) -> Result<Vec<AuthorizedKeyEntry>> {
+    fn ssh_keys(&self) -> Result<Vec<PublicKey>> {
         let mut out = Vec::new();
 
         for key in &self.public_keys {
             let key = PublicKey::parse(&key)?;
-            out.push(AuthorizedKeyEntry::Valid{key});
+            out.push(key);
         }
 
         Ok(out)

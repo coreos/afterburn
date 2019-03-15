@@ -20,7 +20,6 @@ use std::collections::HashMap;
 #[cfg(test)]
 use mockito;
 use openssh_keys::PublicKey;
-use update_ssh_keys::AuthorizedKeyEntry;
 
 use errors::*;
 use network;
@@ -122,12 +121,12 @@ impl MetadataProvider for Ec2Provider {
         self.client.get(retry::Raw, Ec2Provider::endpoint_for("meta-data/hostname")).send()
     }
 
-    fn ssh_keys(&self) -> Result<Vec<AuthorizedKeyEntry>> {
+    fn ssh_keys(&self) -> Result<Vec<PublicKey>> {
         self.fetch_ssh_keys().map(|keys| {
             keys.into_iter()
                 .map(|key| {
                     let key = PublicKey::parse(&key)?;
-                    Ok(AuthorizedKeyEntry::Valid{key})
+                    Ok(key)
                 })
                 .collect::<Result<Vec<_>>>()
         })?

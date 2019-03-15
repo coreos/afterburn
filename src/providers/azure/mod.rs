@@ -21,7 +21,6 @@ use std::net::{IpAddr, SocketAddr};
 
 use openssh_keys::PublicKey;
 use reqwest::header::{HeaderName, HeaderValue};
-use update_ssh_keys::AuthorizedKeyEntry;
 
 use self::crypto::x509;
 use errors::*;
@@ -376,9 +375,9 @@ impl MetadataProvider for Azure {
         Ok(None)
     }
 
-    fn ssh_keys(&self) -> Result<Vec<AuthorizedKeyEntry>> {
+    fn ssh_keys(&self) -> Result<Vec<PublicKey>> {
         let key = self.get_ssh_pubkey()?;
-        Ok(vec![AuthorizedKeyEntry::Valid{key}])
+        Ok(vec![key])
     }
 
     fn networks(&self) -> Result<Vec<network::Interface>> {
