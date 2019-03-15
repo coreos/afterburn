@@ -39,7 +39,7 @@ use std::path::Path;
 
 use openssh_keys::PublicKey;
 use update_ssh_keys::{AuthorizedKeys, AuthorizedKeyEntry};
-use users;
+use users::{self, User};
 
 use errors::*;
 use network;
@@ -54,6 +54,32 @@ fn create_file(filename: &str) -> Result<File> {
     // create (or truncate) the file we want to write to
     File::create(file_path)
         .chain_err(|| format!("failed to create file {:?}", file_path))
+}
+
+fn write_ssh_keys(user: User, ssh_keys: Vec<PublicKey>) -> Result<()> {
+    // If we don't have any SSH keys, don't bother trying to write them as
+    // update-ssh-keys will yell at us.
+    if !ssh_keys.is_empty() {
+        // open the user's authorized keys directory
+        let user_name = user.name().to_string_lossy().into_owned();
+        let mut authorized_keys_dir = AuthorizedKeys::open(user, true, None)
+            .chain_err(|| format!("failed to open authorized keys directory for user '{}'", user_name))?;
+
+        // add the ssh keys to the directory
+        let entries = ssh_keys
+            .into_iter()
+            .map(|key| AuthorizedKeyEntry::Valid{key})
+            .collect::<Vec<_>>();
+        authorized_keys_dir.add_keys("coreos-metadata", entries, true, true)?;
+
+        // write the changes and sync the directory
+        authorized_keys_dir.write()
+            .chain_err(|| "failed to update authorized keys directory")?;
+        authorized_keys_dir.sync()
+            .chain_err(|| "failed to update authorized keys")?;
+    }
+
+    Ok(())
 }
 
 pub trait MetadataProvider {
@@ -75,27 +101,10 @@ pub trait MetadataProvider {
 
     fn write_ssh_keys(&self, ssh_keys_user: String) -> Result<()> {
         let ssh_keys = self.ssh_keys()?;
+        let user = users::get_user_by_name(&ssh_keys_user)
+            .ok_or_else(|| format!("could not find user with username {:?}", ssh_keys_user))?;
 
-        if !ssh_keys.is_empty() {
-            // find the ssh keys user and open their ssh authorized keys directory
-            let user = users::get_user_by_name(&ssh_keys_user)
-                .ok_or_else(|| format!("could not find user with username {:?}", ssh_keys_user))?;
-            let mut authorized_keys_dir = AuthorizedKeys::open(user, true, None)
-                .chain_err(|| format!("failed to open authorized keys directory for user '{}'", ssh_keys_user))?;
-
-            // add the ssh keys to the directory
-            let entries = ssh_keys
-                .into_iter()
-                .map(|key| AuthorizedKeyEntry::Valid{key})
-                .collect::<Vec<_>>();
-            authorized_keys_dir.add_keys("coreos-metadata", entries, true, true)?;
-
-            // write the changes and sync the directory
-            authorized_keys_dir.write()
-                .chain_err(|| "failed to update authorized keys directory")?;
-            authorized_keys_dir.sync()
-                .chain_err(|| "failed to update authorized keys")?;
-        }
+        write_ssh_keys(user, ssh_keys)?;
 
         Ok(())
     }
