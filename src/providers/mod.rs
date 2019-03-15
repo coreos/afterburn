@@ -38,7 +38,6 @@ use std::io::prelude::*;
 use std::path::Path;
 
 use openssh_keys::PublicKey;
-use update_ssh_keys::{AuthorizedKeys, AuthorizedKeyEntry};
 use users::{self, User};
 
 use errors::*;
@@ -56,7 +55,10 @@ fn create_file(filename: &str) -> Result<File> {
         .chain_err(|| format!("failed to create file {:?}", file_path))
 }
 
+#[cfg(feature = "cl-legacy")]
 fn write_ssh_keys(user: User, ssh_keys: Vec<PublicKey>) -> Result<()> {
+    use update_ssh_keys::{AuthorizedKeys, AuthorizedKeyEntry};
+
     // If we don't have any SSH keys, don't bother trying to write them as
     // update-ssh-keys will yell at us.
     if !ssh_keys.is_empty() {
@@ -79,6 +81,11 @@ fn write_ssh_keys(user: User, ssh_keys: Vec<PublicKey>) -> Result<()> {
             .chain_err(|| "failed to update authorized keys")?;
     }
 
+    Ok(())
+}
+
+#[cfg(not(feature = "cl-legacy"))]
+fn write_ssh_keys(user: User, ssh_keys: Vec<PublicKey>) -> Result<()> {
     Ok(())
 }
 

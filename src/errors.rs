@@ -18,7 +18,7 @@ use serde_json;
 error_chain!{
     links {
         PublicKey(::openssh_keys::errors::Error, ::openssh_keys::errors::ErrorKind);
-        AuthorizedKeys(::update_ssh_keys::errors::Error, ::update_ssh_keys::errors::ErrorKind);
+        AuthorizedKeys(::update_ssh_keys::errors::Error, ::update_ssh_keys::errors::ErrorKind) #[cfg(feature = "cl-legacy")];
     }
     foreign_links {
         Log(::slog::Error);
