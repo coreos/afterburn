@@ -21,6 +21,10 @@ before_script:
 
 script:
   - cargo test
+  - cargo test --features cl-legacy
   - bash -c 'if [[ "$TRAVIS_RUST_VERSION" == "$CLIPPY_RUST_VERSION" ]]; then
       cargo clippy -- -D warnings;
+    fi'
+  - bash -c 'if [[ "$TRAVIS_RUST_VERSION" == "$CLIPPY_RUST_VERSION" ]]; then
+      cargo clippy --features cl-legacy -- -D warnings;
     fi'
