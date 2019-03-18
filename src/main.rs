@@ -36,6 +36,7 @@ extern crate slog_term;
 #[macro_use]
 extern crate slog_scope;
 extern crate tempdir;
+extern crate tempfile;
 #[cfg(feature = "cl-legacy")]
 extern crate update_ssh_keys;
 extern crate users;

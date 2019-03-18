@@ -86,6 +86,66 @@ fn write_ssh_keys(user: User, ssh_keys: Vec<PublicKey>) -> Result<()> {
 
 #[cfg(not(feature = "cl-legacy"))]
 fn write_ssh_keys(user: User, ssh_keys: Vec<PublicKey>) -> Result<()> {
+    use std::io::ErrorKind::NotFound;
+    use users::os::unix::UserExt;
+    use tempfile;
+
+    // switch users
+    let _guard = users::switch::switch_user_group(user.uid(), user.primary_group_id())
+        .chain_err(|| "failed to switch user/group")?;
+
+    // get paths
+    let dir_path = user.home_dir().join(".ssh").join("authorized_keys.d");
+    let file_name = "coreos-metadata";
+    let file_path = &dir_path.join(file_name);
+
+    if !ssh_keys.is_empty() {
+        // ensure directory exists
+        fs::create_dir_all(&dir_path)
+            .chain_err(|| format!("failed to create directory {:?}", &dir_path))?;
+
+        // create temporary file
+        let mut temp_file = tempfile::Builder::new()
+            .prefix(&format!(".{}-", file_name))
+            .tempfile_in(&dir_path)
+            .chain_err(|| "failed to create temporary file")?;
+
+        // write out keys
+        for key in ssh_keys {
+            writeln!(temp_file, "{}", key)
+                .chain_err(|| format!("failed to write to file {:?}", temp_file.path().display()))?;
+        }
+
+        // sync to disk
+        temp_file
+            .as_file()
+            .sync_all()
+            .chain_err(|| format!("failed to sync file {:?}", temp_file.path().display()))?;
+
+        // atomically rename to destination
+        // don't leak temporary file on error
+        temp_file.persist(&file_path)
+            .map_err(|e| { e.file.close().ok(); e.error })
+            .chain_err(|| format!("failed to persist file {:?}", file_path.display()))?;
+    } else {
+        // delete the file
+        match fs::remove_file(&file_path) {
+            Err(ref e) if e.kind() == NotFound => {
+                Ok(())
+            },
+            other => other,
+        }.chain_err(|| format!("failed to remove file {:?}", file_path.display()))?;
+    }
+
+    // sync parent dir to persist updates
+    let dir_file = File::open(&dir_path)
+        .chain_err(|| format!("failed to open {:?} for syncing", dir_path.display()))?;
+    dir_file.sync_all()
+        .chain_err(|| format!("failed to sync {:?}", dir_path.display()))?;
+
+    // make clippy happy while fulfilling our interface
+    drop(user);
+
     Ok(())
 }
 
