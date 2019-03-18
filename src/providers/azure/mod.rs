@@ -76,7 +76,7 @@ macro_rules! ready_state {
 #[derive(Debug, Deserialize, Clone, Default)]
 struct GoalState {
     #[serde(rename = "Container")]
-    pub container: Container
+    pub container: Container,
 }
 
 #[derive(Debug, Deserialize, Clone, Default)]
@@ -90,7 +90,7 @@ struct Container {
 #[derive(Debug, Deserialize, Clone, Default)]
 struct RoleInstanceList {
     #[serde(rename = "RoleInstance", default)]
-    pub role_instances: Vec<RoleInstance>
+    pub role_instances: Vec<RoleInstance>,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -112,19 +112,19 @@ struct Configuration {
 #[derive(Debug, Deserialize, Clone)]
 struct CertificatesFile {
     #[serde(rename = "Data", default)]
-    pub data: String
+    pub data: String,
 }
 
 #[derive(Debug, Deserialize, Clone)]
 struct Versions {
     #[serde(rename = "Supported")]
-    pub supported: Supported
+    pub supported: Supported,
 }
 
 #[derive(Debug, Deserialize, Clone)]
 struct Supported {
     #[serde(rename = "Version", default)]
-    pub versions: Vec<String>
+    pub versions: Vec<String>,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -183,10 +183,14 @@ impl Azure {
     pub fn try_new() -> Result<Azure> {
         let addr = Azure::get_fabric_address();
         let client = retry::Client::try_new()?
-            .header(HeaderName::from_static(HDR_AGENT_NAME),
-                    HeaderValue::from_static(MS_AGENT_NAME))
-            .header(HeaderName::from_static(HDR_VERSION),
-                    HeaderValue::from_static(MS_VERSION));
+            .header(
+                HeaderName::from_static(HDR_AGENT_NAME),
+                HeaderValue::from_static(MS_AGENT_NAME),
+            )
+            .header(
+                HeaderName::from_static(HDR_VERSION),
+                HeaderValue::from_static(MS_VERSION),
+            );
 
         let mut azure = Azure {
             client,
@@ -195,7 +199,8 @@ impl Azure {
         };
 
         // make sure the metadata service is compatible with our version
-        azure.is_fabric_compatible(MS_VERSION)
+        azure
+            .is_fabric_compatible(MS_VERSION)
             .chain_err(|| "failed version compatibility check")?;
 
         // populate goalstate
@@ -204,9 +209,14 @@ impl Azure {
     }
 
     fn get_goal_state(&self) -> Result<GoalState> {
-        self.client.get(retry::Xml, format!("{}/machine/?comp=goalstate", self.fabric_base_url())).send()
+        self.client
+            .get(
+                retry::Xml,
+                format!("{}/machine/?comp=goalstate", self.fabric_base_url()),
+            )
+            .send()
             .chain_err(|| "failed to get goal state")?
-        .ok_or_else(|| "failed to get goal state: not found response".into())
+            .ok_or_else(|| "failed to get goal state: not found response".into())
     }
 
     #[cfg(not(test))]
@@ -248,33 +258,52 @@ impl Azure {
     }
 
     fn is_fabric_compatible(&self, version: &str) -> Result<()> {
-        let versions: Versions = self.client.get(retry::Xml, format!("{}/?comp=versions", self.fabric_base_url())).send()
+        let versions: Versions = self
+            .client
+            .get(
+                retry::Xml,
+                format!("{}/?comp=versions", self.fabric_base_url()),
+            )
+            .send()
             .chain_err(|| "failed to get versions")?
             .ok_or_else(|| "failed to get versions: not found")?;
 
         if versions.supported.versions.iter().any(|v| v == version) {
             Ok(())
         } else {
-            Err(format!("fabric version {} not compatible with fabric address {}", MS_VERSION, self.endpoint).into())
+            Err(format!(
+                "fabric version {} not compatible with fabric address {}",
+                MS_VERSION, self.endpoint
+            )
+            .into())
         }
     }
 
     fn get_certs_endpoint(&self) -> Result<String> {
         // grab the certificates endpoint from the xml and return it
-        let cert_endpoint: &str = &self.goal_state.container.role_instance_list.role_instances[0].configuration.certificates;
+        let cert_endpoint: &str = &self.goal_state.container.role_instance_list.role_instances[0]
+            .configuration
+            .certificates;
         Ok(String::from(cert_endpoint))
     }
 
     fn get_certs<S: AsRef<str>>(&self, mangled_pem: S) -> Result<String> {
         // get the certificates
-        let endpoint = self.get_certs_endpoint()
+        let endpoint = self
+            .get_certs_endpoint()
             .chain_err(|| "failed to get certs endpoint")?;
 
-        let certs: CertificatesFile = self.client.get(retry::Xml, endpoint)
-            .header(HeaderName::from_static(HDR_CIPHER_NAME),
-                    HeaderValue::from_static("DES_EDE3_CBC"))
-            .header(HeaderName::from_static(HDR_CERT),
-                    HeaderValue::from_str(mangled_pem.as_ref())?)
+        let certs: CertificatesFile = self
+            .client
+            .get(retry::Xml, endpoint)
+            .header(
+                HeaderName::from_static(HDR_CIPHER_NAME),
+                HeaderValue::from_static("DES_EDE3_CBC"),
+            )
+            .header(
+                HeaderName::from_static(HDR_CERT),
+                HeaderValue::from_str(mangled_pem.as_ref())?,
+            )
             .send()
             .chain_err(|| "failed to get certificates")?
             .ok_or_else(|| "failed to get certificates: not found")?;
@@ -297,11 +326,11 @@ impl Azure {
             .chain_err(|| "failed to generate keys")?;
 
         // mangle the pem file for the request
-        let mangled_pem = crypto::mangle_pem(&x509)
-            .chain_err(|| "failed to mangle pem")?;
+        let mangled_pem = crypto::mangle_pem(&x509).chain_err(|| "failed to mangle pem")?;
 
         // fetch the encrypted cms blob from the certs endpoint
-        let smime = self.get_certs(mangled_pem)
+        let smime = self
+            .get_certs(mangled_pem)
             .chain_err(|| "failed to get certs")?;
 
         // decrypt the cms blob
@@ -316,9 +345,14 @@ impl Azure {
     }
 
     fn get_attributes(&self) -> Result<Attributes> {
-        let endpoint = &self.goal_state.container.role_instance_list.role_instances[0].configuration.shared_config;
+        let endpoint = &self.goal_state.container.role_instance_list.role_instances[0]
+            .configuration
+            .shared_config;
 
-        let shared_config: SharedConfig = self.client.get(retry::Xml, endpoint.to_string()).send()
+        let shared_config: SharedConfig = self
+            .client
+            .get(retry::Xml, endpoint.to_string())
+            .send()
             .chain_err(|| "failed to get shared configuration")?
             .ok_or_else(|| "failed to get shared configuration: not found")?;
 
@@ -326,13 +360,15 @@ impl Azure {
 
         for instance in shared_config.instances.instances {
             if instance.id == shared_config.incarnation.instance {
-                attributes.dynamic_ipv4 = Some(instance.address.parse()
-                    .chain_err(|| format!("failed to parse instance ip address: {}", instance.address))?);
+                attributes.dynamic_ipv4 = Some(instance.address.parse().chain_err(|| {
+                    format!("failed to parse instance ip address: {}", instance.address)
+                })?);
                 for endpoint in instance.input_endpoints.endpoints {
-                    attributes.virtual_ipv4 = match endpoint.load_balanced_public_address.parse::<SocketAddr>() {
-                        Ok(lbpa) => Some(lbpa.ip()),
-                        Err(_) => continue,
-                    };
+                    attributes.virtual_ipv4 =
+                        match endpoint.load_balanced_public_address.parse::<SocketAddr>() {
+                            Ok(lbpa) => Some(lbpa.ip()),
+                            Err(_) => continue,
+                        };
                 }
             }
         }
@@ -347,11 +383,14 @@ impl Azure {
 
     /// Return this instance `InstanceId`.
     pub(crate) fn instance_id(&self) -> Result<&str> {
-        Ok(&self.goal_state.container
-           .role_instance_list
-           .role_instances.get(0)
-           .ok_or_else(|| "empty RoleInstanceList".to_string())?
-           .instance_id)
+        Ok(&self
+            .goal_state
+            .container
+            .role_instance_list
+            .role_instances
+            .get(0)
+            .ok_or_else(|| "empty RoleInstanceList".to_string())?
+            .instance_id)
     }
 }
 
@@ -391,7 +430,8 @@ impl MetadataProvider for Azure {
     fn boot_checkin(&self) -> Result<()> {
         let body = ready_state!(self.container_id(), self.instance_id()?);
         let url = self.fabric_base_url() + "/machine/?comp=health";
-        self.client.post(retry::Xml, url, Some(body.into()))
+        self.client
+            .post(retry::Xml, url, Some(body.into()))
             .dispatch_post()?;
         Ok(())
     }

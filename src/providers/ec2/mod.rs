@@ -42,8 +42,7 @@ pub struct Ec2Provider {
 
 impl Ec2Provider {
     pub fn try_new() -> Result<Ec2Provider> {
-        let client = retry::Client::try_new()?
-            .return_on_404(true);
+        let client = retry::Client::try_new()?.return_on_404(true);
 
         Ok(Ec2Provider { client })
     }
@@ -61,8 +60,12 @@ impl Ec2Provider {
     }
 
     fn fetch_ssh_keys(&self) -> Result<Vec<String>> {
-        let keydata: Option<String> = self.client
-            .get(retry::Raw, Ec2Provider::endpoint_for("meta-data/public-keys"))
+        let keydata: Option<String> = self
+            .client
+            .get(
+                retry::Raw,
+                Ec2Provider::endpoint_for("meta-data/public-keys"),
+            )
             .send()?;
 
         let mut keys = Vec::new();
@@ -72,10 +75,15 @@ impl Ec2Provider {
                 if tokens.len() != 2 {
                     return Err("error parsing keyID".into());
                 }
-                let key: String = self.client
-                    .get(retry::Raw, Ec2Provider::endpoint_for(
-                        &format!("meta-data/public-keys/{}/openssh-key", tokens[0])
-                    ))
+                let key: String = self
+                    .client
+                    .get(
+                        retry::Raw,
+                        Ec2Provider::endpoint_for(&format!(
+                            "meta-data/public-keys/{}/openssh-key",
+                            tokens[0]
+                        )),
+                    )
                     .send()?
                     .ok_or("missing ssh key")?;
                 keys.push(key)
@@ -90,7 +98,10 @@ impl MetadataProvider for Ec2Provider {
         let mut out = HashMap::with_capacity(6);
 
         let add_value = |map: &mut HashMap<_, _>, key: &str, name| -> Result<()> {
-            let value = self.client.get(retry::Raw, Ec2Provider::endpoint_for(name)).send()?;
+            let value = self
+                .client
+                .get(retry::Raw, Ec2Provider::endpoint_for(name))
+                .send()?;
 
             if let Some(value) = value {
                 map.insert(key.to_string(), value);
@@ -102,12 +113,20 @@ impl MetadataProvider for Ec2Provider {
         add_value(&mut out, "EC2_INSTANCE_ID", "meta-data/instance-id")?;
         add_value(&mut out, "EC2_IPV4_LOCAL", "meta-data/local-ipv4")?;
         add_value(&mut out, "EC2_IPV4_PUBLIC", "meta-data/public-ipv4")?;
-        add_value(&mut out, "EC2_AVAILABILITY_ZONE", "meta-data/placement/availability-zone")?;
+        add_value(
+            &mut out,
+            "EC2_AVAILABILITY_ZONE",
+            "meta-data/placement/availability-zone",
+        )?;
         add_value(&mut out, "EC2_HOSTNAME", "meta-data/hostname")?;
         add_value(&mut out, "EC2_PUBLIC_HOSTNAME", "meta-data/public-hostname")?;
 
-        let region = self.client
-            .get(retry::Json, Ec2Provider::endpoint_for("dynamic/instance-identity/document"))
+        let region = self
+            .client
+            .get(
+                retry::Json,
+                Ec2Provider::endpoint_for("dynamic/instance-identity/document"),
+            )
             .send()?
             .map(|instance_id_doc: InstanceIdDoc| instance_id_doc.region);
         if let Some(region) = region {
@@ -118,7 +137,9 @@ impl MetadataProvider for Ec2Provider {
     }
 
     fn hostname(&self) -> Result<Option<String>> {
-        self.client.get(retry::Raw, Ec2Provider::endpoint_for("meta-data/hostname")).send()
+        self.client
+            .get(retry::Raw, Ec2Provider::endpoint_for("meta-data/hostname"))
+            .send()
     }
 
     fn ssh_keys(&self) -> Result<Vec<PublicKey>> {

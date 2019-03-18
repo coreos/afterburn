@@ -22,7 +22,10 @@ fn test_boot_checkin() {
     let provider = packet::PacketProvider { data };
 
     let mock = mockito::mock("POST", "/")
-        .match_header("content-type", Matcher::Regex("application/json".to_string()))
+        .match_header(
+            "content-type",
+            Matcher::Regex("application/json".to_string()),
+        )
         .match_body("")
         .with_status(200)
         .create();

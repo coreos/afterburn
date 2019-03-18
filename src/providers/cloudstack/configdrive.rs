@@ -32,22 +32,24 @@ impl ConfigDrive {
                 temp_dir: None,
                 path: path.to_owned(),
                 target: path.to_owned(),
-            })
+            });
         }
 
         // if not try and mount with each of the labels
-        let target = TempDir::new("coreos-metadata")
-            .chain_err(|| "failed to create temporary directory")?;
+        let target =
+            TempDir::new("coreos-metadata").chain_err(|| "failed to create temporary directory")?;
         ConfigDrive::mount_ro(
             &Path::new("/dev/disk/by-label/").join(CONFIG_DRIVE_LABEL_1),
             target.path(),
-            "iso9660"
+            "iso9660",
         )
-        .or_else(|_| ConfigDrive::mount_ro(
-            &Path::new("/dev/disk/by-label/").join(CONFIG_DRIVE_LABEL_2),
-            target.path(),
-            "iso9660")
-        )?;
+        .or_else(|_| {
+            ConfigDrive::mount_ro(
+                &Path::new("/dev/disk/by-label/").join(CONFIG_DRIVE_LABEL_2),
+                target.path(),
+                "iso9660",
+            )
+        })?;
 
         Ok(ConfigDrive {
             path: target.path().join("cloudstack").join("metadata"),
@@ -60,11 +62,11 @@ impl ConfigDrive {
         let filename = self.path.join(format!("{}.txt", key));
 
         if !filename.exists() {
-            return Ok(None)
+            return Ok(None);
         }
 
-        let mut file = File::open(&filename)
-            .chain_err(|| format!("failed to open file '{:?}'", filename))?;
+        let mut file =
+            File::open(&filename).chain_err(|| format!("failed to open file '{:?}'", filename))?;
 
         let mut contents = String::new();
         file.read_to_string(&mut contents)
@@ -75,21 +77,30 @@ impl ConfigDrive {
 
     fn fetch_publickeys(&self) -> Result<Vec<PublicKey>> {
         let filename = self.path.join("public_keys.txt");
-        let file = File::open(&filename)
-            .chain_err(|| format!("failed to open file '{:?}'", filename))?;
+        let file =
+            File::open(&filename).chain_err(|| format!("failed to open file '{:?}'", filename))?;
 
-        PublicKey::read_keys(file)
-            .chain_err(|| "failed to read public keys from config drive file")
+        PublicKey::read_keys(file).chain_err(|| "failed to read public keys from config drive file")
     }
 
     fn mount_ro(source: &Path, target: &Path, fstype: &str) -> Result<()> {
-        mount::mount(Some(source), target, Some(fstype), mount::MsFlags::MS_RDONLY, None::<&str>)
-            .chain_err(|| format!("failed to read-only mount source '{:?}' to target '{:?}' with filetype '{}'", source, target, fstype))
+        mount::mount(
+            Some(source),
+            target,
+            Some(fstype),
+            mount::MsFlags::MS_RDONLY,
+            None::<&str>,
+        )
+        .chain_err(|| {
+            format!(
+                "failed to read-only mount source '{:?}' to target '{:?}' with filetype '{}'",
+                source, target, fstype
+            )
+        })
     }
 
     fn unmount(target: &Path) -> Result<()> {
-        mount::umount(target)
-            .chain_err(|| format!("failed to unmount target '{:?}'", target))
+        mount::umount(target).chain_err(|| format!("failed to unmount target '{:?}'", target))
     }
 }
 
@@ -106,7 +117,11 @@ impl MetadataProvider for ConfigDrive {
             Ok(())
         };
 
-        add_value(&mut out, "CLOUDSTACK_AVAILABILITY_ZONE", "availability_zone")?;
+        add_value(
+            &mut out,
+            "CLOUDSTACK_AVAILABILITY_ZONE",
+            "availability_zone",
+        )?;
         add_value(&mut out, "CLOUDSTACK_CLOUD_IDENTIFIER", "cloud_identifier")?;
         add_value(&mut out, "CLOUDSTACK_INSTANCE_ID", "instance_id")?;
         add_value(&mut out, "CLOUDSTACK_LOCAL_HOSTNAME", "local_hostname")?;

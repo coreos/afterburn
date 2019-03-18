@@ -24,8 +24,8 @@
 //! `fetch_metadata()` function in metadata.rs.
 
 pub mod azure;
-pub mod digitalocean;
 pub mod cloudstack;
+pub mod digitalocean;
 pub mod ec2;
 pub mod gce;
 pub mod openstack;
@@ -46,38 +46,43 @@ use network;
 fn create_file(filename: &str) -> Result<File> {
     let file_path = Path::new(&filename);
     // create the directories if they don't exist
-    let folder = file_path.parent()
+    let folder = file_path
+        .parent()
         .ok_or_else(|| format!("could not get parent directory of {:?}", file_path))?;
-    fs::create_dir_all(&folder)
-        .chain_err(|| format!("failed to create directory {:?}", folder))?;
+    fs::create_dir_all(&folder).chain_err(|| format!("failed to create directory {:?}", folder))?;
     // create (or truncate) the file we want to write to
-    File::create(file_path)
-        .chain_err(|| format!("failed to create file {:?}", file_path))
+    File::create(file_path).chain_err(|| format!("failed to create file {:?}", file_path))
 }
 
 #[cfg(feature = "cl-legacy")]
 fn write_ssh_keys(user: User, ssh_keys: Vec<PublicKey>) -> Result<()> {
-    use update_ssh_keys::{AuthorizedKeys, AuthorizedKeyEntry};
+    use update_ssh_keys::{AuthorizedKeyEntry, AuthorizedKeys};
 
     // If we don't have any SSH keys, don't bother trying to write them as
     // update-ssh-keys will yell at us.
     if !ssh_keys.is_empty() {
         // open the user's authorized keys directory
         let user_name = user.name().to_string_lossy().into_owned();
-        let mut authorized_keys_dir = AuthorizedKeys::open(user, true, None)
-            .chain_err(|| format!("failed to open authorized keys directory for user '{}'", user_name))?;
+        let mut authorized_keys_dir = AuthorizedKeys::open(user, true, None).chain_err(|| {
+            format!(
+                "failed to open authorized keys directory for user '{}'",
+                user_name
+            )
+        })?;
 
         // add the ssh keys to the directory
         let entries = ssh_keys
             .into_iter()
-            .map(|key| AuthorizedKeyEntry::Valid{key})
+            .map(|key| AuthorizedKeyEntry::Valid { key })
             .collect::<Vec<_>>();
         authorized_keys_dir.add_keys("coreos-metadata", entries, true, true)?;
 
         // write the changes and sync the directory
-        authorized_keys_dir.write()
+        authorized_keys_dir
+            .write()
             .chain_err(|| "failed to update authorized keys directory")?;
-        authorized_keys_dir.sync()
+        authorized_keys_dir
+            .sync()
             .chain_err(|| "failed to update authorized keys")?;
     }
 
@@ -87,8 +92,8 @@ fn write_ssh_keys(user: User, ssh_keys: Vec<PublicKey>) -> Result<()> {
 #[cfg(not(feature = "cl-legacy"))]
 fn write_ssh_keys(user: User, ssh_keys: Vec<PublicKey>) -> Result<()> {
     use std::io::ErrorKind::NotFound;
-    use users::os::unix::UserExt;
     use tempfile;
+    use users::os::unix::UserExt;
 
     // switch users
     let _guard = users::switch::switch_user_group(user.uid(), user.primary_group_id())
@@ -112,8 +117,9 @@ fn write_ssh_keys(user: User, ssh_keys: Vec<PublicKey>) -> Result<()> {
 
         // write out keys
         for key in ssh_keys {
-            writeln!(temp_file, "{}", key)
-                .chain_err(|| format!("failed to write to file {:?}", temp_file.path().display()))?;
+            writeln!(temp_file, "{}", key).chain_err(|| {
+                format!("failed to write to file {:?}", temp_file.path().display())
+            })?;
         }
 
         // sync to disk
@@ -124,23 +130,27 @@ fn write_ssh_keys(user: User, ssh_keys: Vec<PublicKey>) -> Result<()> {
 
         // atomically rename to destination
         // don't leak temporary file on error
-        temp_file.persist(&file_path)
-            .map_err(|e| { e.file.close().ok(); e.error })
+        temp_file
+            .persist(&file_path)
+            .map_err(|e| {
+                e.file.close().ok();
+                e.error
+            })
             .chain_err(|| format!("failed to persist file {:?}", file_path.display()))?;
     } else {
         // delete the file
         match fs::remove_file(&file_path) {
-            Err(ref e) if e.kind() == NotFound => {
-                Ok(())
-            },
+            Err(ref e) if e.kind() == NotFound => Ok(()),
             other => other,
-        }.chain_err(|| format!("failed to remove file {:?}", file_path.display()))?;
+        }
+        .chain_err(|| format!("failed to remove file {:?}", file_path.display()))?;
     }
 
     // sync parent dir to persist updates
     let dir_file = File::open(&dir_path)
         .chain_err(|| format!("failed to open {:?} for syncing", dir_path.display()))?;
-    dir_file.sync_all()
+    dir_file
+        .sync_all()
         .chain_err(|| format!("failed to sync {:?}", dir_path.display()))?;
 
     // make clippy happy while fulfilling our interface
@@ -159,9 +169,10 @@ pub trait MetadataProvider {
 
     fn write_attributes(&self, attributes_file_path: String) -> Result<()> {
         let mut attributes_file = create_file(&attributes_file_path)?;
-        for (k,v) in self.attributes()? {
-            writeln!(&mut attributes_file, "COREOS_{}={}", k, v)
-                .chain_err(|| format!("failed to write attributes to file {:?}", attributes_file))?;
+        for (k, v) in self.attributes()? {
+            writeln!(&mut attributes_file, "COREOS_{}={}", k, v).chain_err(|| {
+                format!("failed to write attributes to file {:?}", attributes_file)
+            })?;
         }
         Ok(())
     }
@@ -180,10 +191,14 @@ pub trait MetadataProvider {
         match self.hostname()? {
             Some(ref hostname) => {
                 let mut hostname_file = create_file(&hostname_file_path)?;
-                writeln!(&mut hostname_file, "{}", hostname)
-                    .chain_err(|| format!("failed to write hostname {:?} to file {:?}", hostname, hostname_file))
+                writeln!(&mut hostname_file, "{}", hostname).chain_err(|| {
+                    format!(
+                        "failed to write hostname {:?} to file {:?}",
+                        hostname, hostname_file
+                    )
+                })
             }
-            None => Ok(())
+            None => Ok(()),
         }
     }
 
@@ -195,15 +210,20 @@ pub trait MetadataProvider {
             let file_path = dir_path.join(interface.unit_name());
             let mut unit_file = File::create(&file_path)
                 .chain_err(|| format!("failed to create file {:?}", file_path))?;
-            write!(&mut unit_file, "{}", interface.config())
-                .chain_err(|| format!("failed to write network interface unit file {:?}", unit_file))?;
+            write!(&mut unit_file, "{}", interface.config()).chain_err(|| {
+                format!(
+                    "failed to write network interface unit file {:?}",
+                    unit_file
+                )
+            })?;
         }
         for device in &self.network_devices()? {
             let file_path = dir_path.join(device.unit_name());
             let mut unit_file = File::create(&file_path)
                 .chain_err(|| format!("failed to create file {:?}", file_path))?;
-            write!(&mut unit_file, "{}", device.config())
-                .chain_err(|| format!("failed to write network device unit file {:?}", unit_file))?;
+            write!(&mut unit_file, "{}", device.config()).chain_err(|| {
+                format!("failed to write network device unit file {:?}", unit_file)
+            })?;
         }
         Ok(())
     }

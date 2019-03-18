@@ -20,8 +20,8 @@ use std::thread;
 use std::time::Duration;
 
 use hostname;
-use pnet;
 use openssh_keys::PublicKey;
+use pnet;
 
 use errors::*;
 use network;

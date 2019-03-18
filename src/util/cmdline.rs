@@ -20,8 +20,8 @@
 //!  flags.
 
 use errors::*;
-use std::{fs, io};
 use std::io::Read;
+use std::{fs, io};
 
 // Get OEM ID value from cmdline file.
 pub fn get_oem(fpath: &str, flagname: &str) -> Result<String> {
@@ -57,7 +57,8 @@ fn find_flag_value(flagname: &str, cmdline: &str) -> Option<String> {
                 2 => Some((kv[0], kv[1])),
                 _ => None,
             }
-        }).collect();
+        })
+        .collect();
 
     // find the oem flag
     for (key, val) in params {
