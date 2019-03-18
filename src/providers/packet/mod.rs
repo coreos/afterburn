@@ -26,7 +26,7 @@ use openssh_keys::PublicKey;
 use pnet::util::MacAddr;
 
 use errors::*;
-use network::{self, Interface, Device, Section, NetworkRoute};
+use network::{self, Device, Interface, NetworkRoute, Section};
 use providers::MetadataProvider;
 use retry;
 use util;
@@ -91,41 +91,59 @@ impl PacketProvider {
         let client = retry::Client::try_new()?;
 
         let data: PacketData = client
-            .get(retry::Json, "http://metadata.packet.net/metadata".to_string())
+            .get(
+                retry::Json,
+                "http://metadata.packet.net/metadata".to_string(),
+            )
             .send()?
             .ok_or("not found")?;
 
-        Ok(PacketProvider{ data })
+        Ok(PacketProvider { data })
     }
 
-    fn get_attrs(&self) -> Result<Vec<(String,String)>> {
+    fn get_attrs(&self) -> Result<Vec<(String, String)>> {
         let mut attrs = Vec::new();
         let mut v4_public_counter = 0;
         let mut v4_private_counter = 0;
         let mut v6_public_counter = 0;
         let mut v6_private_counter = 0;
         for a in self.data.network.addresses.clone() {
-            match (a.address,a.public) {
-                (IpAddr::V4(a),true) => {
-                    attrs.push((format!("PACKET_IPV4_PUBLIC_{}", v4_public_counter), format!("{}", a)));
+            match (a.address, a.public) {
+                (IpAddr::V4(a), true) => {
+                    attrs.push((
+                        format!("PACKET_IPV4_PUBLIC_{}", v4_public_counter),
+                        format!("{}", a),
+                    ));
                     v4_public_counter += 1;
                 }
-                (IpAddr::V4(a),false) => {
-                    attrs.push((format!("PACKET_IPV4_PRIVATE_{}", v4_private_counter), format!("{}", a)));
+                (IpAddr::V4(a), false) => {
+                    attrs.push((
+                        format!("PACKET_IPV4_PRIVATE_{}", v4_private_counter),
+                        format!("{}", a),
+                    ));
                     v4_private_counter += 1;
                 }
-                (IpAddr::V6(a),true) => {
-                    attrs.push((format!("PACKET_IPV6_PUBLIC_{}", v6_public_counter), format!("{}", a)));
+                (IpAddr::V6(a), true) => {
+                    attrs.push((
+                        format!("PACKET_IPV6_PUBLIC_{}", v6_public_counter),
+                        format!("{}", a),
+                    ));
                     v6_public_counter += 1;
                 }
-                (IpAddr::V6(a),false) => {
-                    attrs.push((format!("PACKET_IPV6_PRIVATE_{}", v6_private_counter), format!("{}", a)));
+                (IpAddr::V6(a), false) => {
+                    attrs.push((
+                        format!("PACKET_IPV6_PRIVATE_{}", v6_private_counter),
+                        format!("{}", a),
+                    ));
                     v6_private_counter += 1;
                 }
             }
         }
         attrs.push(("PACKET_HOSTNAME".to_owned(), self.data.hostname.clone()));
-        attrs.push(("PACKET_PHONE_HOME_URL".to_owned(), self.data.phone_home_url.clone()));
+        attrs.push((
+            "PACKET_PHONE_HOME_URL".to_owned(),
+            self.data.phone_home_url.clone(),
+        ));
         Ok(attrs)
     }
 
@@ -137,8 +155,7 @@ impl PacketProvider {
             .ok_or("DNS not found in netif state file")?;
         let mut addrs = Vec::new();
         for ip_string in ip_strings.split(' ') {
-            addrs.push(IpAddr::from_str(ip_string)
-                .chain_err(|| "failed to parse IP address")?);
+            addrs.push(IpAddr::from_str(ip_string).chain_err(|| "failed to parse IP address")?);
         }
         if addrs.is_empty() {
             return Err("no DNS servers in /run/systemd/netif/state".into());
@@ -146,7 +163,7 @@ impl PacketProvider {
         Ok(addrs)
     }
 
-    fn parse_network(&self) -> Result<(Vec<Interface>,Vec<Device>)> {
+    fn parse_network(&self) -> Result<(Vec<Interface>, Vec<Device>)> {
         let netinfo = &self.data.network;
         let mut interfaces = Vec::new();
         let mut bonds = Vec::new();
@@ -180,7 +197,10 @@ impl PacketProvider {
                     routes: Vec::new(),
                     unmanaged: false,
                 };
-                if !bonds.iter().any(|&(_, ref b): &(MacAddr, Interface)| &bond == b) {
+                if !bonds
+                    .iter()
+                    .any(|&(_, ref b): &(MacAddr, Interface)| &bond == b)
+                {
                     bonds.push((mac, bond));
                 }
             }
@@ -193,17 +213,22 @@ impl PacketProvider {
         // addresses to anything.
         if let Some((_mac, ref mut first_bond)) = bonds.get_mut(0) {
             for a in netinfo.addresses.clone() {
-                let prefix = ipnetwork::ip_mask_to_prefix(a.netmask)
-                    .chain_err(|| "invalid network mask")?;
-                first_bond.ip_addresses.push(IpNetwork::new(a.address, prefix)
-                                        .chain_err(|| "invalid IP address or prefix")?);
+                let prefix =
+                    ipnetwork::ip_mask_to_prefix(a.netmask).chain_err(|| "invalid network mask")?;
+                first_bond.ip_addresses.push(
+                    IpNetwork::new(a.address, prefix)
+                        .chain_err(|| "invalid IP address or prefix")?,
+                );
                 let dest = match (a.public, a.address) {
-                    (false, IpAddr::V4(_)) =>
-                        IpNetwork::V4(Ipv4Network::new(Ipv4Addr::new(10,0,0,0),8).unwrap()),
-                    (true, IpAddr::V4(_)) =>
-                        IpNetwork::V4(Ipv4Network::new(Ipv4Addr::new(0,0,0,0),0).unwrap()),
-                    (_, IpAddr::V6(_)) =>
-                        IpNetwork::V6(Ipv6Network::new(Ipv6Addr::new(0,0,0,0,0,0,0,0),0).unwrap()),
+                    (false, IpAddr::V4(_)) => {
+                        IpNetwork::V4(Ipv4Network::new(Ipv4Addr::new(10, 0, 0, 0), 8).unwrap())
+                    }
+                    (true, IpAddr::V4(_)) => {
+                        IpNetwork::V4(Ipv4Network::new(Ipv4Addr::new(0, 0, 0, 0), 0).unwrap())
+                    }
+                    (_, IpAddr::V6(_)) => IpNetwork::V6(
+                        Ipv6Network::new(Ipv6Addr::new(0, 0, 0, 0, 0, 0, 0, 0), 0).unwrap(),
+                    ),
                 };
                 first_bond.routes.push(NetworkRoute {
                     destination: dest,
@@ -221,7 +246,10 @@ impl PacketProvider {
             ("MIIMonitorSec".to_owned(), ".1".to_owned()),
             ("UpDelaySec".to_owned(), ".2".to_owned()),
             ("DownDelaySec".to_owned(), ".2".to_owned()),
-            ("Mode".to_owned(), network::bonding_mode_to_string(netinfo.bonding.mode)?),
+            (
+                "Mode".to_owned(),
+                network::bonding_mode_to_string(netinfo.bonding.mode)?,
+            ),
         ];
         if netinfo.bonding.mode == network::BONDING_MODE_LACP {
             attrs.push(("LACPTransmitRate".to_owned(), "fast".to_owned()));
@@ -230,23 +258,23 @@ impl PacketProvider {
         let mut network_devices = Vec::with_capacity(bonds.len());
         for (mac, bond) in bonds {
             network_devices.push(Device {
-                name: bond.name.clone()
+                name: bond
+                    .name
+                    .clone()
                     .ok_or("bond doesn't have a name, should be impossible")?,
                 kind: "bond".to_owned(),
                 mac_address: mac,
                 priority: Some(5),
-                sections: vec![
-                    Section{
-                        name: "Bond".to_owned(),
-                        attributes: attrs.clone(),
-                    }
-                ],
+                sections: vec![Section {
+                    name: "Bond".to_owned(),
+                    attributes: attrs.clone(),
+                }],
             });
             // finally, make sure the bond interfaces are in the interface list
             interfaces.push(bond)
         }
 
-        Ok((interfaces,network_devices))
+        Ok((interfaces, network_devices))
     }
 }
 

@@ -1,5 +1,5 @@
-use mockito;
 use errors::*;
+use mockito;
 use providers::ec2;
 
 #[test]
@@ -14,20 +14,14 @@ fn test_ec2_basic() {
 
     provider.fetch_ssh_keys().unwrap_err();
 
-    let _m = mockito::mock("GET", ep)
-        .with_status(503)
-        .create();
+    let _m = mockito::mock("GET", ep).with_status(503).create();
     provider.fetch_ssh_keys().unwrap_err();
 
-    let _m = mockito::mock("GET", ep)
-        .with_status(200)
-        .create();
+    let _m = mockito::mock("GET", ep).with_status(200).create();
     let v = provider.fetch_ssh_keys().unwrap();
     assert_eq!(v.len(), 0);
 
-    let _m = mockito::mock("GET", ep)
-        .with_status(404)
-        .create();
+    let _m = mockito::mock("GET", ep).with_status(404).create();
     let v = provider.fetch_ssh_keys().unwrap();
     assert_eq!(v.len(), 0);
 }

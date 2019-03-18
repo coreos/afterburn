@@ -23,21 +23,23 @@ use std::borrow::Cow;
 use std::io::Read;
 use std::time::Duration;
 
-use reqwest::{self, Method, Request};
 use reqwest::header;
+use reqwest::{self, Method, Request};
 
 use serde;
-use serde_xml_rs;
 use serde_json;
+use serde_xml_rs;
 
-use retry::Retry;
 use errors::*;
+use retry::Retry;
 
 use retry::raw_deserializer;
 
 pub trait Deserializer {
     fn deserialize<T, R>(&self, R) -> Result<T>
-        where T: for<'de> serde::Deserialize<'de>, R: Read;
+    where
+        T: for<'de> serde::Deserialize<'de>,
+        R: Read;
     fn content_type(&self) -> header::HeaderValue;
 }
 
@@ -46,10 +48,11 @@ pub struct Xml;
 
 impl Deserializer for Xml {
     fn deserialize<T, R>(&self, r: R) -> Result<T>
-        where T: for<'de> serde::Deserialize<'de>, R: Read
+    where
+        T: for<'de> serde::Deserialize<'de>,
+        R: Read,
     {
-        serde_xml_rs::deserialize(r)
-            .chain_err(|| "failed xml deserialization")
+        serde_xml_rs::deserialize(r).chain_err(|| "failed xml deserialization")
     }
     fn content_type(&self) -> header::HeaderValue {
         header::HeaderValue::from_static("text/xml; charset=utf-8")
@@ -61,10 +64,11 @@ pub struct Json;
 
 impl Deserializer for Json {
     fn deserialize<T, R>(&self, r: R) -> Result<T>
-        where T: serde::de::DeserializeOwned, R: Read
+    where
+        T: serde::de::DeserializeOwned,
+        R: Read,
     {
-        serde_json::from_reader(r)
-            .chain_err(|| "failed json deserialization")
+        serde_json::from_reader(r).chain_err(|| "failed json deserialization")
     }
     fn content_type(&self) -> header::HeaderValue {
         header::HeaderValue::from_static("application/json")
@@ -76,10 +80,11 @@ pub struct Raw;
 
 impl Deserializer for Raw {
     fn deserialize<T, R>(&self, r: R) -> Result<T>
-        where T: for<'de> serde::Deserialize<'de>, R: Read
+    where
+        T: for<'de> serde::Deserialize<'de>,
+        R: Read,
     {
-        raw_deserializer::from_reader(r)
-            .chain_err(|| "failed raw deserialization")
+        raw_deserializer::from_reader(r).chain_err(|| "failed raw deserialization")
     }
     fn content_type(&self) -> header::HeaderValue {
         header::HeaderValue::from_static("text/plain; charset=utf-8")
@@ -99,7 +104,7 @@ impl Client {
         let client = reqwest::Client::builder()
             .build()
             .chain_err(|| "failed to initialize client")?;
-        Ok(Client{
+        Ok(Client {
             client,
             headers: header::HeaderMap::new(),
             retry: Retry::new(),
@@ -107,8 +112,7 @@ impl Client {
         })
     }
 
-    pub fn header(mut self, k: header::HeaderName, v: header::HeaderValue) -> Self
-    {
+    pub fn header(mut self, k: header::HeaderName, v: header::HeaderValue) -> Self {
         self.headers.append(k, v);
         self
     }
@@ -135,9 +139,10 @@ impl Client {
     }
 
     pub fn get<D>(&self, d: D, url: String) -> RequestBuilder<D>
-        where D: Deserializer
+    where
+        D: Deserializer,
     {
-        RequestBuilder{
+        RequestBuilder {
             url,
             body: None,
             d,
@@ -149,9 +154,10 @@ impl Client {
     }
 
     pub fn post<D>(&self, d: D, url: String, body: Option<Cow<str>>) -> RequestBuilder<D>
-        where D: Deserializer
+    where
+        D: Deserializer,
     {
-        RequestBuilder{
+        RequestBuilder {
             url,
             body: body.map(|b| b.into_owned()),
             d,
@@ -164,7 +170,8 @@ impl Client {
 }
 
 pub struct RequestBuilder<D>
-    where D: Deserializer
+where
+    D: Deserializer,
 {
     url: String,
     body: Option<String>,
@@ -176,20 +183,19 @@ pub struct RequestBuilder<D>
 }
 
 impl<D> RequestBuilder<D>
-    where D: Deserializer
+where
+    D: Deserializer,
 {
-
-    pub fn header(mut self, k: header::HeaderName, v: header::HeaderValue) -> Self
-    {
+    pub fn header(mut self, k: header::HeaderName, v: header::HeaderValue) -> Self {
         self.headers.append(k, v);
         self
     }
 
     pub fn send<T>(self) -> Result<Option<T>>
-        where T: for<'de> serde::Deserialize<'de>
+    where
+        T: for<'de> serde::Deserialize<'de>,
     {
-        let url = reqwest::Url::parse(self.url.as_str())
-            .chain_err(|| "failed to parse uri")?;
+        let url = reqwest::Url::parse(self.url.as_str()).chain_err(|| "failed to parse uri")?;
         let mut req = Request::new(Method::GET, url);
         req.headers_mut().extend(self.headers.clone().into_iter());
 
@@ -199,10 +205,8 @@ impl<D> RequestBuilder<D>
         })
     }
 
-    pub fn dispatch_post(self) -> Result<reqwest::StatusCode>
-    {
-        let url = reqwest::Url::parse(self.url.as_str())
-            .chain_err(|| "failed to parse uri")?;
+    pub fn dispatch_post(self) -> Result<reqwest::StatusCode> {
+        let url = reqwest::Url::parse(self.url.as_str()).chain_err(|| "failed to parse uri")?;
 
         self.retry.clone().retry(|attempt| {
             let mut builder = reqwest::Client::new()
@@ -212,11 +216,14 @@ impl<D> RequestBuilder<D>
             if let Some(ref content) = self.body {
                 builder = builder.body(content.clone());
             };
-            let req = builder.build()
+            let req = builder
+                .build()
                 .chain_err(|| "failed to build POST request")?;
 
             info!("Posting {}: Attempt #{}", req.url(), attempt + 1);
-            let status = self.client.execute(req)
+            let status = self
+                .client
+                .execute(req)
                 .chain_err(|| "failed to POST request")?
                 .status();
             if status.is_success() {
@@ -228,27 +235,27 @@ impl<D> RequestBuilder<D>
     }
 
     fn dispatch_request<T>(&self, req: &Request) -> Result<Option<T>>
-        where T: for<'de> serde::Deserialize<'de>
+    where
+        T: for<'de> serde::Deserialize<'de>,
     {
         match self.client.execute(clone_request(req)) {
-            Ok(resp) => {
-                match (resp.status(), self.return_on_404) {
-                    (reqwest::StatusCode::OK,_) => {
-                        info!("Fetch successful");
-                        self.d.deserialize(resp)
-                            .map(Some)
-                            .chain_err(|| "failed to deserialize data")
-                    }
-                    (reqwest::StatusCode::NOT_FOUND,true) => {
-                        info!("Fetch failed with 404: resource not found");
-                        Ok(None)
-                    }
-                    (s,_) => {
-                        info!("Failed to fetch: {}", s);
-                        Err(format!("failed to fetch: {}", s).into())
-                    }
+            Ok(resp) => match (resp.status(), self.return_on_404) {
+                (reqwest::StatusCode::OK, _) => {
+                    info!("Fetch successful");
+                    self.d
+                        .deserialize(resp)
+                        .map(Some)
+                        .chain_err(|| "failed to deserialize data")
                 }
-            }
+                (reqwest::StatusCode::NOT_FOUND, true) => {
+                    info!("Fetch failed with 404: resource not found");
+                    Ok(None)
+                }
+                (s, _) => {
+                    info!("Failed to fetch: {}", s);
+                    Err(format!("failed to fetch: {}", s).into())
+                }
+            },
             Err(e) => {
                 info!("Failed to fetch: {}", e);
                 Err(Error::with_chain(e, "failed to fetch"))
@@ -261,6 +268,8 @@ impl<D> RequestBuilder<D>
 /// so we have to do it here.
 fn clone_request(req: &Request) -> Request {
     let mut newreq = Request::new(req.method().clone(), req.url().clone());
-    newreq.headers_mut().extend(req.headers().clone().into_iter());
+    newreq
+        .headers_mut()
+        .extend(req.headers().clone().into_iter());
     newreq
 }

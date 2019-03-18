@@ -15,11 +15,11 @@
 //! retry is a generic function that retrys functions until they succeed.
 
 use errors::*;
-use std::time::Duration;
 use std::thread;
+use std::time::Duration;
 
-pub mod raw_deserializer;
 mod client;
+pub mod raw_deserializer;
 pub use self::client::*;
 
 #[derive(Clone, Debug)]
@@ -32,8 +32,8 @@ pub struct Retry {
 impl ::std::default::Default for Retry {
     fn default() -> Self {
         Retry {
-            initial_backoff: Duration::new(1,0),
-            max_backoff: Duration::new(5,0),
+            initial_backoff: Duration::new(1, 0),
+            max_backoff: Duration::new(5, 0),
             max_attempts: 10,
         }
     }
@@ -60,7 +60,8 @@ impl Retry {
     }
 
     pub fn retry<F, R>(self, try: F) -> Result<R>
-        where F: Fn(u32) -> Result<R>
+    where
+        F: Fn(u32) -> Result<R>,
     {
         let mut delay = self.initial_backoff;
         let mut attempts = 0;
@@ -81,7 +82,7 @@ impl Retry {
 
             thread::sleep(delay);
 
-            delay = if self.max_backoff != Duration::new(0,0) && delay * 2 > self.max_backoff {
+            delay = if self.max_backoff != Duration::new(0, 0) && delay * 2 > self.max_backoff {
                 self.max_backoff
             } else {
                 delay * 2

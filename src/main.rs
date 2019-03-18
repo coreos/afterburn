@@ -84,38 +84,42 @@ fn run() -> Result<()> {
     debug!("Logging initialized");
 
     // initialize program
-    let config = init()
-        .chain_err(|| "initialization")?;
+    let config = init().chain_err(|| "initialization")?;
 
     trace!("cli configuration - {:?}", config);
 
     // fetch the metadata from the configured provider
-    let metadata = fetch_metadata(&config.provider)
-        .chain_err(|| "fetching metadata from provider")?;
+    let metadata =
+        fetch_metadata(&config.provider).chain_err(|| "fetching metadata from provider")?;
 
     // write attributes if configured to do so
-    config.attributes_file
+    config
+        .attributes_file
         .map_or(Ok(()), |x| metadata.write_attributes(x))
         .chain_err(|| "writing metadata attributes")?;
 
     // write ssh keys if configured to do so
-    config.ssh_keys_user
+    config
+        .ssh_keys_user
         .map_or(Ok(()), |x| metadata.write_ssh_keys(x))
         .chain_err(|| "writing ssh keys")?;
 
     // write hostname if configured to do so
-    config.hostname_file
+    config
+        .hostname_file
         .map_or(Ok(()), |x| metadata.write_hostname(x))
         .chain_err(|| "writing hostname")?;
 
     // write network units if configured to do so
-    config.network_units_dir
+    config
+        .network_units_dir
         .map_or(Ok(()), |x| metadata.write_network_units(x))
         .chain_err(|| "writing network units")?;
 
     // perform boot check-in.
     if config.check_in {
-        metadata.boot_checkin()
+        metadata
+            .boot_checkin()
             .chain_err(|| "checking-in instance boot to cloud provider")?;
     }
 
@@ -147,42 +151,58 @@ fn init() -> Result<Config> {
     // long ones
     let matches = App::new("coreos-metadata")
         .version(crate_version!())
-        .arg(Arg::with_name("attributes")
-             .long("attributes")
-             .help("The file into which the metadata attributes are written")
-             .takes_value(true))
-        .arg(Arg::with_name("check-in")
-             .long("check-in")
-             .help("Check-in this instance boot with the cloud provider"))
-        .arg(Arg::with_name("cmdline")
-             .long("cmdline")
-             .help("Read the cloud provider from the kernel cmdline"))
-        .arg(Arg::with_name("hostname")
-             .long("hostname")
-             .help("The file into which the hostname should be written")
-             .takes_value(true))
-        .arg(Arg::with_name("network-units")
-             .long("network-units")
-             .help("The directory into which network units are written")
-             .takes_value(true))
-        .arg(Arg::with_name("provider")
-             .long("provider")
-             .help("The name of the cloud provider")
-             .takes_value(true))
-        .arg(Arg::with_name("ssh-keys")
-             .long("ssh-keys")
-             .help("Update SSH keys for the given user")
-             .takes_value(true))
+        .arg(
+            Arg::with_name("attributes")
+                .long("attributes")
+                .help("The file into which the metadata attributes are written")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("check-in")
+                .long("check-in")
+                .help("Check-in this instance boot with the cloud provider"),
+        )
+        .arg(
+            Arg::with_name("cmdline")
+                .long("cmdline")
+                .help("Read the cloud provider from the kernel cmdline"),
+        )
+        .arg(
+            Arg::with_name("hostname")
+                .long("hostname")
+                .help("The file into which the hostname should be written")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("network-units")
+                .long("network-units")
+                .help("The directory into which network units are written")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("provider")
+                .long("provider")
+                .help("The name of the cloud provider")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("ssh-keys")
+                .long("ssh-keys")
+                .help("Update SSH keys for the given user")
+                .takes_value(true),
+        )
         .get_matches_from(args);
 
     // return configuration
     Ok(Config {
         provider: match matches.value_of("provider") {
             Some(provider) => String::from(provider),
-            None => if matches.is_present("cmdline") {
-                util::get_oem(CMDLINE_PATH, CMDLINE_OEM_FLAG)?
-            } else {
-                return Err("Must set either --provider or --cmdline".into());
+            None => {
+                if matches.is_present("cmdline") {
+                    util::get_oem(CMDLINE_PATH, CMDLINE_OEM_FLAG)?
+                } else {
+                    return Err("Must set either --provider or --cmdline".into());
+                }
             }
         },
         attributes_file: matches.value_of("attributes").map(String::from),

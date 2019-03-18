@@ -14,13 +14,13 @@
 
 //! utility functions
 
+use errors::*;
 use pnet;
-use std::io::{Read, BufRead, BufReader};
+use retry;
 use std::fs::File;
+use std::io::{BufRead, BufReader, Read};
 use std::path::Path;
 use std::time::Duration;
-use errors::*;
-use retry;
 
 mod cmdline;
 pub use self::cmdline::get_oem;
@@ -28,7 +28,7 @@ pub use self::cmdline::get_oem;
 fn key_lookup_line(delim: char, key: &str, line: &str) -> Option<String> {
     match line.find(delim) {
         Some(index) => {
-            let (k, val) = line.split_at(index+1);
+            let (k, val) = line.split_at(index + 1);
             if k != format!("{}{}", key, delim) {
                 None
             } else {
@@ -73,7 +73,10 @@ pub fn dns_lease_key_lookup(key: &str) -> Result<String> {
                         return Ok(v);
                     }
 
-                    debug!("failed to get value from existing lease file '{:?}'", lease_path);
+                    debug!(
+                        "failed to get value from existing lease file '{:?}'",
+                        lease_path
+                    );
                 }
             }
             Err("failed to retrieve fabric address".into())
@@ -82,12 +85,17 @@ pub fn dns_lease_key_lookup(key: &str) -> Result<String> {
 
 #[cfg(test)]
 mod tests {
-    use std::io::Cursor;
     use super::*;
+    use std::io::Cursor;
     #[test]
     fn key_lookup_test() {
         let tests = vec![
-            ('=', "DNS", "foo=bar\nbaz=bax\nDNS=8.8.8.8\n", Some("8.8.8.8".to_owned())),
+            (
+                '=',
+                "DNS",
+                "foo=bar\nbaz=bax\nDNS=8.8.8.8\n",
+                Some("8.8.8.8".to_owned()),
+            ),
             (':', "foo", "foo:bar", Some("bar".to_owned())),
             (' ', "foo", "", None),
             (':', "bar", "foo:bar\nbaz:bar", None),

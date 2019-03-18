@@ -40,7 +40,8 @@ impl CloudstackNetwork {
 
     fn get_dhcp_server_address() -> Result<IpAddr> {
         let server = util::dns_lease_key_lookup(SERVER_ADDRESS)?;
-        let ip = server.parse()
+        let ip = server
+            .parse()
             .chain_err(|| format!("failed to parse server ip address: {}", server))?;
         Ok(IpAddr::V4(ip))
     }
@@ -50,7 +51,10 @@ impl MetadataProvider for CloudstackNetwork {
     fn attributes(&self) -> Result<HashMap<String, String>> {
         let mut out = HashMap::with_capacity(9);
         let add_value = |map: &mut HashMap<_, _>, key: &str, name| -> Result<()> {
-            let value = self.client.get(retry::Raw, self.endpoint_for(name)).send()?;
+            let value = self
+                .client
+                .get(retry::Raw, self.endpoint_for(name))
+                .send()?;
 
             if let Some(value) = value {
                 map.insert(key.to_string(), value);
@@ -62,7 +66,11 @@ impl MetadataProvider for CloudstackNetwork {
         add_value(&mut out, "CLOUDSTACK_INSTANCE_ID", "instance-id")?;
         add_value(&mut out, "CLOUDSTACK_LOCAL_HOSTNAME", "local-hostname")?;
         add_value(&mut out, "CLOUDSTACK_PUBLIC_HOSTNAME", "public-hostname")?;
-        add_value(&mut out, "CLOUDSTACK_AVAILABILITY_ZONE", "availability-zone")?;
+        add_value(
+            &mut out,
+            "CLOUDSTACK_AVAILABILITY_ZONE",
+            "availability-zone",
+        )?;
         add_value(&mut out, "CLOUDSTACK_IPV4_PUBLIC", "public-ipv4")?;
         add_value(&mut out, "CLOUDSTACK_IPV4_LOCAL", "local-ipv4")?;
         add_value(&mut out, "CLOUDSTACK_SERVICE_OFFERING", "service-offering")?;
@@ -77,7 +85,8 @@ impl MetadataProvider for CloudstackNetwork {
     }
 
     fn ssh_keys(&self) -> Result<Vec<PublicKey>> {
-        let keys: Option<String> = self.client
+        let keys: Option<String> = self
+            .client
             .get(retry::Raw, self.endpoint_for("public-keys"))
             .send()?;
 
