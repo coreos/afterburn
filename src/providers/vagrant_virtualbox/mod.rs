@@ -21,7 +21,7 @@ use std::time::Duration;
 
 use hostname;
 use pnet;
-use update_ssh_keys::AuthorizedKeyEntry;
+use openssh_keys::PublicKey;
 
 use errors::*;
 use network;
@@ -80,7 +80,7 @@ impl MetadataProvider for VagrantVirtualboxProvider {
         Ok(hostname::get_hostname())
     }
 
-    fn ssh_keys(&self) -> Result<Vec<AuthorizedKeyEntry>> {
+    fn ssh_keys(&self) -> Result<Vec<PublicKey>> {
         Ok(vec![])
     }
 

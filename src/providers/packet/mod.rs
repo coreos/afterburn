@@ -24,7 +24,6 @@ use std::str::FromStr;
 
 use openssh_keys::PublicKey;
 use pnet::util::MacAddr;
-use update_ssh_keys::AuthorizedKeyEntry;
 
 use errors::*;
 use network::{self, Interface, Device, Section, NetworkRoute};
@@ -260,12 +259,12 @@ impl MetadataProvider for PacketProvider {
         Ok(Some(self.data.hostname.clone()))
     }
 
-    fn ssh_keys(&self) -> Result<Vec<AuthorizedKeyEntry>> {
+    fn ssh_keys(&self) -> Result<Vec<PublicKey>> {
         let mut out = Vec::new();
 
         for key in &self.data.ssh_keys {
             let key = PublicKey::parse(&key)?;
-            out.push(AuthorizedKeyEntry::Valid{key});
+            out.push(key);
         }
 
         Ok(out)

@@ -18,7 +18,6 @@ use std::collections::HashMap;
 
 use openssh_keys::PublicKey;
 use reqwest::header::{HeaderName, HeaderValue};
-use update_ssh_keys::AuthorizedKeyEntry;
 
 use errors::*;
 use network;
@@ -128,12 +127,12 @@ impl MetadataProvider for GceProvider {
         self.client.get(retry::Raw, GceProvider::endpoint_for("instance/hostname")).send()
     }
 
-    fn ssh_keys(&self) -> Result<Vec<AuthorizedKeyEntry>> {
+    fn ssh_keys(&self) -> Result<Vec<PublicKey>> {
         let mut out = Vec::new();
 
         for key in &self.fetch_all_ssh_keys()? {
             let key = PublicKey::parse(&key)?;
-            out.push(AuthorizedKeyEntry::Valid{key});
+            out.push(key);
         }
 
         Ok(out)
