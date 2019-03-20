@@ -14,12 +14,12 @@
 
 use errors;
 use providers;
+use providers::aws::AwsProvider;
 use providers::azure::Azure;
 use providers::cloudstack::configdrive::ConfigDrive;
 use providers::cloudstack::network::CloudstackNetwork;
 use providers::digitalocean::DigitalOceanProvider;
-use providers::ec2::Ec2Provider;
-use providers::gce::GceProvider;
+use providers::gcp::GcpProvider;
 use providers::openstack::network::OpenstackProvider;
 use providers::packet::PacketProvider;
 use providers::vagrant_virtualbox::VagrantVirtualboxProvider;
@@ -39,8 +39,8 @@ pub fn fetch_metadata(provider: &str) -> errors::Result<Box<providers::MetadataP
         "cloudstack-metadata" => box_result!(CloudstackNetwork::try_new()?),
         "cloudstack-configdrive" => box_result!(ConfigDrive::try_new()?),
         "digitalocean" => box_result!(DigitalOceanProvider::try_new()?),
-        "ec2" => box_result!(Ec2Provider::try_new()?),
-        "gce" => box_result!(GceProvider::try_new()?),
+        "ec2" => box_result!(AwsProvider::try_new()?),
+        "gce" => box_result!(GcpProvider::try_new()?),
         "openstack-metadata" => box_result!(OpenstackProvider::try_new()?),
         "packet" => box_result!(PacketProvider::try_new()?),
         "vagrant-virtualbox" => box_result!(VagrantVirtualboxProvider::new()),

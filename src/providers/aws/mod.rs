@@ -36,15 +36,15 @@ struct InstanceIdDoc {
 }
 
 #[derive(Clone, Debug)]
-pub struct Ec2Provider {
+pub struct AwsProvider {
     client: retry::Client,
 }
 
-impl Ec2Provider {
-    pub fn try_new() -> Result<Ec2Provider> {
+impl AwsProvider {
+    pub fn try_new() -> Result<AwsProvider> {
         let client = retry::Client::try_new()?.return_on_404(true);
 
-        Ok(Ec2Provider { client })
+        Ok(AwsProvider { client })
     }
 
     #[cfg(test)]
@@ -64,7 +64,7 @@ impl Ec2Provider {
             .client
             .get(
                 retry::Raw,
-                Ec2Provider::endpoint_for("meta-data/public-keys"),
+                AwsProvider::endpoint_for("meta-data/public-keys"),
             )
             .send()?;
 
@@ -79,7 +79,7 @@ impl Ec2Provider {
                     .client
                     .get(
                         retry::Raw,
-                        Ec2Provider::endpoint_for(&format!(
+                        AwsProvider::endpoint_for(&format!(
                             "meta-data/public-keys/{}/openssh-key",
                             tokens[0]
                         )),
@@ -93,14 +93,14 @@ impl Ec2Provider {
     }
 }
 
-impl MetadataProvider for Ec2Provider {
+impl MetadataProvider for AwsProvider {
     fn attributes(&self) -> Result<HashMap<String, String>> {
         let mut out = HashMap::with_capacity(6);
 
         let add_value = |map: &mut HashMap<_, _>, key: &str, name| -> Result<()> {
             let value = self
                 .client
-                .get(retry::Raw, Ec2Provider::endpoint_for(name))
+                .get(retry::Raw, AwsProvider::endpoint_for(name))
                 .send()?;
 
             if let Some(value) = value {
@@ -125,7 +125,7 @@ impl MetadataProvider for Ec2Provider {
             .client
             .get(
                 retry::Json,
-                Ec2Provider::endpoint_for("dynamic/instance-identity/document"),
+                AwsProvider::endpoint_for("dynamic/instance-identity/document"),
             )
             .send()?
             .map(|instance_id_doc: InstanceIdDoc| instance_id_doc.region);
@@ -138,7 +138,7 @@ impl MetadataProvider for Ec2Provider {
 
     fn hostname(&self) -> Result<Option<String>> {
         self.client
-            .get(retry::Raw, Ec2Provider::endpoint_for("meta-data/hostname"))
+            .get(retry::Raw, AwsProvider::endpoint_for("meta-data/hostname"))
             .send()
     }
 

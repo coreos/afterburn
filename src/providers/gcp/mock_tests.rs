@@ -1,6 +1,6 @@
 use errors::*;
 use mockito;
-use providers::gce;
+use providers::gcp;
 use providers::MetadataProvider;
 
 #[test]
@@ -8,7 +8,7 @@ fn basic_hostname() {
     let ep = "/instance/hostname";
     let hostname = "test-hostname";
 
-    let mut provider = gce::GceProvider::try_new().unwrap();
+    let mut provider = gcp::GcpProvider::try_new().unwrap();
     provider.client = provider.client.max_attempts(1);
 
     provider.hostname().unwrap_err();

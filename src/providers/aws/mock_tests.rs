@@ -1,16 +1,16 @@
 use errors::*;
 use mockito;
-use providers::ec2;
+use providers::aws;
 
 #[test]
-fn test_ec2_basic() {
+fn test_aws_basic() {
     let ep = "/meta-data/public-keys";
     let client = ::retry::Client::try_new()
         .chain_err(|| "failed to create http client")
         .unwrap()
         .max_attempts(1)
         .return_on_404(true);
-    let provider = ec2::Ec2Provider { client };
+    let provider = aws::AwsProvider { client };
 
     provider.fetch_ssh_keys().unwrap_err();
 
