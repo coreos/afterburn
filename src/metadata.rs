@@ -35,12 +35,18 @@ macro_rules! box_result {
 /// function dispatches the call to the correct provider-specific fetch function
 pub fn fetch_metadata(provider: &str) -> errors::Result<Box<providers::MetadataProvider>> {
     match provider {
+        #[cfg(not(feature = "cl-legacy"))]
+        "aws" => box_result!(AwsProvider::try_new()?),
         "azure" => box_result!(Azure::try_new()?),
         "cloudstack-metadata" => box_result!(CloudstackNetwork::try_new()?),
         "cloudstack-configdrive" => box_result!(ConfigDrive::try_new()?),
         "digitalocean" => box_result!(DigitalOceanProvider::try_new()?),
+        // FIXME: "ec2" is accepted in non-legacy mode temporarily for transition
         "ec2" => box_result!(AwsProvider::try_new()?),
+        #[cfg(feature = "cl-legacy")]
         "gce" => box_result!(GcpProvider::try_new()?),
+        #[cfg(not(feature = "cl-legacy"))]
+        "gcp" => box_result!(GcpProvider::try_new()?),
         "openstack-metadata" => box_result!(OpenstackProvider::try_new()?),
         "packet" => box_result!(PacketProvider::try_new()?),
         "vagrant-virtualbox" => box_result!(VagrantVirtualboxProvider::new()),
