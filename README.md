@@ -11,6 +11,16 @@ This can include adding SSH keys and writing cloud-specific attributes into an e
 The supported cloud providers and their respective metadata are listed below.
 On CoreOS Container Linux, the supported providers and metadata are [somewhat different][cl-legacy].
 
+  - aws
+    - SSH Keys
+    - Attributes
+      - COREOS_AWS_HOSTNAME
+      - COREOS_AWS_PUBLIC_HOSTNAME
+      - COREOS_AWS_IPV4_LOCAL
+      - COREOS_AWS_IPV4_PUBLIC
+      - COREOS_AWS_AVAILABILITY_ZONE
+      - COREOS_AWS_INSTANCE_ID
+      - COREOS_AWS_REGION
   - azure
     - SSH Keys
     - Attributes
@@ -49,22 +59,12 @@ On CoreOS Container Linux, the supported providers and metadata are [somewhat di
       - COREOS_DIGITALOCEAN_IPV6_PUBLIC_0
       - COREOS_DIGITALOCEAN_IPV6_PRIVATE_0
       - COREOS_DIGITALOCEAN_REGION
-  - ec2
+  - gcp
     - SSH Keys
     - Attributes
-      - COREOS_EC2_HOSTNAME
-      - COREOS_EC2_PUBLIC_HOSTNAME
-      - COREOS_EC2_IPV4_LOCAL
-      - COREOS_EC2_IPV4_PUBLIC
-      - COREOS_EC2_AVAILABILITY_ZONE
-      - COREOS_EC2_INSTANCE_ID
-      - COREOS_EC2_REGION
-  - gce
-    - SSH Keys
-    - Attributes
-      - COREOS_GCE_HOSTNAME
-      - COREOS_GCE_IP_EXTERNAL_0
-      - COREOS_GCE_IP_LOCAL_0
+      - COREOS_GCP_HOSTNAME
+      - COREOS_GCP_IP_EXTERNAL_0
+      - COREOS_GCP_IP_LOCAL_0
   - openstack-metadata
     - SSH Keys
     - Attributes
