@@ -29,6 +29,11 @@ use retry;
 #[cfg(test)]
 mod mock_tests;
 
+#[cfg(not(feature = "cl-legacy"))]
+static ENV_PREFIX: &str = "AWS";
+#[cfg(feature = "cl-legacy")]
+static ENV_PREFIX: &str = "EC2";
+
 #[allow(non_snake_case)]
 #[derive(Debug, Deserialize)]
 struct InstanceIdDoc {
@@ -110,16 +115,36 @@ impl MetadataProvider for AwsProvider {
             Ok(())
         };
 
-        add_value(&mut out, "EC2_INSTANCE_ID", "meta-data/instance-id")?;
-        add_value(&mut out, "EC2_IPV4_LOCAL", "meta-data/local-ipv4")?;
-        add_value(&mut out, "EC2_IPV4_PUBLIC", "meta-data/public-ipv4")?;
         add_value(
             &mut out,
-            "EC2_AVAILABILITY_ZONE",
+            &format!("{}_INSTANCE_ID", ENV_PREFIX),
+            "meta-data/instance-id",
+        )?;
+        add_value(
+            &mut out,
+            &format!("{}_IPV4_LOCAL", ENV_PREFIX),
+            "meta-data/local-ipv4",
+        )?;
+        add_value(
+            &mut out,
+            &format!("{}_IPV4_PUBLIC", ENV_PREFIX),
+            "meta-data/public-ipv4",
+        )?;
+        add_value(
+            &mut out,
+            &format!("{}_AVAILABILITY_ZONE", ENV_PREFIX),
             "meta-data/placement/availability-zone",
         )?;
-        add_value(&mut out, "EC2_HOSTNAME", "meta-data/hostname")?;
-        add_value(&mut out, "EC2_PUBLIC_HOSTNAME", "meta-data/public-hostname")?;
+        add_value(
+            &mut out,
+            &format!("{}_HOSTNAME", ENV_PREFIX),
+            "meta-data/hostname",
+        )?;
+        add_value(
+            &mut out,
+            &format!("{}_PUBLIC_HOSTNAME", ENV_PREFIX),
+            "meta-data/public-hostname",
+        )?;
 
         let region = self
             .client
@@ -130,7 +155,7 @@ impl MetadataProvider for AwsProvider {
             .send()?
             .map(|instance_id_doc: InstanceIdDoc| instance_id_doc.region);
         if let Some(region) = region {
-            out.insert("EC2_REGION".to_string(), region);
+            out.insert(format!("{}_REGION", ENV_PREFIX), region);
         }
 
         Ok(out)

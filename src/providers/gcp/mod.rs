@@ -30,6 +30,11 @@ mod mock_tests;
 
 static HDR_METADATA_FLAVOR: &str = "metadata-flavor";
 
+#[cfg(not(feature = "cl-legacy"))]
+static ENV_PREFIX: &str = "GCP";
+#[cfg(feature = "cl-legacy")]
+static ENV_PREFIX: &str = "GCE";
+
 #[derive(Clone, Debug)]
 pub struct GcpProvider {
     client: retry::Client,
@@ -143,15 +148,19 @@ impl MetadataProvider for GcpProvider {
             Ok(())
         };
 
-        add_value(&mut out, "GCE_HOSTNAME", "instance/hostname")?;
         add_value(
             &mut out,
-            "GCE_IP_EXTERNAL_0",
+            &format!("{}_HOSTNAME", ENV_PREFIX),
+            "instance/hostname",
+        )?;
+        add_value(
+            &mut out,
+            &format!("{}_IP_EXTERNAL_0", ENV_PREFIX),
             "instance/network-interfaces/0/access-configs/0/external-ip",
         )?;
         add_value(
             &mut out,
-            "GCE_IP_LOCAL_0",
+            &format!("{}_IP_LOCAL_0", ENV_PREFIX),
             "instance/network-interfaces/0/ip",
         )?;
 
