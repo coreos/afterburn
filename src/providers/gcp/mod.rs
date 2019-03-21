@@ -30,13 +30,18 @@ mod mock_tests;
 
 static HDR_METADATA_FLAVOR: &str = "metadata-flavor";
 
+#[cfg(not(feature = "cl-legacy"))]
+static ENV_PREFIX: &str = "GCP";
+#[cfg(feature = "cl-legacy")]
+static ENV_PREFIX: &str = "GCE";
+
 #[derive(Clone, Debug)]
-pub struct GceProvider {
+pub struct GcpProvider {
     client: retry::Client,
 }
 
-impl GceProvider {
-    pub fn try_new() -> Result<GceProvider> {
+impl GcpProvider {
+    pub fn try_new() -> Result<GcpProvider> {
         let client = retry::Client::try_new()?
             .header(
                 HeaderName::from_static(HDR_METADATA_FLAVOR),
@@ -44,7 +49,7 @@ impl GceProvider {
             )
             .return_on_404(true);
 
-        Ok(GceProvider { client })
+        Ok(GcpProvider { client })
     }
 
     #[cfg(test)]
@@ -83,7 +88,7 @@ impl GceProvider {
             .clone()
             .get(
                 retry::Raw,
-                GceProvider::endpoint_for("instance/attributes/block-project-ssh-keys"),
+                GcpProvider::endpoint_for("instance/attributes/block-project-ssh-keys"),
             )
             .send()?;
 
@@ -102,7 +107,7 @@ impl GceProvider {
     fn fetch_ssh_keys(&self, key: &str) -> Result<Vec<String>> {
         let key_data: Option<String> = self
             .client
-            .get(retry::Raw, GceProvider::endpoint_for(key))
+            .get(retry::Raw, GcpProvider::endpoint_for(key))
             .send()?;
         if let Some(key_data) = key_data {
             let mut keys = Vec::new();
@@ -124,14 +129,14 @@ impl GceProvider {
     }
 }
 
-impl MetadataProvider for GceProvider {
+impl MetadataProvider for GcpProvider {
     fn attributes(&self) -> Result<HashMap<String, String>> {
         let mut out = HashMap::with_capacity(3);
 
         let add_value = |map: &mut HashMap<_, _>, key: &str, name| -> Result<()> {
             let value: Option<String> = self
                 .client
-                .get(retry::Raw, GceProvider::endpoint_for(name))
+                .get(retry::Raw, GcpProvider::endpoint_for(name))
                 .send()?;
 
             if let Some(value) = value {
@@ -143,15 +148,19 @@ impl MetadataProvider for GceProvider {
             Ok(())
         };
 
-        add_value(&mut out, "GCE_HOSTNAME", "instance/hostname")?;
         add_value(
             &mut out,
-            "GCE_IP_EXTERNAL_0",
+            &format!("{}_HOSTNAME", ENV_PREFIX),
+            "instance/hostname",
+        )?;
+        add_value(
+            &mut out,
+            &format!("{}_IP_EXTERNAL_0", ENV_PREFIX),
             "instance/network-interfaces/0/access-configs/0/external-ip",
         )?;
         add_value(
             &mut out,
-            "GCE_IP_LOCAL_0",
+            &format!("{}_IP_LOCAL_0", ENV_PREFIX),
             "instance/network-interfaces/0/ip",
         )?;
 
@@ -160,7 +169,7 @@ impl MetadataProvider for GceProvider {
 
     fn hostname(&self) -> Result<Option<String>> {
         self.client
-            .get(retry::Raw, GceProvider::endpoint_for("instance/hostname"))
+            .get(retry::Raw, GcpProvider::endpoint_for("instance/hostname"))
             .send()
     }
 

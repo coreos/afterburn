@@ -23,11 +23,11 @@
 //! function to fetch the metadata, and then add a match line in the top-level
 //! `fetch_metadata()` function in metadata.rs.
 
+pub mod aws;
 pub mod azure;
 pub mod cloudstack;
 pub mod digitalocean;
-pub mod ec2;
-pub mod gce;
+pub mod gcp;
 pub mod openstack;
 pub mod packet;
 pub mod vagrant_virtualbox;

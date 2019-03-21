@@ -1,26 +1,15 @@
-# coreos-metadata
-
-[![Build Status](https://travis-ci.org/coreos/coreos-metadata.svg?branch=master)](https://travis-ci.org/coreos/coreos-metadata)
-![minimum rust 1.29](https://img.shields.io/badge/rust-1.29%2B-orange.svg)
+# coreos-metadata on CoreOS Container Linux
 
 This is a small utility, typically used in conjunction with [Ignition][ignition], which reads metadata from a given cloud-provider and applies it to the system.
 This can include adding SSH keys and writing cloud-specific attributes into an environment file (e.g. `/run/metadata/coreos`), which can then be consumed by systemd service units via `EnvironmentFile=`.
 
+coreos-metadata can be built with the `cl-legacy` feature to enable legacy behavior for Container Linux.
+Other distros should not enable this feature.
+
 ## Support
 
-The supported cloud providers and their respective metadata are listed below.
-On CoreOS Container Linux, the supported providers and metadata are [somewhat different][cl-legacy].
+On Container Linux, the supported cloud providers and their respective metadata are as follows:
 
-  - aws
-    - SSH Keys
-    - Attributes
-      - COREOS_AWS_HOSTNAME
-      - COREOS_AWS_PUBLIC_HOSTNAME
-      - COREOS_AWS_IPV4_LOCAL
-      - COREOS_AWS_IPV4_PUBLIC
-      - COREOS_AWS_AVAILABILITY_ZONE
-      - COREOS_AWS_INSTANCE_ID
-      - COREOS_AWS_REGION
   - azure
     - SSH Keys
     - Attributes
@@ -59,12 +48,22 @@ On CoreOS Container Linux, the supported providers and metadata are [somewhat di
       - COREOS_DIGITALOCEAN_IPV6_PUBLIC_0
       - COREOS_DIGITALOCEAN_IPV6_PRIVATE_0
       - COREOS_DIGITALOCEAN_REGION
-  - gcp
+  - ec2
     - SSH Keys
     - Attributes
-      - COREOS_GCP_HOSTNAME
-      - COREOS_GCP_IP_EXTERNAL_0
-      - COREOS_GCP_IP_LOCAL_0
+      - COREOS_EC2_HOSTNAME
+      - COREOS_EC2_PUBLIC_HOSTNAME
+      - COREOS_EC2_IPV4_LOCAL
+      - COREOS_EC2_IPV4_PUBLIC
+      - COREOS_EC2_AVAILABILITY_ZONE
+      - COREOS_EC2_INSTANCE_ID
+      - COREOS_EC2_REGION
+  - gce
+    - SSH Keys
+    - Attributes
+      - COREOS_GCE_HOSTNAME
+      - COREOS_GCE_IP_EXTERNAL_0
+      - COREOS_GCE_IP_LOCAL_0
   - openstack-metadata
     - SSH Keys
     - Attributes
@@ -98,4 +97,3 @@ These can be safely used by external providers on a platform not supported by co
 
 [ignition]: https://github.com/coreos/ignition
 [custom-metadata]: https://github.com/coreos/container-linux-config-transpiler/blob/v0.8.0/doc/dynamic-data.md#custom-metadata-providers
-[cl-legacy]: docs/container-linux-legacy.md
