@@ -14,15 +14,19 @@
 
 //! google compute engine metadata fetcher
 
-use std::collections::HashMap;
-
+#[cfg(test)]
+use mockito;
 use openssh_keys::PublicKey;
 use reqwest::header::{HeaderName, HeaderValue};
+use std::collections::HashMap;
 
 use errors::*;
 use network;
 use providers::MetadataProvider;
 use retry;
+
+#[cfg(test)]
+mod mock_tests;
 
 static HDR_METADATA_FLAVOR: &str = "metadata-flavor";
 
@@ -43,6 +47,13 @@ impl GceProvider {
         Ok(GceProvider { client })
     }
 
+    #[cfg(test)]
+    fn endpoint_for(name: &str) -> String {
+        let url = mockito::server_url();
+        format!("{}/{}", url, name)
+    }
+
+    #[cfg(not(test))]
     fn endpoint_for(name: &str) -> String {
         format!(
             "http://metadata.google.internal/computeMetadata/v1/{}",
