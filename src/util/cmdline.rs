@@ -23,8 +23,15 @@ use errors::*;
 use std::io::Read;
 use std::{fs, io};
 
-// Get OEM ID value from cmdline file.
-pub fn get_oem(fpath: &str, flagname: &str) -> Result<String> {
+/// Platform key.
+#[cfg(not(feature = "cl-legacy"))]
+const CMDLINE_PLATFORM_FLAG: &str = "ignition.platform.id";
+/// Platform key (CL and RHCOS legacy name: "OEM").
+#[cfg(feature = "cl-legacy")]
+const CMDLINE_PLATFORM_FLAG: &str = "coreos.oem.id";
+
+// Get platform/OEM value from cmdline file.
+pub fn get_platform(fpath: &str) -> Result<String> {
     // open the cmdline file
     let file =
         fs::File::open(fpath).chain_err(|| format!("Failed to open cmdline file ({})", fpath))?;
@@ -36,11 +43,14 @@ pub fn get_oem(fpath: &str, flagname: &str) -> Result<String> {
         .read_to_string(&mut contents)
         .chain_err(|| format!("Failed to read cmdline file ({})", fpath))?;
 
-    match find_flag_value(flagname, &contents) {
-        Some(s) => Ok(s),
+    match find_flag_value(CMDLINE_PLATFORM_FLAG, &contents) {
+        Some(platform) => {
+            trace!("found '{}' flag: {}", CMDLINE_PLATFORM_FLAG, platform);
+            Ok(platform)
+        }
         None => bail!(
             "Couldn't find flag '{}' in cmdline file ({})",
-            flagname,
+            CMDLINE_PLATFORM_FLAG,
             fpath
         ),
     }
