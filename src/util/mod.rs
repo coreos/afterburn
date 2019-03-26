@@ -23,7 +23,7 @@ use std::path::Path;
 use std::time::Duration;
 
 mod cmdline;
-pub use self::cmdline::get_oem;
+pub use self::cmdline::get_platform;
 
 fn key_lookup_line(delim: char, key: &str, line: &str) -> Option<String> {
     match line.find(delim) {

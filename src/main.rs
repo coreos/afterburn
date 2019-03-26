@@ -58,8 +58,8 @@ use std::env;
 use errors::*;
 use metadata::fetch_metadata;
 
+/// Path to kernel command-line (requires procfs mount).
 const CMDLINE_PATH: &str = "/proc/cmdline";
-const CMDLINE_OEM_FLAG: &str = "coreos.oem.id";
 
 #[derive(Debug)]
 struct Config {
@@ -199,7 +199,7 @@ fn init() -> Result<Config> {
             Some(provider) => String::from(provider),
             None => {
                 if matches.is_present("cmdline") {
-                    util::get_oem(CMDLINE_PATH, CMDLINE_OEM_FLAG)?
+                    util::get_platform(CMDLINE_PATH)?
                 } else {
                     return Err("Must set either --provider or --cmdline".into());
                 }
