@@ -185,7 +185,7 @@ dependencies = [
  "hostname 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "ipnetwork 0.14.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "mime 0.3.13 (registry+https://github.com/rust-lang/crates.io-index)",
- "mockito 0.16.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "mockito 0.17.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "nix 0.13.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "openssh-keys 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "openssl 0.10.20 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -633,7 +633,7 @@ dependencies = [
 
 [[package]]
 name = "mockito"
-version = "0.16.0"
+version = "0.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "colored 1.6.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1868,7 +1868,7 @@ dependencies = [
 "checksum mio 0.6.16 (registry+https://github.com/rust-lang/crates.io-index)" = "71646331f2619b1026cc302f87a2b8b648d5c6dd6937846a16cc8ce0f347f432"
 "checksum mio-uds 0.6.7 (registry+https://github.com/rust-lang/crates.io-index)" = "966257a94e196b11bb43aca423754d87429960a768de9414f3691d6957abf125"
 "checksum miow 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)" = "8c1f2f3b1cf331de6896aabf6e9d55dca90356cc9960cca7eaaf408a355ae919"
-"checksum mockito 0.16.0 (registry+https://github.com/rust-lang/crates.io-index)" = "27503fc74a5c8466970a1bd24eaeb9dcbfa8ac89770ee46eced7fceb51f44db2"
+"checksum mockito 0.17.0 (registry+https://github.com/rust-lang/crates.io-index)" = "51de2209113259eac2b0d4d96e2b8920b4936afbf1ba7bf0cbfae2903751942e"
 "checksum native-tls 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)" = "ff8e08de0070bbf4c31f452ea2a70db092f36f6f2e4d897adf5674477d488fb2"
 "checksum net2 0.2.33 (registry+https://github.com/rust-lang/crates.io-index)" = "42550d9fb7b6684a6d404d9fa7250c2eb2646df731d1c06afc06dcee9e1bcf88"
 "checksum nix 0.13.0 (registry+https://github.com/rust-lang/crates.io-index)" = "46f0f3210768d796e8fa79ec70ee6af172dacbe7147f5e69be5240a47778302b"
