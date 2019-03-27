@@ -1,0 +1,10 @@
+[Unit]
+Description=Afterburn (Metadata)
+
+[Service]
+Type=oneshot
+Environment=AFTERBURN_OPT_PROVIDER=--cmdline
+ExecStart=/usr/bin/afterburn ${AFTERBURN_OPT_PROVIDER} --attributes=/run/metadata/afterburn
+
+[Install]
+RequiredBy=metadata.target

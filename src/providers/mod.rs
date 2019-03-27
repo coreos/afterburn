@@ -14,7 +14,7 @@
 
 //! Providers
 //!
-//! These are the providers which coreos-metadata knows how to retrieve metadata
+//! These are the providers which Afterburn knows how to retrieve metadata
 //! from. Internally, they handle the ins and outs of each providers metadata
 //! services, and externally, they provide a function to fetch that metadata in
 //! a regular format.
@@ -42,6 +42,11 @@ use users::{self, User};
 
 use errors::*;
 use network;
+
+#[cfg(not(feature = "cl-legacy"))]
+const ENV_PREFIX: &str = "AFTERBURN_";
+#[cfg(feature = "cl-legacy")]
+const ENV_PREFIX: &str = "COREOS_";
 
 fn create_file(filename: &str) -> Result<File> {
     let file_path = Path::new(&filename);
@@ -75,6 +80,7 @@ fn write_ssh_keys(user: User, ssh_keys: Vec<PublicKey>) -> Result<()> {
             .into_iter()
             .map(|key| AuthorizedKeyEntry::Valid { key })
             .collect::<Vec<_>>();
+        // legacy name for legacy mode
         authorized_keys_dir.add_keys("coreos-metadata", entries, true, true)?;
 
         // write the changes and sync the directory
@@ -101,7 +107,7 @@ fn write_ssh_keys(user: User, ssh_keys: Vec<PublicKey>) -> Result<()> {
 
     // get paths
     let dir_path = user.home_dir().join(".ssh").join("authorized_keys.d");
-    let file_name = "coreos-metadata";
+    let file_name = "afterburn";
     let file_path = &dir_path.join(file_name);
 
     if !ssh_keys.is_empty() {
@@ -170,7 +176,7 @@ pub trait MetadataProvider {
     fn write_attributes(&self, attributes_file_path: String) -> Result<()> {
         let mut attributes_file = create_file(&attributes_file_path)?;
         for (k, v) in self.attributes()? {
-            writeln!(&mut attributes_file, "COREOS_{}={}", k, v).chain_err(|| {
+            writeln!(&mut attributes_file, "{}{}={}", ENV_PREFIX, k, v).chain_err(|| {
                 format!("failed to write attributes to file {:?}", attributes_file)
             })?;
         }

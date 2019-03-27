@@ -36,7 +36,7 @@ static HDR_VERSION: &str = "x-ms-version";
 static HDR_CIPHER_NAME: &str = "x-ms-cipher-name";
 static HDR_CERT: &str = "x-ms-guest-agent-public-x509-cert";
 
-const MS_AGENT_NAME: &str = "com.coreos.metadata";
+const MS_AGENT_NAME: &str = "com.coreos.afterburn";
 const MS_VERSION: &str = "2012-11-30";
 const SMIME_HEADER: &str = "\
 MIME-Version:1.0

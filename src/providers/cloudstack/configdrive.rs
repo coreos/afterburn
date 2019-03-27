@@ -37,7 +37,7 @@ impl ConfigDrive {
 
         // if not try and mount with each of the labels
         let target =
-            TempDir::new("coreos-metadata").chain_err(|| "failed to create temporary directory")?;
+            TempDir::new("afterburn").chain_err(|| "failed to create temporary directory")?;
         ConfigDrive::mount_ro(
             &Path::new("/dev/disk/by-label/").join(CONFIG_DRIVE_LABEL_1),
             target.path(),
