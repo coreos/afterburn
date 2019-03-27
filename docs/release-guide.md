@@ -72,7 +72,7 @@ For each release to be published, proceed as follows:
 #### 6. Assemble vendor tarball and publish a Release
 
 * `cargo vendor`
-* `tar -czf target/coreos-metadata-${RELEASE_VER}-vendor.tar.gz vendor`
+* `tar -czf target/afterburn-${RELEASE_VER}-vendor.tar.gz vendor`
 * Open a web browser and create a GitHub Release for the tag above
 * Attach the `vendor.tar.gz` (located under `target/`) to the current Release
 * Write a short changelog and publish the Release

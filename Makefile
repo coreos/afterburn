@@ -3,7 +3,7 @@ PREFIX ?= /usr
 
 DEFAULT_INSTANCE ?= core
 
-units = $(addprefix systemd/,coreos-metadata.service coreos-metadata-sshkeys@.service)
+units = $(addprefix systemd/,afterburn.service afterburn-sshkeys@.service)
 
 %.service: %.service.in
 	sed -e 's,@DEFAULT_INSTANCE@,'$(DEFAULT_INSTANCE)',' < $< > $@.tmp && mv $@.tmp $@

@@ -1,0 +1,11 @@
+[Unit]
+Description=Afterburn (SSH Keys)
+
+[Service]
+Type=oneshot
+Environment=AFTERBURN_OPT_PROVIDER=--cmdline
+ExecStart=/usr/bin/afterburn ${AFTERBURN_OPT_PROVIDER} --ssh-keys=%i
+
+[Install]
+DefaultInstance=@DEFAULT_INSTANCE@
+RequiredBy=multi-user.target

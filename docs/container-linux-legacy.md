@@ -1,9 +1,11 @@
-# coreos-metadata on CoreOS Container Linux
+# Afterburn on CoreOS Container Linux
 
 This is a small utility, typically used in conjunction with [Ignition][ignition], which reads metadata from a given cloud-provider and applies it to the system.
 This can include adding SSH keys and writing cloud-specific attributes into an environment file (e.g. `/run/metadata/coreos`), which can then be consumed by systemd service units via `EnvironmentFile=`.
 
-coreos-metadata can be built with the `cl-legacy` feature to enable legacy behavior for Container Linux.
+On Container Linux, for historical reasons, Afterburn is usually called "coreos-metadata".
+
+Afterburn can be built with the `cl-legacy` feature to enable legacy behavior for Container Linux.
 Other distros should not enable this feature.
 
 ## Support
@@ -85,7 +87,7 @@ On Container Linux, the supported cloud providers and their respective metadata 
       - COREOS_VAGRANT_VIRTUALBOX_HOSTNAME
 
 Additionally, some attribute names are reserved for usage by [custom metadata providers][custom-metadata].
-These can be safely used by external providers on a platform not supported by coreos-metadata:
+These can be safely used by external providers on a platform not supported by Afterburn:
 
   - custom
     - Attributes

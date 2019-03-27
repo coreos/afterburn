@@ -1,14 +1,14 @@
 [package]
-name = "coreos-metadata"
-repository = "https://github.com/coreos/coreos-metadata"
+name = "afterburn"
+repository = "https://github.com/coreos/afterburn"
 license = "Apache-2.0"
 authors = [ "Stephen Demos <stephen.demos@coreos.com>",
             "Luca Bruno <lucab@debian.org>" ]
-description = "A simple cloud-provider metadata agent"
+description = "A simple cloud provider agent"
 version = "3.1.1-alpha.0"
 
 [[bin]]
-name = "coreos-metadata"
+name = "afterburn"
 path = "src/main.rs"
 
 [profile.release]
@@ -54,7 +54,7 @@ sign-commit = true
 upload-doc = false
 disable-push = true
 disable-publish = true
-pre-release-commit-message = "cargo: coreos-metadata release {{version}}"
+pre-release-commit-message = "cargo: Afterburn release {{version}}"
 pro-release-commit-message = "cargo: version bump to {{version}}"
-tag-message = "coreos-metadata v{{version}}"
+tag-message = "Afterburn v{{version}}"
 tag-prefix = "v"

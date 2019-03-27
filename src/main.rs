@@ -149,7 +149,7 @@ fn init() -> Result<Config> {
     //      prepends the hyphens
     // the preprocessing will probably convert any short flags it finds into
     // long ones
-    let matches = App::new("coreos-metadata")
+    let matches = App::new("Afterburn")
         .version(crate_version!())
         .arg(
             Arg::with_name("attributes")
