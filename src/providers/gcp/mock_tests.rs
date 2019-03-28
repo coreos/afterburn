@@ -1,4 +1,3 @@
-use errors::*;
 use mockito;
 use providers::gcp;
 use providers::MetadataProvider;
