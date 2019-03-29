@@ -41,7 +41,7 @@ pub fn fetch_metadata(provider: &str) -> errors::Result<Box<providers::MetadataP
         "cloudstack-metadata" => box_result!(CloudstackNetwork::try_new()?),
         "cloudstack-configdrive" => box_result!(ConfigDrive::try_new()?),
         "digitalocean" => box_result!(DigitalOceanProvider::try_new()?),
-        // FIXME: "ec2" is accepted in non-legacy mode temporarily for transition
+        #[cfg(feature = "cl-legacy")]
         "ec2" => box_result!(AwsProvider::try_new()?),
         #[cfg(feature = "cl-legacy")]
         "gce" => box_result!(GcpProvider::try_new()?),
