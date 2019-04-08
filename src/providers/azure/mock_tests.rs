@@ -89,3 +89,27 @@ fn test_boot_checkin() {
     m_health.assert();
     r.unwrap();
 }
+
+#[test]
+fn test_hostname() {
+    let m_version = mock_fab_version();
+    let m_goalstate = mock_goalstate();
+
+    let testname = "testname";
+    let endpoint = "/metadata/instance/compute/name?api-version=2017-08-01&format=text";
+    let m_hostname = mockito::mock("GET", endpoint)
+        .match_header("Metadata", "true")
+        .with_body(testname)
+        .with_status(200)
+        .create();
+
+    let provider = azure::Azure::try_new();
+    let r = provider.unwrap().hostname().unwrap();
+
+    m_version.assert();
+    m_goalstate.assert();
+
+    m_hostname.assert();
+    let hostname = r.unwrap();
+    assert_eq!(hostname, testname);
+}
