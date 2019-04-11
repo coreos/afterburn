@@ -1,0 +1,12 @@
+[Unit]
+Description=Afterburn (Check In)
+ConditionKernelCommandLine=|ignition.platform.id=azure
+After=boot-complete.target
+
+[Service]
+ExecStart=/usr/bin/afterburn --cmdline --check-in
+Type=oneshot
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
