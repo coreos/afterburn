@@ -1,8 +1,7 @@
 use mockito::{self, Matcher};
 use providers::{azure, MetadataProvider};
 
-#[test]
-fn test_boot_checkin() {
+fn mock_fab_version() -> mockito::Mock {
     let fab_version = "/?comp=versions";
     let ver_body = r#"<?xml version="1.0" encoding="utf-8"?>
 <Versions>
@@ -22,11 +21,14 @@ fn test_boot_checkin() {
     <Version>2010-28-10</Version>
   </Supported>
 </Versions>"#;
-    let m_version = mockito::mock("GET", fab_version)
+
+    mockito::mock("GET", fab_version)
         .with_body(ver_body)
         .with_status(200)
-        .create();
+        .create()
+}
 
+fn mock_goalstate() -> mockito::Mock {
     let fab_goalstate = "/machine/?comp=goalstate";
     let gs_body = r#"<?xml version="1.0" encoding="utf-8"?>
 <GoalState xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="goalstate10.xsd">
@@ -59,10 +61,17 @@ fn test_boot_checkin() {
   </Container>
 </GoalState>
 "#;
-    let m_goalstate = mockito::mock("GET", fab_goalstate)
+
+    mockito::mock("GET", fab_goalstate)
         .with_body(gs_body)
         .with_status(200)
-        .create();
+        .create()
+}
+
+#[test]
+fn test_boot_checkin() {
+    let m_version = mock_fab_version();
+    let m_goalstate = mock_goalstate();
 
     let fab_health = "/machine/?comp=health";
     let m_health = mockito::mock("POST", fab_health)
@@ -79,4 +88,28 @@ fn test_boot_checkin() {
     m_goalstate.assert();
     m_health.assert();
     r.unwrap();
+}
+
+#[test]
+fn test_hostname() {
+    let m_version = mock_fab_version();
+    let m_goalstate = mock_goalstate();
+
+    let testname = "testname";
+    let endpoint = "/metadata/instance/compute/name?api-version=2017-08-01&format=text";
+    let m_hostname = mockito::mock("GET", endpoint)
+        .match_header("Metadata", "true")
+        .with_body(testname)
+        .with_status(200)
+        .create();
+
+    let provider = azure::Azure::try_new();
+    let r = provider.unwrap().hostname().unwrap();
+
+    m_version.assert();
+    m_goalstate.assert();
+
+    m_hostname.assert();
+    let hostname = r.unwrap();
+    assert_eq!(hostname, testname);
 }

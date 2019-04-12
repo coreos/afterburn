@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! azure metadata fetcher
+//! Azure provider, metadata and wireserver fetcher.
 
 mod crypto;
 
@@ -279,6 +279,17 @@ impl Azure {
         }
     }
 
+    #[cfg(test)]
+    fn metadata_endpoint() -> String {
+        mockito::server_url()
+    }
+
+    #[cfg(not(test))]
+    fn metadata_endpoint() -> String {
+        const URL: &str = "http://169.254.169.254";
+        URL.to_string()
+    }
+
     fn get_certs_endpoint(&self) -> Result<String> {
         // grab the certificates endpoint from the xml and return it
         let cert_endpoint: &str = &self.goal_state.container.role_instance_list.role_instances[0]
@@ -392,6 +403,21 @@ impl Azure {
             .ok_or_else(|| "empty RoleInstanceList".to_string())?
             .instance_id)
     }
+
+    fn fetch_hostname(&self) -> Result<Option<String>> {
+        const NAME_URL: &str = "metadata/instance/compute/name?api-version=2017-08-01&format=text";
+        let url = format!("{}/{}", Self::metadata_endpoint(), NAME_URL);
+
+        let name = retry::Client::try_new()?
+            .header(
+                HeaderName::from_static("metadata"),
+                HeaderValue::from_static("true"),
+            )
+            .get(retry::Raw, url)
+            .send()
+            .chain_err(|| "failed to get hostname")?;
+        Ok(name)
+    }
 }
 
 impl MetadataProvider for Azure {
@@ -411,7 +437,7 @@ impl MetadataProvider for Azure {
     }
 
     fn hostname(&self) -> Result<Option<String>> {
-        Ok(None)
+        self.fetch_hostname()
     }
 
     fn ssh_keys(&self) -> Result<Vec<PublicKey>> {
