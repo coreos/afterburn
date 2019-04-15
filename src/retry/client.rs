@@ -52,8 +52,9 @@ impl Deserializer for Xml {
         T: for<'de> serde::Deserialize<'de>,
         R: Read,
     {
-        serde_xml_rs::deserialize(r).chain_err(|| "failed xml deserialization")
+        serde_xml_rs::de::from_reader(r).chain_err(|| "failed xml deserialization")
     }
+
     fn content_type(&self) -> header::HeaderValue {
         header::HeaderValue::from_static("text/xml; charset=utf-8")
     }
