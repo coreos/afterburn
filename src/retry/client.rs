@@ -160,7 +160,7 @@ impl Client {
     {
         RequestBuilder {
             url,
-            body: body.map(|b| b.into_owned()),
+            body: body.map(Cow::into_owned),
             d,
             client: self.client.clone(),
             headers: self.headers.clone(),
