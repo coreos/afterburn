@@ -37,7 +37,7 @@ slog-term = "2.2"
 tempdir = "0.3"
 tempfile = "^3.0.7"
 update-ssh-keys = { version = "^0.4.1", optional = true }
-users = "^0.8.1"
+users = "^0.9.1"
 
 [features]
 cl-legacy = ["update-ssh-keys"]
