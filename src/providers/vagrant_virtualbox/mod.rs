@@ -23,9 +23,9 @@ use hostname;
 use openssh_keys::PublicKey;
 use pnet;
 
-use errors::*;
-use network;
-use providers::MetadataProvider;
+use crate::errors::*;
+use crate::network;
+use crate::providers::MetadataProvider;
 
 #[derive(Clone, Copy, Debug)]
 pub struct VagrantVirtualboxProvider;

@@ -21,7 +21,7 @@ use std::net::IpAddr;
 use std::string::String;
 use std::string::ToString;
 
-use errors::*;
+use crate::errors::*;
 use ipnetwork::IpNetwork;
 
 pub const BONDING_MODE_BALANCE_RR: u32 = 0;

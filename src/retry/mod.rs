@@ -14,7 +14,7 @@
 
 //! retry is a generic function that retrys functions until they succeed.
 
-use errors::*;
+use crate::errors::*;
 use std::thread;
 use std::time::Duration;
 
@@ -59,7 +59,7 @@ impl Retry {
         self
     }
 
-    pub fn retry<F, R>(self, try: F) -> Result<R>
+    pub fn retry<F, R>(self, try_fn: F) -> Result<R>
     where
         F: Fn(u32) -> Result<R>,
     {
@@ -67,7 +67,7 @@ impl Retry {
         let mut attempts = 0;
 
         loop {
-            let res = try(attempts);
+            let res = try_fn(attempts);
 
             // if the result is ok, we don't need to try again
             if res.is_ok() {

@@ -55,8 +55,8 @@ use clap::{App, Arg};
 use slog::Drain;
 use std::env;
 
-use errors::*;
-use metadata::fetch_metadata;
+use crate::errors::*;
+use crate::metadata::fetch_metadata;
 
 /// Path to kernel command-line (requires procfs mount).
 const CMDLINE_PATH: &str = "/proc/cmdline";

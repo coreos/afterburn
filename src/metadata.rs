@@ -12,17 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use errors;
-use providers;
-use providers::aws::AwsProvider;
-use providers::azure::Azure;
-use providers::cloudstack::configdrive::ConfigDrive;
-use providers::cloudstack::network::CloudstackNetwork;
-use providers::digitalocean::DigitalOceanProvider;
-use providers::gcp::GcpProvider;
-use providers::openstack::network::OpenstackProvider;
-use providers::packet::PacketProvider;
-use providers::vagrant_virtualbox::VagrantVirtualboxProvider;
+use crate::errors;
+use crate::providers;
+use crate::providers::aws::AwsProvider;
+use crate::providers::azure::Azure;
+use crate::providers::cloudstack::configdrive::ConfigDrive;
+use crate::providers::cloudstack::network::CloudstackNetwork;
+use crate::providers::digitalocean::DigitalOceanProvider;
+use crate::providers::gcp::GcpProvider;
+use crate::providers::openstack::network::OpenstackProvider;
+use crate::providers::packet::PacketProvider;
+use crate::providers::vagrant_virtualbox::VagrantVirtualboxProvider;
 
 macro_rules! box_result {
     ($exp:expr) => {

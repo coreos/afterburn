@@ -23,10 +23,10 @@ use ipnetwork::{IpNetwork, Ipv4Network, Ipv6Network};
 use openssh_keys::PublicKey;
 use pnet::util::MacAddr;
 
-use errors::*;
-use network;
-use providers::MetadataProvider;
-use retry;
+use crate::errors::*;
+use crate::network;
+use crate::providers::MetadataProvider;
+use crate::retry;
 
 #[derive(Clone, Deserialize)]
 struct Address {

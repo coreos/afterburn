@@ -1,11 +1,11 @@
-use errors::*;
+use crate::errors::*;
 use mockito;
-use providers::aws;
+use crate::providers::aws;
 
 #[test]
 fn test_aws_basic() {
     let ep = "/meta-data/public-keys";
-    let client = ::retry::Client::try_new()
+    let client = crate::retry::Client::try_new()
         .chain_err(|| "failed to create http client")
         .unwrap()
         .max_attempts(1)

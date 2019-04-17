@@ -1,6 +1,6 @@
 use mockito;
-use providers::gcp;
-use providers::MetadataProvider;
+use crate::providers::gcp;
+use crate::providers::MetadataProvider;
 
 #[test]
 fn basic_hostname() {

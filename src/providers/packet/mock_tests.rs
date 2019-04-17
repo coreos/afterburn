@@ -1,5 +1,5 @@
 use mockito::{self, Matcher};
-use providers::{packet, MetadataProvider};
+use crate::providers::{packet, MetadataProvider};
 
 #[test]
 fn test_boot_checkin() {

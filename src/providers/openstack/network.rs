@@ -4,10 +4,10 @@ use std::collections::HashMap;
 
 use openssh_keys::PublicKey;
 
-use errors::*;
-use network;
-use providers::MetadataProvider;
-use retry;
+use crate::errors::*;
+use crate::network;
+use crate::providers::MetadataProvider;
+use crate::retry;
 
 const URL: &str = "http://169.254.169.254/latest/meta-data";
 
