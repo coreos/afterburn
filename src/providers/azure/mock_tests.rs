@@ -1,5 +1,5 @@
+use crate::providers::{azure, MetadataProvider};
 use mockito::{self, Matcher};
-use providers::{azure, MetadataProvider};
 
 fn mock_fab_version() -> mockito::Mock {
     let fab_version = "/?comp=versions";

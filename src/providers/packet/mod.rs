@@ -25,11 +25,11 @@ use std::str::FromStr;
 use openssh_keys::PublicKey;
 use pnet::util::MacAddr;
 
-use errors::*;
-use network::{self, Device, Interface, NetworkRoute, Section};
-use providers::MetadataProvider;
-use retry;
-use util;
+use crate::errors::*;
+use crate::network::{self, Device, Interface, NetworkRoute, Section};
+use crate::providers::MetadataProvider;
+use crate::retry;
+use crate::util;
 
 use ipnetwork::{self, IpNetwork, Ipv4Network, Ipv6Network};
 

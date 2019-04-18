@@ -21,10 +21,10 @@ use std::collections::HashMap;
 use mockito;
 use openssh_keys::PublicKey;
 
-use errors::*;
-use network;
-use providers::MetadataProvider;
-use retry;
+use crate::errors::*;
+use crate::network;
+use crate::providers::MetadataProvider;
+use crate::retry;
 
 #[cfg(test)]
 mod mock_tests;

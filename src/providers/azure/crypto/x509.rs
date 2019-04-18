@@ -23,7 +23,7 @@ use openssl::rsa::Rsa;
 use openssl::x509::extension;
 use openssl::x509::{X509Name, X509};
 
-use errors::*;
+use crate::errors::*;
 
 pub struct Config {
     rsa_bits: u32,

@@ -19,7 +19,7 @@
 //!  handle separator quoting/escaping, list of values, and merging of repeated
 //!  flags.
 
-use errors::*;
+use crate::errors::*;
 use std::io::Read;
 use std::{fs, io};
 

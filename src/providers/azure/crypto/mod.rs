@@ -23,7 +23,7 @@ use openssl::x509::X509;
 
 use openssh_keys::PublicKey;
 
-use errors::*;
+use crate::errors::*;
 
 pub fn mangle_pem(x509: &X509) -> Result<String> {
     // get the pem

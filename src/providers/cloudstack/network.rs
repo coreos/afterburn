@@ -6,11 +6,11 @@ use std::time::Duration;
 
 use openssh_keys::PublicKey;
 
-use errors::*;
-use network;
-use providers::MetadataProvider;
-use retry;
-use util;
+use crate::errors::*;
+use crate::network;
+use crate::providers::MetadataProvider;
+use crate::retry;
+use crate::util;
 
 const SERVER_ADDRESS: &str = "SERVER_ADDRESS";
 

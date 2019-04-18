@@ -30,13 +30,13 @@ use serde;
 use serde_json;
 use serde_xml_rs;
 
-use errors::*;
-use retry::Retry;
+use crate::errors::*;
+use crate::retry::Retry;
 
-use retry::raw_deserializer;
+use crate::retry::raw_deserializer;
 
 pub trait Deserializer {
-    fn deserialize<T, R>(&self, R) -> Result<T>
+    fn deserialize<T, R>(&self, r: R) -> Result<T>
     where
         T: for<'de> serde::Deserialize<'de>,
         R: Read;

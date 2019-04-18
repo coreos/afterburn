@@ -40,8 +40,8 @@ use std::path::Path;
 use openssh_keys::PublicKey;
 use users::{self, User};
 
-use errors::*;
-use network;
+use crate::errors::*;
+use crate::network;
 
 #[cfg(not(feature = "cl-legacy"))]
 const ENV_PREFIX: &str = "AFTERBURN_";

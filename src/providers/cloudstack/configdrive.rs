@@ -9,9 +9,9 @@ use nix::mount;
 use openssh_keys::PublicKey;
 use tempdir::TempDir;
 
-use errors::*;
-use network;
-use providers::MetadataProvider;
+use crate::errors::*;
+use crate::network;
+use crate::providers::MetadataProvider;
 
 const CONFIG_DRIVE_LABEL_1: &str = "config-2";
 const CONFIG_DRIVE_LABEL_2: &str = "CONFIG-2";

@@ -18,7 +18,7 @@ use std::result;
 
 use serde::de::{self, DeserializeOwned, Visitor};
 
-use errors::*;
+use crate::errors::*;
 
 pub struct RawDeserializer {
     s: String,
