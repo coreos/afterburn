@@ -1,6 +1,6 @@
 use crate::errors::*;
-use mockito;
 use crate::providers::aws;
+use mockito;
 
 #[test]
 fn test_aws_basic() {

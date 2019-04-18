@@ -15,8 +15,8 @@
 //! utility functions
 
 use crate::errors::*;
-use pnet;
 use crate::retry;
+use pnet;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Read};
 use std::path::Path;
