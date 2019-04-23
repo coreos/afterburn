@@ -3,7 +3,11 @@ PREFIX ?= /usr
 
 DEFAULT_INSTANCE ?= core
 
-units = $(addprefix systemd/,afterburn.service afterburn-sshkeys@.service)
+units = $(addprefix systemd/, \
+	afterburn-checkin.service \
+	afterburn-firstboot-checkin.service \
+	afterburn.service \
+	afterburn-sshkeys@.service)
 
 %.service: %.service.in
 	sed -e 's,@DEFAULT_INSTANCE@,'$(DEFAULT_INSTANCE)',' < $< > $@.tmp && mv $@.tmp $@
