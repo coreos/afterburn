@@ -21,7 +21,7 @@ use std::str::FromStr;
 use ipnetwork;
 use ipnetwork::{IpNetwork, Ipv4Network, Ipv6Network};
 use openssh_keys::PublicKey;
-use pnet::util::MacAddr;
+use pnet_base::MacAddr;
 
 use crate::errors::*;
 use crate::network;

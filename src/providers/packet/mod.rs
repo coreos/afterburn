@@ -23,7 +23,7 @@ use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 use std::str::FromStr;
 
 use openssh_keys::PublicKey;
-use pnet::util::MacAddr;
+use pnet_base::MacAddr;
 
 use crate::errors::*;
 use crate::network::{self, Device, Interface, NetworkRoute, Section};

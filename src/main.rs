@@ -22,7 +22,6 @@ extern crate ipnetwork;
 extern crate nix;
 extern crate openssh_keys;
 extern crate openssl;
-extern crate pnet;
 extern crate reqwest;
 #[macro_use]
 extern crate serde_derive;
