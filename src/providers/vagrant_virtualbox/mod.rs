@@ -21,7 +21,7 @@ use std::time::Duration;
 
 use hostname;
 use openssh_keys::PublicKey;
-use pnet;
+use pnet_datalink;
 
 use crate::errors::*;
 use crate::network;
@@ -52,8 +52,8 @@ impl VagrantVirtualboxProvider {
         Err("eth1 was not found!".into())
     }
 
-    fn find_eth1() -> Option<pnet::datalink::NetworkInterface> {
-        let mut ifaces = pnet::datalink::interfaces();
+    fn find_eth1() -> Option<pnet_datalink::NetworkInterface> {
+        let mut ifaces = pnet_datalink::interfaces();
         ifaces.retain(|i| i.name == "eth1");
         if !ifaces.is_empty() {
             Some(ifaces[0].clone())

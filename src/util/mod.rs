@@ -16,7 +16,7 @@
 
 use crate::errors::*;
 use crate::retry;
-use pnet;
+use pnet_datalink;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Read};
 use std::path::Path;
@@ -52,7 +52,7 @@ pub fn key_lookup<R: Read>(delim: char, key: &str, reader: R) -> Result<Option<S
 }
 
 pub fn dns_lease_key_lookup(key: &str) -> Result<String> {
-    let interfaces = pnet::datalink::interfaces();
+    let interfaces = pnet_datalink::interfaces();
     trace!("interfaces - {:?}", interfaces);
 
     retry::Retry::new()

@@ -16,7 +16,7 @@
 //! interface unit files. All that is left is to write the resulting string to
 //! the necessary unit.
 
-use pnet::util::MacAddr;
+use pnet_base::MacAddr;
 use std::net::IpAddr;
 use std::string::String;
 use std::string::ToString;
