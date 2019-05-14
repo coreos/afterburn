@@ -1,5 +1,10 @@
 [Unit]
 Description=Afterburn (SSH Keys)
+ConditionKernelCommandLine=|ignition.platform.id=aws
+ConditionKernelCommandLine=|ignition.platform.id=azure
+ConditionKernelCommandLine=|ignition.platform.id=digitalocean
+ConditionKernelCommandLine=|ignition.platform.id=gcp
+ConditionKernelCommandLine=|ignition.platform.id=packet
 
 [Service]
 Type=oneshot
