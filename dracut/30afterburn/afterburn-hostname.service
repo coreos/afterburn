@@ -1,0 +1,19 @@
+[Unit]
+Description=Afterburn Hostname
+# Azure needs to fetch the hostname in the initramfs
+ConditionKernelCommandLine=|ignition.platform.id=azure
+
+# We order this service after sysroot has been mounted
+# but before ignition-files stage has run, so ignition can
+# overwrite the configured hostname with e.g. a static one
+# Also order after ignition-remount-sysroot just for
+# safety for systems that mount /sysroot ro
+After=initrd-root-fs.target
+Before=ignition-files.service
+
+OnFailure=emergency.target
+OnFailureJobMode=isolate
+
+[Service]
+ExecStart=/usr/bin/afterburn --cmdline --hostname=/sysroot/etc/hostname
+Type=oneshot
