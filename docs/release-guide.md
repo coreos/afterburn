@@ -75,7 +75,11 @@ For each release to be published, proceed as follows:
 * `tar -czf target/afterburn-${RELEASE_VER}-vendor.tar.gz vendor`
 * Open a web browser and create a GitHub Release for the tag above
 * Attach the `vendor.tar.gz` (located under `target/`) to the current Release
-* Write a short changelog and publish the Release
+* Record digests of local artifacts:
+
+    `sha256sum target/package/afterburn-${RELEASE_VER}.crate`
+    `sha256sum target/afterburn-${RELEASE_VER}-vendor.tar.gz`
+* Write a short changelog (see previous entries) and publish the Release
 
 #### 7. Clean up the environment
 

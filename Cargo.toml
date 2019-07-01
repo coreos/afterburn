@@ -57,6 +57,6 @@ upload-doc = false
 disable-push = true
 disable-publish = true
 pre-release-commit-message = "cargo: Afterburn release {{version}}"
-pro-release-commit-message = "cargo: version bump to {{version}}"
+pro-release-commit-message = "cargo: development version bump"
 tag-message = "Afterburn v{{version}}"
 tag-prefix = "v"

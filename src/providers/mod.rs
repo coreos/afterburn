@@ -98,7 +98,6 @@ fn write_ssh_keys(user: User, ssh_keys: Vec<PublicKey>) -> Result<()> {
 #[cfg(not(feature = "cl-legacy"))]
 fn write_ssh_keys(user: User, ssh_keys: Vec<PublicKey>) -> Result<()> {
     use std::io::ErrorKind::NotFound;
-    use tempfile;
     use users::os::unix::UserExt;
 
     // switch users
