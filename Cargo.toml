@@ -37,7 +37,7 @@ slog-async = "2.1"
 slog-scope = "~4.1"
 slog-term = "2.2"
 tempdir = "0.3"
-tempfile = "^3.0.8"
+tempfile = "^3.0.9"
 update-ssh-keys = { version = "^0.5.0", optional = true }
 users = "^0.9.1"
 
