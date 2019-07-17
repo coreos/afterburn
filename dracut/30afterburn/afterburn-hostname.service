@@ -16,4 +16,9 @@ OnFailureJobMode=isolate
 
 [Service]
 ExecStart=/usr/bin/afterburn --cmdline --hostname=/sysroot/etc/hostname
+# Add hack to mark the file as needing relabelling, as the hostname
+# file dropped by afterburn will be unlabelled causing SELinux denials.
+# see: https://github.com/coreos/ignition/issues/635
+ExecStart=/bin/sh -c 'mkdir -p /run/tmpfiles.d'
+ExecStart=/bin/sh -c 'echo "z /etc/hostname - - -" > /run/tmpfiles.d/hostname-relabel.conf'
 Type=oneshot
