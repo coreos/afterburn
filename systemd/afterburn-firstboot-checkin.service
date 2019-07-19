@@ -5,7 +5,8 @@ ConditionFirstBoot=yes
 After=boot-complete.target
 
 [Service]
-ExecStart=/usr/bin/afterburn --cmdline --check-in
+Environment=AFTERBURN_OPT_PROVIDER=--cmdline
+ExecStart=/usr/bin/afterburn ${AFTERBURN_OPT_PROVIDER} --check-in
 Type=oneshot
 RemainAfterExit=yes
 
