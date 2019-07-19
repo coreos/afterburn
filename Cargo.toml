@@ -45,7 +45,7 @@ users = "^0.9.1"
 cl-legacy = ["update-ssh-keys"]
 
 [dependencies.slog]
-version = "2.0"
+version = "2.5"
 features = ["max_level_trace", "release_max_level_info"]
 
 [dev-dependencies]
