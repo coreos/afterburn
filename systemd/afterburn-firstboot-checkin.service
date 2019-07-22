@@ -2,6 +2,7 @@
 Description=Afterburn (Firstboot Check In)
 ConditionKernelCommandLine=|ignition.platform.id=packet
 ConditionFirstBoot=yes
+After=network.target
 After=boot-complete.target
 
 [Service]
