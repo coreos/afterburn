@@ -6,7 +6,7 @@ edition = "2018"
 authors = [ "Stephen Demos <stephen.demos@coreos.com>",
             "Luca Bruno <lucab@debian.org>" ]
 description = "A simple cloud provider agent"
-version = "4.1.2-alpha.0"
+version = "4.1.3-alpha.0"
 
 [[bin]]
 name = "afterburn"
