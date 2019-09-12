@@ -22,10 +22,14 @@ This guide requires:
  * a web browser (and network connectivity)
  * `git`
  * `tar`
+ * `sha256sum`
  * GPG setup and personal key for signing
  * `cargo` (suggested: latest stable toolchain from [rustup][rustup])
  * `cargo-release` (suggested: `cargo install -f cargo-release`)
  * `cargo-vendor` (suggested: `cargo install -f cargo-vendor`)
+ * A verified account on crates.io
+ * Write access to https://github.com/coreos/afterburn
+ * Upload access to https://crates.io/crates/afterburn
 
 ## Steps
 
@@ -41,6 +45,8 @@ For each release to be published, proceed as follows:
 * `git clean -fd`
 * `export RELEASE_VER=x.y.z`
 * `export UPSTREAM_REMOTE=origin`
+
+:warning:: `UPSTREAM_REMOTE` should reference your locally configured remote that points to the https://github.com/coreos/afterburn git repository
 
 #### 2. Create release commits on a dedicated branch and tag it
 
