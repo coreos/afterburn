@@ -33,7 +33,7 @@ macro_rules! box_result {
 /// `fetch_metadata` is the generic, top-level function that is used by the main
 /// function to fetch metadata. The configured provider is passed in and this
 /// function dispatches the call to the correct provider-specific fetch function
-pub fn fetch_metadata(provider: &str) -> errors::Result<Box<providers::MetadataProvider>> {
+pub fn fetch_metadata(provider: &str) -> errors::Result<Box<dyn providers::MetadataProvider>> {
     match provider {
         #[cfg(not(feature = "cl-legacy"))]
         "aws" => box_result!(AwsProvider::try_new()?),
