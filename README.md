@@ -34,6 +34,7 @@ On CoreOS Container Linux, the supported providers and metadata are [somewhat di
       - AFTERBURN_AWS_IPV4_PUBLIC
       - AFTERBURN_AWS_AVAILABILITY_ZONE
       - AFTERBURN_AWS_INSTANCE_ID
+      - AFTERBURN_AWS_INSTANCE_TYPE
       - AFTERBURN_AWS_REGION
   - azure
     - SSH Keys

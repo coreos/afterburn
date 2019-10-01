@@ -122,6 +122,11 @@ impl MetadataProvider for AwsProvider {
         )?;
         add_value(
             &mut out,
+            &format!("{}_INSTANCE_TYPE", ENV_PREFIX),
+            "meta-data/instance-type",
+        )?;
+        add_value(
+            &mut out,
             &format!("{}_IPV4_LOCAL", ENV_PREFIX),
             "meta-data/local-ipv4",
         )?;
