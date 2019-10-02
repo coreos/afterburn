@@ -418,12 +418,28 @@ impl Azure {
             .chain_err(|| "failed to get hostname")?;
         Ok(name)
     }
+
+    fn fetch_sku (&self) -> Result<Option<String>> {
+        const SKU_URL: &str = "metadata/instance/compute/sku?api-version=2017-08-01&format=text";
+        let url = format!("{}/{}", Self::metadata_endpoint(), SKU_URL);
+
+        let sku = retry::Client::try_new()?
+            .header(
+                HeaderName::from_static("metadata"),
+                HeaderValue::from_static("true"),
+            )
+            .get(retry::Raw, url)
+            .send()
+            .chain_err(|| "failed to get sku")?;
+        Ok(sku)
+    }
 }
 
 impl MetadataProvider for Azure {
     fn attributes(&self) -> Result<HashMap<String, String>> {
         let attributes = self.get_attributes()?;
-        let mut out = HashMap::with_capacity(2);
+        let sku = self.fetch_sku()?;
+        let mut out = HashMap::with_capacity(3);
 
         if let Some(virtual_ipv4) = attributes.virtual_ipv4 {
             out.insert("AZURE_IPV4_VIRTUAL".to_string(), virtual_ipv4.to_string());
@@ -431,6 +447,10 @@ impl MetadataProvider for Azure {
 
         if let Some(dynamic_ipv4) = attributes.dynamic_ipv4 {
             out.insert("AZURE_IPV4_DYNAMIC".to_string(), dynamic_ipv4.to_string());
+        }
+
+        if let Some(sku) = sku {
+            out.insert("AZURE_SKU".to_string(), sku.to_string());
         }
 
         Ok(out)

@@ -41,6 +41,7 @@ On CoreOS Container Linux, the supported providers and metadata are [somewhat di
     - Attributes
       - AFTERBURN_AZURE_IPV4_DYNAMIC
       - AFTERBURN_AZURE_IPV4_VIRTUAL
+      - AFTERBURN_AZURE_SKU
   - cloudstack-configdrive
     - SSH Keys
     - Attributes
