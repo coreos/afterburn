@@ -89,6 +89,7 @@ On CoreOS Container Linux, the supported providers and metadata are [somewhat di
       - AFTERBURN_OPENSTACK_IPV4_LOCAL
       - AFTERBURN_OPENSTACK_IPV4_PUBLIC
       - AFTERBURN_OPENSTACK_INSTANCE_ID
+      - AFTERBURN_OPENSTACK_INSTANCE_TYPE
   - packet
     - SSH Keys
     - Network Configs
