@@ -163,6 +163,11 @@ impl MetadataProvider for GcpProvider {
             &format!("{}_IP_LOCAL_0", ENV_PREFIX),
             "instance/network-interfaces/0/ip",
         )?;
+        add_value(
+            &mut out,
+            &format!("{}_MACHINE_TYPE", ENV_PREFIX),
+            "instance/machine-type",
+        )?;
 
         Ok(out)
     }

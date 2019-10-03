@@ -81,6 +81,7 @@ On CoreOS Container Linux, the supported providers and metadata are [somewhat di
       - AFTERBURN_GCP_HOSTNAME
       - AFTERBURN_GCP_IP_EXTERNAL_0
       - AFTERBURN_GCP_IP_LOCAL_0
+      - AFTERBURN_GCP_MACHINE_TYPE
   - openstack-metadata
     - SSH Keys
     - Attributes
