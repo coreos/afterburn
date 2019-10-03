@@ -95,6 +95,7 @@ On CoreOS Container Linux, the supported providers and metadata are [somewhat di
     - Network Configs
     - Attributes
       - AFTERBURN_PACKET_HOSTNAME
+      - AFTERBURN_PACKET_PLAN
       - AFTERBURN_PACKET_IPV4_PUBLIC_0
       - AFTERBURN_PACKET_IPV4_PRIVATE_0
       - AFTERBURN_PACKET_IPV6_PUBLIC_0

@@ -144,6 +144,7 @@ impl PacketProvider {
             "PACKET_PHONE_HOME_URL".to_owned(),
             self.data.phone_home_url.clone(),
         ));
+        attrs.push(("PACKET_PLAN".to_owned(), self.data.plan.clone()));
         Ok(attrs)
     }
 
