@@ -113,3 +113,28 @@ fn test_hostname() {
     let hostname = r.unwrap();
     assert_eq!(hostname, testname);
 }
+
+#[test]
+fn test_vmsize() {
+    let m_version = mock_fab_version();
+    let m_goalstate = mock_goalstate();
+
+    let testvmsize = "testvmsize";
+    let endpoint = "/metadata/instance/compute/vmSize?api-version=2017-08-01&format=text";
+    let m_vmsize = mockito::mock("GET", endpoint)
+        .match_header("Metadata", "true")
+        .with_body(testvmsize)
+        .with_status(200)
+        .create();
+
+    let provider = azure::Azure::try_new();
+    let attributes = provider.unwrap().attributes().unwrap();
+    let r = attributes.get("AZURE_VMSIZE");
+
+    m_version.assert();
+    m_goalstate.assert();
+
+    m_vmsize.assert();
+    let vmsize = r.unwrap();
+    assert_eq!(vmsize, testvmsize);
+}
