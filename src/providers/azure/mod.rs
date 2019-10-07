@@ -419,26 +419,26 @@ impl Azure {
         Ok(name)
     }
 
-    fn fetch_sku (&self) -> Result<Option<String>> {
-        const SKU_URL: &str = "metadata/instance/compute/sku?api-version=2017-08-01&format=text";
-        let url = format!("{}/{}", Self::metadata_endpoint(), SKU_URL);
+    fn fetch_vmsize (&self) -> Result<String> {
+        const VMSIZE_URL: &str = "metadata/instance/compute/vmSize?api-version=2017-08-01&format=text";
+        let url = format!("{}/{}", Self::metadata_endpoint(), VMSIZE_URL);
 
-        let sku = retry::Client::try_new()?
+        let vmsize = retry::Client::try_new()?
             .header(
                 HeaderName::from_static("metadata"),
                 HeaderValue::from_static("true"),
             )
             .get(retry::Raw, url)
-            .send()
-            .chain_err(|| "failed to get sku")?;
-        Ok(sku)
+            .send()?
+            .chain_err(|| "failed to get vmsize")?;
+        Ok(vmsize)
     }
 }
 
 impl MetadataProvider for Azure {
     fn attributes(&self) -> Result<HashMap<String, String>> {
         let attributes = self.get_attributes()?;
-        let sku = self.fetch_sku()?;
+        let vmsize = self.fetch_vmsize()?;
         let mut out = HashMap::with_capacity(3);
 
         if let Some(virtual_ipv4) = attributes.virtual_ipv4 {
@@ -449,9 +449,7 @@ impl MetadataProvider for Azure {
             out.insert("AZURE_IPV4_DYNAMIC".to_string(), dynamic_ipv4.to_string());
         }
 
-        if let Some(sku) = sku {
-            out.insert("AZURE_SKU".to_string(), sku.to_string());
-        }
+        out.insert("AZURE_VMSIZE".to_string(), vmsize.to_string());
 
         Ok(out)
     }
