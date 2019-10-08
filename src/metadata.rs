@@ -14,6 +14,7 @@
 
 use crate::errors;
 use crate::providers;
+use crate::providers::aliyun::AliyunProvider;
 use crate::providers::aws::AwsProvider;
 use crate::providers::azure::Azure;
 use crate::providers::cloudstack::configdrive::ConfigDrive;
@@ -35,6 +36,7 @@ macro_rules! box_result {
 /// function dispatches the call to the correct provider-specific fetch function
 pub fn fetch_metadata(provider: &str) -> errors::Result<Box<dyn providers::MetadataProvider>> {
     match provider {
+        "aliyun" => box_result!(AliyunProvider::try_new()?),
         #[cfg(not(feature = "cl-legacy"))]
         "aws" => box_result!(AwsProvider::try_new()?),
         "azure" => box_result!(Azure::try_new()?),
