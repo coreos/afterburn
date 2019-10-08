@@ -87,6 +87,23 @@ pub struct PacketProvider {
 }
 
 impl PacketProvider {
+    #[cfg(test)]
+    pub fn try_new() -> Result<PacketProvider> {
+        let client = retry::Client::try_new()?;
+        let url = mockito::server_url();
+
+        let data: PacketData = client
+            .get(
+                retry::Json,
+                format!("{}/metadata", url),
+            )
+            .send()?
+            .ok_or("not found")?;
+
+        Ok(PacketProvider { data })
+    }
+
+    #[cfg(not(test))]
     pub fn try_new() -> Result<PacketProvider> {
         let client = retry::Client::try_new()?;
 

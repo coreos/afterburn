@@ -34,7 +34,7 @@ fn test_aws_basic() {
 }
 
 #[test]
-fn test_attributes_fetching() {
+fn test_aws_attributes() {
     let ep_instance_id = "/meta-data/instance-id";
     let instance_id = "test-instance-id";
 
