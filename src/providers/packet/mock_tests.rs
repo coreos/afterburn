@@ -1,6 +1,5 @@
 use crate::providers::{packet, MetadataProvider};
 use mockito::{self, Matcher};
-use std::collections::HashMap;
 
 #[test]
 fn test_boot_checkin() {
@@ -38,30 +37,31 @@ fn test_boot_checkin() {
 
 #[test]
 fn test_packet_attributes() {
-    let metadata = "{
-        \"id\": \"test-id\",
-        \"hostname\": \"test-hostname\",
-        \"iqn\": \"test-iqn\",
-        \"plan\": \"test-plan\",
-        \"facility\": \"test-facility\",
-        \"tags\": [],
-        \"ssh_keys\": [],
-        \"network\": {
-            \"interfaces\": [],
-            \"addresses\": [],
-            \"bonding\": { \"mode\": 0 }
+    let metadata = r#"{
+        "id": "test-id",
+        "hostname": "test-hostname",
+        "iqn": "test-iqn",
+        "plan": "test-plan",
+        "facility": "test-facility",
+        "tags": [],
+        "ssh_keys": [],
+        "network": {
+            "interfaces": [],
+            "addresses": [],
+            "bonding": { "mode": 0 }
         },
-        \"phone_home_url\": \"test-url\"
-    }";
+        "phone_home_url": "test-url"
+    }"#;
 
     let hostname = "test-hostname";
     let phone_home_url = "test-url";
     let plan = "test-plan";
 
-    let mut attributes:HashMap<String, String> = HashMap::new();
-    attributes.insert(format!("PACKET_HOSTNAME"), String::from(hostname));
-    attributes.insert(format!("PACKET_PHONE_HOME_URL"), String::from(phone_home_url));
-    attributes.insert(format!("PACKET_PLAN"), String::from(plan));
+    let attributes = maplit::hashmap! {
+        format!("PACKET_HOSTNAME") => String::from(hostname),
+        format!("PACKET_PHONE_HOME_URL") => String::from(phone_home_url),
+        format!("PACKET_PLAN") => String::from(plan),
+    };
 
     let _m = mockito::mock("GET", "/metadata")
         .with_status(200)

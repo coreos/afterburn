@@ -18,8 +18,6 @@ mod crypto;
 
 use std::collections::HashMap;
 use std::net::IpAddr;
-#[cfg(not(test))]
-use std::net::SocketAddr;
 
 use openssh_keys::PublicKey;
 use reqwest::header::{HeaderName, HeaderValue};
@@ -367,6 +365,8 @@ impl Azure {
 
     #[cfg(not(test))]
     fn get_attributes(&self) -> Result<Attributes> {
+        use std::net::SocketAddr;
+
         let endpoint = &self.goal_state.container.role_instance_list.role_instances[0]
             .configuration
             .shared_config;
