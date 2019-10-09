@@ -59,4 +59,5 @@ features = ["max_level_trace", "release_max_level_info"]
 cl-legacy = ["update-ssh-keys"]
 
 [dev-dependencies]
+maplit = "^1.0"
 mockito = "^0.21.0"
