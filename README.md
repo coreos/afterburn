@@ -12,6 +12,19 @@ This can include adding SSH keys and writing cloud-specific attributes into an e
 The supported cloud providers and their respective metadata are listed below.
 On CoreOS Container Linux, the supported providers and metadata are [somewhat different][cl-legacy].
 
+  - aliyun
+    - SSH Keys
+    - Attributes
+      - AFTERBURN_ALIYUN_EIPV4
+      - AFTERBURN_ALIYUN_HOSTNAME
+      - AFTERBURN_ALIYUN_IMAGE_ID
+      - AFTERBURN_ALIYUN_INSTANCE_ID
+      - AFTERBURN_ALIYUN_INSTANCE_TYPE
+      - AFTERBURN_ALIYUN_IPV4_PRIVATE
+      - AFTERBURN_ALIYUN_IPV4_PUBLIC
+      - AFTERBURN_ALIYUN_REGION_ID
+      - AFTERBURN_ALIYUN_VPC_ID
+      - AFTERBURN_ALIYUN_ZONE_ID
   - aws
     - SSH Keys
     - Attributes

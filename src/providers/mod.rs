@@ -23,6 +23,7 @@
 //! function to fetch the metadata, and then add a match line in the top-level
 //! `fetch_metadata()` function in metadata.rs.
 
+pub mod aliyun;
 pub mod aws;
 pub mod azure;
 pub mod cloudstack;
