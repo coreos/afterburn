@@ -25,6 +25,9 @@ fn test_aws_basic() {
     let _m = mockito::mock("GET", ep).with_status(404).create();
     let v = provider.fetch_ssh_keys().unwrap();
     assert_eq!(v.len(), 0);
+
+    mockito::reset();
+    provider.fetch_ssh_keys().unwrap_err();
 }
 
 #[test]
@@ -60,14 +63,14 @@ fn test_aws_attributes() {
     }
 
     let attributes = maplit::hashmap! {
-        format!("{}_INSTANCE_ID", aws::ENV_PREFIX) => String::from(instance_id),
-        format!("{}_INSTANCE_TYPE", aws::ENV_PREFIX) => String::from(instance_type),
-        format!("{}_IPV4_LOCAL", aws::ENV_PREFIX) => String::from(ipv4_local),
-        format!("{}_IPV4_PUBLIC", aws::ENV_PREFIX) => String::from(ipv4_public),
-        format!("{}_AVAILABILITY_ZONE", aws::ENV_PREFIX) => String::from(availability_zone),
-        format!("{}_HOSTNAME", aws::ENV_PREFIX) => String::from(hostname),
-        format!("{}_PUBLIC_HOSTNAME", aws::ENV_PREFIX) => String::from(public_hostname),
-        format!("{}_REGION", aws::ENV_PREFIX) => String::from(region),
+        format!("{}_INSTANCE_ID", aws::ENV_PREFIX) => instance_id.to_string(),
+        format!("{}_INSTANCE_TYPE", aws::ENV_PREFIX) => instance_type.to_string(),
+        format!("{}_IPV4_LOCAL", aws::ENV_PREFIX) => ipv4_local.to_string(),
+        format!("{}_IPV4_PUBLIC", aws::ENV_PREFIX) => ipv4_public.to_string(),
+        format!("{}_AVAILABILITY_ZONE", aws::ENV_PREFIX) => availability_zone.to_string(),
+        format!("{}_HOSTNAME", aws::ENV_PREFIX) => hostname.to_string(),
+        format!("{}_PUBLIC_HOSTNAME", aws::ENV_PREFIX) => public_hostname.to_string(),
+        format!("{}_REGION", aws::ENV_PREFIX) => region.to_string(),
     };
 
     let client = crate::retry::Client::try_new()

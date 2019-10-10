@@ -88,6 +88,9 @@ fn test_boot_checkin() {
     m_goalstate.assert();
     m_health.assert();
     r.unwrap();
+
+    mockito::reset();
+    azure::Azure::try_new().unwrap_err();
 }
 
 #[test]
@@ -112,6 +115,9 @@ fn test_hostname() {
     m_hostname.assert();
     let hostname = r.unwrap();
     assert_eq!(hostname, testname);
+
+    mockito::reset();
+    azure::Azure::try_new().unwrap_err();
 }
 
 #[test]
@@ -137,4 +143,7 @@ fn test_vmsize() {
     m_vmsize.assert();
     let vmsize = r.unwrap();
     assert_eq!(vmsize, testvmsize);
+
+    mockito::reset();
+    azure::Azure::try_new().unwrap_err();
 }

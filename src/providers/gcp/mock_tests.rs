@@ -51,10 +51,10 @@ fn basic_attributes() {
     }
 
     let attributes = maplit::hashmap! {
-        format!("{}_HOSTNAME", gcp::ENV_PREFIX) => String::from(hostname),
-        format!("{}_IP_EXTERNAL_0", gcp::ENV_PREFIX) => String::from(ip_external),
-        format!("{}_IP_LOCAL_0", gcp::ENV_PREFIX) => String::from(ip_local),
-        format!("{}_MACHINE_TYPE", gcp::ENV_PREFIX) => String::from(machine_type),
+        format!("{}_HOSTNAME", gcp::ENV_PREFIX) => hostname.to_string(),
+        format!("{}_IP_EXTERNAL_0", gcp::ENV_PREFIX) => ip_external.to_string(),
+        format!("{}_IP_LOCAL_0", gcp::ENV_PREFIX) => ip_local.to_string(),
+        format!("{}_MACHINE_TYPE", gcp::ENV_PREFIX) => machine_type.to_string(),
     };
 
     let client = crate::retry::Client::try_new()
