@@ -10,8 +10,6 @@ fn basic_hostname() {
     let mut provider = gcp::GcpProvider::try_new().unwrap();
     provider.client = provider.client.max_attempts(1);
 
-    provider.hostname().unwrap_err();
-
     let _m = mockito::mock("GET", ep).with_status(503).create();
     provider.hostname().unwrap_err();
 
@@ -25,4 +23,7 @@ fn basic_hostname() {
     let _m = mockito::mock("GET", ep).with_status(404).create();
     let v = provider.hostname().unwrap();
     assert_eq!(v, None);
+
+    mockito::reset();
+    provider.hostname().unwrap_err();
 }
