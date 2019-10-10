@@ -4,6 +4,7 @@ Description=Afterburn (SSH Keys)
 # Platforms which support SSH keys but require selecting from multiple metadata
 # sources are not listed here; for those platforms, CT writes a drop-in which
 # adds the appropriate triggering condition and sets AFTERBURN_OPT_PROVIDER.
+ConditionKernelCommandLine=|ignition.platform.id=aliyun
 ConditionKernelCommandLine=|ignition.platform.id=aws
 ConditionKernelCommandLine=|ignition.platform.id=azure
 ConditionKernelCommandLine=|ignition.platform.id=digitalocean
