@@ -87,6 +87,23 @@ pub struct PacketProvider {
 }
 
 impl PacketProvider {
+    #[cfg(test)]
+    pub fn try_new() -> Result<PacketProvider> {
+        let client = retry::Client::try_new()?;
+        let url = mockito::server_url();
+
+        let data: PacketData = client
+            .get(
+                retry::Json,
+                format!("{}/metadata", url),
+            )
+            .send()?
+            .ok_or("not found")?;
+
+        Ok(PacketProvider { data })
+    }
+
+    #[cfg(not(test))]
     pub fn try_new() -> Result<PacketProvider> {
         let client = retry::Client::try_new()?;
 
@@ -144,6 +161,7 @@ impl PacketProvider {
             "PACKET_PHONE_HOME_URL".to_owned(),
             self.data.phone_home_url.clone(),
         ));
+        attrs.push(("PACKET_PLAN".to_owned(), self.data.plan.clone()));
         Ok(attrs)
     }
 

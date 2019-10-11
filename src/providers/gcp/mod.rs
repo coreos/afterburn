@@ -131,7 +131,7 @@ impl GcpProvider {
 
 impl MetadataProvider for GcpProvider {
     fn attributes(&self) -> Result<HashMap<String, String>> {
-        let mut out = HashMap::with_capacity(3);
+        let mut out = HashMap::with_capacity(4);
 
         let add_value = |map: &mut HashMap<_, _>, key: &str, name| -> Result<()> {
             let value: Option<String> = self
@@ -162,6 +162,11 @@ impl MetadataProvider for GcpProvider {
             &mut out,
             &format!("{}_IP_LOCAL_0", ENV_PREFIX),
             "instance/network-interfaces/0/ip",
+        )?;
+        add_value(
+            &mut out,
+            &format!("{}_MACHINE_TYPE", ENV_PREFIX),
+            "instance/machine-type",
         )?;
 
         Ok(out)

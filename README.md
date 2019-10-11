@@ -34,12 +34,14 @@ On CoreOS Container Linux, the supported providers and metadata are [somewhat di
       - AFTERBURN_AWS_IPV4_PUBLIC
       - AFTERBURN_AWS_AVAILABILITY_ZONE
       - AFTERBURN_AWS_INSTANCE_ID
+      - AFTERBURN_AWS_INSTANCE_TYPE
       - AFTERBURN_AWS_REGION
   - azure
     - SSH Keys
     - Attributes
       - AFTERBURN_AZURE_IPV4_DYNAMIC
       - AFTERBURN_AZURE_IPV4_VIRTUAL
+      - AFTERBURN_AZURE_VMSIZE
   - cloudstack-configdrive
     - SSH Keys
     - Attributes
@@ -79,6 +81,7 @@ On CoreOS Container Linux, the supported providers and metadata are [somewhat di
       - AFTERBURN_GCP_HOSTNAME
       - AFTERBURN_GCP_IP_EXTERNAL_0
       - AFTERBURN_GCP_IP_LOCAL_0
+      - AFTERBURN_GCP_MACHINE_TYPE
   - openstack-metadata
     - SSH Keys
     - Attributes
@@ -86,11 +89,13 @@ On CoreOS Container Linux, the supported providers and metadata are [somewhat di
       - AFTERBURN_OPENSTACK_IPV4_LOCAL
       - AFTERBURN_OPENSTACK_IPV4_PUBLIC
       - AFTERBURN_OPENSTACK_INSTANCE_ID
+      - AFTERBURN_OPENSTACK_INSTANCE_TYPE
   - packet
     - SSH Keys
     - Network Configs
     - Attributes
       - AFTERBURN_PACKET_HOSTNAME
+      - AFTERBURN_PACKET_PLAN
       - AFTERBURN_PACKET_IPV4_PUBLIC_0
       - AFTERBURN_PACKET_IPV4_PRIVATE_0
       - AFTERBURN_PACKET_IPV6_PUBLIC_0

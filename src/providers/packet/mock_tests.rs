@@ -33,4 +33,45 @@ fn test_boot_checkin() {
     let r = provider.boot_checkin();
     mock.assert();
     r.unwrap();
+
+    mockito::reset();
+    provider.boot_checkin().unwrap_err();
+}
+
+#[test]
+fn test_packet_attributes() {
+    let metadata = r#"{
+        "id": "test-id",
+        "hostname": "test-hostname",
+        "iqn": "test-iqn",
+        "plan": "test-plan",
+        "facility": "test-facility",
+        "tags": [],
+        "ssh_keys": [],
+        "network": {
+            "interfaces": [],
+            "addresses": [],
+            "bonding": { "mode": 0 }
+        },
+        "phone_home_url": "test-url"
+    }"#;
+
+    let attributes = maplit::hashmap! {
+        "PACKET_HOSTNAME".to_string() => "test-hostname".to_string(),
+        "PACKET_PHONE_HOME_URL".to_string() => "test-url".to_string(),
+        "PACKET_PLAN".to_string() => "test-plan".to_string(),
+    };
+
+    let _m = mockito::mock("GET", "/metadata")
+        .with_status(200)
+        .with_body(metadata)
+        .create();
+
+    let provider = packet::PacketProvider::try_new().unwrap();
+    let v = provider.attributes().unwrap();
+
+    assert_eq!(v, attributes);
+
+    mockito::reset();
+    packet::PacketProvider::try_new().unwrap_err();
 }

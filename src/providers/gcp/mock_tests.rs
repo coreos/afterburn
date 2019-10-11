@@ -27,3 +27,45 @@ fn basic_hostname() {
     mockito::reset();
     provider.hostname().unwrap_err();
 }
+
+#[test]
+fn basic_attributes() {
+    let hostname = "test-hostname";
+    let ip_external = "test-ip-external";
+    let ip_local = "test-ip-local";
+    let machine_type = "test-machine-type";
+
+    let endpoints = maplit::btreemap! {
+        "/instance/hostname" => hostname,
+        "/instance/network-interfaces/0/access-configs/0/external-ip" => ip_external,
+        "/instance/network-interfaces/0/ip" => ip_local,
+        "/instance/machine-type" => machine_type,
+    };
+    let mut mocks = Vec::with_capacity(endpoints.len());
+    for (endpoint, body) in endpoints {
+        let m = mockito::mock("GET", endpoint)
+            .with_status(200)
+            .with_body(body)
+            .create();
+        mocks.push(m);
+    }
+
+    let attributes = maplit::hashmap! {
+        format!("{}_HOSTNAME", gcp::ENV_PREFIX) => hostname.to_string(),
+        format!("{}_IP_EXTERNAL_0", gcp::ENV_PREFIX) => ip_external.to_string(),
+        format!("{}_IP_LOCAL_0", gcp::ENV_PREFIX) => ip_local.to_string(),
+        format!("{}_MACHINE_TYPE", gcp::ENV_PREFIX) => machine_type.to_string(),
+    };
+
+    let client = crate::retry::Client::try_new()
+        .unwrap()
+        .max_attempts(1)
+        .return_on_404(true);
+    let provider = gcp::GcpProvider { client };
+
+    let v = provider.attributes().unwrap();
+    assert_eq!(v, attributes);
+
+    mockito::reset();
+    provider.attributes().unwrap_err();
+}

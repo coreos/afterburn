@@ -17,6 +17,7 @@ On Container Linux, the supported cloud providers and their respective metadata 
     - Attributes
       - COREOS_AZURE_IPV4_DYNAMIC
       - COREOS_AZURE_IPV4_VIRTUAL
+      - COREOS_AZURE_VMSIZE
   - cloudstack-configdrive
     - SSH Keys
     - Attributes
@@ -59,6 +60,7 @@ On Container Linux, the supported cloud providers and their respective metadata 
       - COREOS_EC2_IPV4_PUBLIC
       - COREOS_EC2_AVAILABILITY_ZONE
       - COREOS_EC2_INSTANCE_ID
+      - COREOS_EC2_INSTANCE_TYPE
       - COREOS_EC2_REGION
   - gce
     - SSH Keys
@@ -66,6 +68,7 @@ On Container Linux, the supported cloud providers and their respective metadata 
       - COREOS_GCE_HOSTNAME
       - COREOS_GCE_IP_EXTERNAL_0
       - COREOS_GCE_IP_LOCAL_0
+      - COREOS_GCE_MACHINE_TYPE
   - openstack-metadata
     - SSH Keys
     - Attributes
@@ -73,11 +76,13 @@ On Container Linux, the supported cloud providers and their respective metadata 
       - COREOS_OPENSTACK_IPV4_LOCAL
       - COREOS_OPENSTACK_IPV4_PUBLIC
       - COREOS_OPENSTACK_INSTANCE_ID
+      - COREOS_OPENSTACK_INSTANCE_TYPE
   - packet
     - SSH Keys
     - Network Configs
     - Attributes
       - COREOS_PACKET_HOSTNAME
+      - COREOS_PACKET_PLAN
       - COREOS_PACKET_IPV4_PUBLIC_0
       - COREOS_PACKET_IPV4_PRIVATE_0
       - COREOS_PACKET_IPV6_PUBLIC_0

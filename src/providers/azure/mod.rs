@@ -17,7 +17,7 @@
 mod crypto;
 
 use std::collections::HashMap;
-use std::net::{IpAddr, SocketAddr};
+use std::net::IpAddr;
 
 use openssh_keys::PublicKey;
 use reqwest::header::{HeaderName, HeaderValue};
@@ -355,7 +355,18 @@ impl Azure {
         Ok(ssh_pubkey)
     }
 
+    #[cfg(test)]
     fn get_attributes(&self) -> Result<Attributes> {
+        Ok(Attributes{
+            virtual_ipv4: Some(Azure::get_fabric_address()),
+            dynamic_ipv4: Some(Azure::get_fabric_address()),
+        })
+    }
+
+    #[cfg(not(test))]
+    fn get_attributes(&self) -> Result<Attributes> {
+        use std::net::SocketAddr;
+
         let endpoint = &self.goal_state.container.role_instance_list.role_instances[0]
             .configuration
             .shared_config;
@@ -418,12 +429,28 @@ impl Azure {
             .chain_err(|| "failed to get hostname")?;
         Ok(name)
     }
+
+    fn fetch_vmsize (&self) -> Result<String> {
+        const VMSIZE_URL: &str = "metadata/instance/compute/vmSize?api-version=2017-08-01&format=text";
+        let url = format!("{}/{}", Self::metadata_endpoint(), VMSIZE_URL);
+
+        let vmsize = retry::Client::try_new()?
+            .header(
+                HeaderName::from_static("metadata"),
+                HeaderValue::from_static("true"),
+            )
+            .get(retry::Raw, url)
+            .send()?
+            .chain_err(|| "failed to get vmsize")?;
+        Ok(vmsize)
+    }
 }
 
 impl MetadataProvider for Azure {
     fn attributes(&self) -> Result<HashMap<String, String>> {
         let attributes = self.get_attributes()?;
-        let mut out = HashMap::with_capacity(2);
+        let vmsize = self.fetch_vmsize()?;
+        let mut out = HashMap::with_capacity(3);
 
         if let Some(virtual_ipv4) = attributes.virtual_ipv4 {
             out.insert("AZURE_IPV4_VIRTUAL".to_string(), virtual_ipv4.to_string());
@@ -432,6 +459,8 @@ impl MetadataProvider for Azure {
         if let Some(dynamic_ipv4) = attributes.dynamic_ipv4 {
             out.insert("AZURE_IPV4_DYNAMIC".to_string(), dynamic_ipv4.to_string());
         }
+
+        out.insert("AZURE_VMSIZE".to_string(), vmsize.to_string());
 
         Ok(out)
     }

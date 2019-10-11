@@ -73,6 +73,7 @@ impl MetadataProvider for OpenstackProvider {
 
         add_value(&mut out, "OPENSTACK_HOSTNAME", "hostname")?;
         add_value(&mut out, "OPENSTACK_INSTANCE_ID", "instance-id")?;
+        add_value(&mut out, "OPENSTACK_INSTANCE_TYPE", "instance-type")?;
         add_value(&mut out, "OPENSTACK_IPV4_LOCAL", "local-ipv4")?;
         add_value(&mut out, "OPENSTACK_IPV4_PUBLIC", "public-ipv4")?;
 
