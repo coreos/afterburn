@@ -20,6 +20,8 @@
 //!  flags.
 
 use crate::errors::*;
+use error_chain::bail;
+use slog_scope::trace;
 use std::io::Read;
 use std::{fs, io};
 

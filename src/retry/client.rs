@@ -25,6 +25,7 @@ use std::time::Duration;
 
 use reqwest::header;
 use reqwest::{self, Method, Request};
+use slog_scope::info;
 
 use serde;
 use serde_json;

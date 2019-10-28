@@ -3,6 +3,7 @@
 use std::collections::HashMap;
 
 use openssh_keys::PublicKey;
+use slog_scope::warn;
 
 use crate::errors::*;
 use crate::network;

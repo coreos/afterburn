@@ -7,6 +7,7 @@ use std::path::{Path, PathBuf};
 
 use nix::mount;
 use openssh_keys::PublicKey;
+use slog_scope::warn;
 use tempdir::TempDir;
 
 use crate::errors::*;

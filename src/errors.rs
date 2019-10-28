@@ -14,6 +14,7 @@
 
 #![allow(deprecated)]
 
+use error_chain::error_chain;
 use reqwest::header;
 use serde_json;
 

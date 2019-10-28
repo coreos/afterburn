@@ -24,6 +24,8 @@ use std::str::FromStr;
 
 use openssh_keys::PublicKey;
 use pnet_base::MacAddr;
+use serde_derive::Deserialize;
+use slog_scope::warn;
 
 use crate::errors::*;
 use crate::network::{self, Device, Interface, NetworkRoute, Section};
@@ -93,10 +95,7 @@ impl PacketProvider {
         let url = mockito::server_url();
 
         let data: PacketData = client
-            .get(
-                retry::Json,
-                format!("{}/metadata", url),
-            )
+            .get(retry::Json, format!("{}/metadata", url))
             .send()?
             .ok_or("not found")?;
 

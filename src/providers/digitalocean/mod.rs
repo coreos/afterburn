@@ -22,6 +22,8 @@ use ipnetwork;
 use ipnetwork::{IpNetwork, Ipv4Network, Ipv6Network};
 use openssh_keys::PublicKey;
 use pnet_base::MacAddr;
+use serde_derive::Deserialize;
+use slog_scope::warn;
 
 use crate::errors::*;
 use crate::network;

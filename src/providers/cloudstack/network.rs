@@ -5,6 +5,7 @@ use std::net::IpAddr;
 use std::time::Duration;
 
 use openssh_keys::PublicKey;
+use slog_scope::warn;
 
 use crate::errors::*;
 use crate::network;
