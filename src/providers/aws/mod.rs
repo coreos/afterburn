@@ -20,6 +20,7 @@ use std::collections::HashMap;
 #[cfg(test)]
 use mockito;
 use openssh_keys::PublicKey;
+use serde_derive::Deserialize;
 
 use crate::errors::*;
 use crate::network;

@@ -12,36 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-extern crate base64;
-#[macro_use]
-extern crate clap;
-#[macro_use]
-extern crate error_chain;
-extern crate hostname;
-extern crate ipnetwork;
-extern crate nix;
-extern crate openssh_keys;
-extern crate openssl;
-extern crate reqwest;
-#[macro_use]
-extern crate serde_derive;
-extern crate serde;
-extern crate serde_json;
-extern crate serde_xml_rs;
-#[macro_use]
-extern crate slog;
-extern crate slog_async;
-extern crate slog_term;
 #[macro_use]
 extern crate slog_scope;
-extern crate tempdir;
-extern crate tempfile;
-#[cfg(feature = "cl-legacy")]
-extern crate update_ssh_keys;
-extern crate users;
-
-#[cfg(test)]
-extern crate mockito;
 
 mod errors;
 mod metadata;
@@ -50,8 +22,9 @@ mod providers;
 mod retry;
 mod util;
 
-use clap::{App, Arg};
-use slog::Drain;
+use clap::{crate_version, App, Arg};
+use error_chain::quick_main;
+use slog::{slog_o, Drain};
 use std::env;
 
 use crate::errors::*;
