@@ -1,7 +1,7 @@
 use crate::errors::*;
 use crate::providers::aws;
-use mockito;
 use crate::providers::MetadataProvider;
+use mockito;
 
 #[test]
 fn test_aws_basic() {

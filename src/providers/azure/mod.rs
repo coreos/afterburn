@@ -357,7 +357,7 @@ impl Azure {
 
     #[cfg(test)]
     fn get_attributes(&self) -> Result<Attributes> {
-        Ok(Attributes{
+        Ok(Attributes {
             virtual_ipv4: Some(Azure::get_fabric_address()),
             dynamic_ipv4: Some(Azure::get_fabric_address()),
         })
@@ -430,8 +430,9 @@ impl Azure {
         Ok(name)
     }
 
-    fn fetch_vmsize (&self) -> Result<String> {
-        const VMSIZE_URL: &str = "metadata/instance/compute/vmSize?api-version=2017-08-01&format=text";
+    fn fetch_vmsize(&self) -> Result<String> {
+        const VMSIZE_URL: &str =
+            "metadata/instance/compute/vmSize?api-version=2017-08-01&format=text";
         let url = format!("{}/{}", Self::metadata_endpoint(), VMSIZE_URL);
 
         let vmsize = retry::Client::try_new()?

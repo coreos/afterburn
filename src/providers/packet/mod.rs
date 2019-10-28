@@ -93,10 +93,7 @@ impl PacketProvider {
         let url = mockito::server_url();
 
         let data: PacketData = client
-            .get(
-                retry::Json,
-                format!("{}/metadata", url),
-            )
+            .get(retry::Json, format!("{}/metadata", url))
             .send()?
             .ok_or("not found")?;
 
