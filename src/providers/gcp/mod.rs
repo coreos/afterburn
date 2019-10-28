@@ -18,6 +18,7 @@
 use mockito;
 use openssh_keys::PublicKey;
 use reqwest::header::{HeaderName, HeaderValue};
+use slog_scope::warn;
 use std::collections::HashMap;
 
 use crate::errors::*;

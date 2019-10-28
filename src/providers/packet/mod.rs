@@ -25,6 +25,7 @@ use std::str::FromStr;
 use openssh_keys::PublicKey;
 use pnet_base::MacAddr;
 use serde_derive::Deserialize;
+use slog_scope::warn;
 
 use crate::errors::*;
 use crate::network::{self, Device, Interface, NetworkRoute, Section};

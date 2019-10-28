@@ -6,6 +6,7 @@
 #[cfg(test)]
 use mockito;
 use openssh_keys::PublicKey;
+use slog_scope::{error, warn};
 use std::collections::{BTreeSet, HashMap};
 
 use crate::errors::*;

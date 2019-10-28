@@ -12,9 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#[macro_use]
-extern crate slog_scope;
-
 mod errors;
 mod metadata;
 mod network;
@@ -25,6 +22,7 @@ mod util;
 use clap::{crate_version, App, Arg};
 use error_chain::quick_main;
 use slog::{slog_o, Drain};
+use slog_scope::{debug, trace};
 use std::env;
 
 use crate::errors::*;
