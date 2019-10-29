@@ -182,9 +182,21 @@ pub struct Azure {
 }
 
 impl Azure {
-    pub fn try_new() -> Result<Azure> {
-        let addr = Azure::get_fabric_address();
-        let client = retry::Client::try_new()?
+    /// Try to build a new provider client.
+    ///
+    /// This internally tries to fetch and cache the goal-state content.
+    pub fn try_new() -> Result<Self> {
+        Self::fetch_content(None)
+    }
+
+    /// Fetch metadata content from Azure internal API (fabric).
+    pub(crate) fn fetch_content(client: Option<retry::Client>) -> Result<Azure> {
+        let mut client = match client {
+            Some(c) => c,
+            None => retry::Client::try_new()?,
+        };
+        // Add headers required by API.
+        client = client
             .header(
                 HeaderName::from_static(HDR_AGENT_NAME),
                 HeaderValue::from_static(MS_AGENT_NAME),
@@ -196,7 +208,7 @@ impl Azure {
 
         let mut azure = Azure {
             client,
-            endpoint: addr,
+            endpoint: Azure::get_fabric_address(),
             goal_state: GoalState::default(),
         };
 
