@@ -35,7 +35,10 @@ fn test_boot_checkin() {
     r.unwrap();
 
     mockito::reset();
-    provider.boot_checkin().unwrap_err();
+
+    // Check error logic, but fail fast without re-trying.
+    let client = crate::retry::Client::try_new().unwrap().max_attempts(1);
+    packet::PacketProvider::fetch_content(Some(client)).unwrap_err();
 }
 
 #[test]
@@ -73,5 +76,8 @@ fn test_packet_attributes() {
     assert_eq!(v, attributes);
 
     mockito::reset();
-    packet::PacketProvider::try_new().unwrap_err();
+
+    // Check error logic, but fail fast without re-trying.
+    let client = crate::retry::Client::try_new().unwrap().max_attempts(1);
+    packet::PacketProvider::fetch_content(Some(client)).unwrap_err();
 }
