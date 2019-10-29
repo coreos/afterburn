@@ -5,9 +5,8 @@ use std::fs::File;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 
-use nix::mount;
 use openssh_keys::PublicKey;
-use slog_scope::warn;
+use slog_scope::{error, warn};
 use tempdir::TempDir;
 
 use crate::errors::*;
@@ -17,50 +16,61 @@ use crate::providers::MetadataProvider;
 const CONFIG_DRIVE_LABEL_1: &str = "config-2";
 const CONFIG_DRIVE_LABEL_2: &str = "CONFIG-2";
 
+/// CloudStack config-drive.
 #[derive(Debug)]
 pub struct ConfigDrive {
+    /// Path to the top directory of the mounted config-drive.
+    drive_path: PathBuf,
+    /// Temporary directory for own mountpoint (if any).
     temp_dir: Option<TempDir>,
-    target: PathBuf,
-    path: PathBuf,
 }
 
 impl ConfigDrive {
+    /// Try to build a new provider client.
+    ///
+    /// This internally tries to mount (and own) the config-drive.
     pub fn try_new() -> Result<Self> {
-        // maybe its already mounted
+        // Short-circuit if the config-drive is already mounted.
         let path = Path::new("/media/ConfigDrive/cloudstack/metadata/");
         if path.exists() {
             return Ok(ConfigDrive {
                 temp_dir: None,
-                path: path.to_owned(),
-                target: path.to_owned(),
+                drive_path: PathBuf::from("/media/ConfigDrive/"),
             });
         }
 
-        // if not try and mount with each of the labels
+        // Otherwise, try and mount with each of the labels.
         let target =
             TempDir::new("afterburn").chain_err(|| "failed to create temporary directory")?;
-        ConfigDrive::mount_ro(
+        crate::util::mount_ro(
             &Path::new("/dev/disk/by-label/").join(CONFIG_DRIVE_LABEL_1),
             target.path(),
             "iso9660",
+            3,
         )
         .or_else(|_| {
-            ConfigDrive::mount_ro(
+            crate::util::mount_ro(
                 &Path::new("/dev/disk/by-label/").join(CONFIG_DRIVE_LABEL_2),
                 target.path(),
                 "iso9660",
+                3,
             )
         })?;
 
-        Ok(ConfigDrive {
-            path: target.path().join("cloudstack").join("metadata"),
-            target: target.path().to_owned(),
+        let cd = ConfigDrive {
+            drive_path: target.path().to_owned(),
             temp_dir: Some(target),
-        })
+        };
+        Ok(cd)
+    }
+
+    /// Return the path to the metadata directory.
+    fn metadata_dir(&self) -> PathBuf {
+        self.drive_path.clone().join("cloudstack").join("metadata")
     }
 
     fn fetch_value(&self, key: &str) -> Result<Option<String>> {
-        let filename = self.path.join(format!("{}.txt", key));
+        let filename = self.metadata_dir().join(format!("{}.txt", key));
 
         if !filename.exists() {
             return Ok(None);
@@ -77,31 +87,11 @@ impl ConfigDrive {
     }
 
     fn fetch_publickeys(&self) -> Result<Vec<PublicKey>> {
-        let filename = self.path.join("public_keys.txt");
+        let filename = self.metadata_dir().join("public_keys.txt");
         let file =
             File::open(&filename).chain_err(|| format!("failed to open file '{:?}'", filename))?;
 
         PublicKey::read_keys(file).chain_err(|| "failed to read public keys from config drive file")
-    }
-
-    fn mount_ro(source: &Path, target: &Path, fstype: &str) -> Result<()> {
-        mount::mount(
-            Some(source),
-            target,
-            Some(fstype),
-            mount::MsFlags::MS_RDONLY,
-            None::<&str>,
-        )
-        .chain_err(|| {
-            format!(
-                "failed to read-only mount source '{:?}' to target '{:?}' with filetype '{}'",
-                source, target, fstype
-            )
-        })
-    }
-
-    fn unmount(target: &Path) -> Result<()> {
-        mount::umount(target).chain_err(|| format!("failed to unmount target '{:?}'", target))
     }
 }
 
@@ -154,10 +144,12 @@ impl MetadataProvider for ConfigDrive {
     }
 }
 
-impl ::std::ops::Drop for ConfigDrive {
+impl Drop for ConfigDrive {
     fn drop(&mut self) {
         if self.temp_dir.is_some() {
-            ConfigDrive::unmount(&self.path).unwrap();
+            if let Err(e) = crate::util::unmount(&self.metadata_dir(), 3) {
+                error!("failed to cleanup CloudStack config-drive: {}", e);
+            };
         }
     }
 }
