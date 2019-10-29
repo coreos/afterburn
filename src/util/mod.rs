@@ -26,6 +26,9 @@ use std::time::Duration;
 mod cmdline;
 pub use self::cmdline::get_platform;
 
+mod mount;
+pub(crate) use mount::{unmount, mount_ro};
+
 fn key_lookup_line(delim: char, key: &str, line: &str) -> Option<String> {
     match line.find(delim) {
         Some(index) => {
