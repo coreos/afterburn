@@ -89,32 +89,38 @@ pub struct PacketProvider {
 }
 
 impl PacketProvider {
-    #[cfg(test)]
-    pub fn try_new() -> Result<PacketProvider> {
-        let client = retry::Client::try_new()?;
-        let url = mockito::server_url();
+    /// Try to build a new provider client.
+    ///
+    /// This internally tries to fetch and cache the metadata content.
+    pub fn try_new() -> Result<Self> {
+        Self::fetch_content(None)
+    }
+
+    /// Fetch metadata content from Packet metadata endpoint.
+    pub(crate) fn fetch_content(client: Option<retry::Client>) -> Result<Self> {
+        let client = match client {
+            Some(c) => c,
+            None => retry::Client::try_new()?,
+        };
 
         let data: PacketData = client
-            .get(retry::Json, format!("{}/metadata", url))
+            .get(retry::Json, Self::endpoint_for("metadata"))
             .send()?
-            .ok_or("not found")?;
+            .ok_or("metadata endpoint unreachable")?;
 
-        Ok(PacketProvider { data })
+        Ok(Self { data })
+    }
+
+    #[cfg(test)]
+    fn endpoint_for(name: &str) -> String {
+        let url = mockito::server_url();
+        format!("{}/{}", url, name)
     }
 
     #[cfg(not(test))]
-    pub fn try_new() -> Result<PacketProvider> {
-        let client = retry::Client::try_new()?;
-
-        let data: PacketData = client
-            .get(
-                retry::Json,
-                "http://metadata.packet.net/metadata".to_string(),
-            )
-            .send()?
-            .ok_or("not found")?;
-
-        Ok(PacketProvider { data })
+    fn endpoint_for(name: &str) -> String {
+        let url = "http://metadata.packet.net";
+        format!("{}/{}", url, name)
     }
 
     fn get_attrs(&self) -> Result<Vec<(String, String)>> {
