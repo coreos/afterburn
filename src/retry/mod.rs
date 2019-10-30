@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! retry is a generic function that retrys functions until they succeed.
+//! Drive a functions through a finite number of retries until it succeeds.
 
 use crate::errors::*;
 use std::thread;
@@ -26,39 +26,49 @@ pub use self::client::*;
 pub struct Retry {
     initial_backoff: Duration,
     max_backoff: Duration,
-    max_attempts: u32,
+    max_retries: u32,
 }
 
-impl ::std::default::Default for Retry {
+impl Default for Retry {
     fn default() -> Self {
         Retry {
             initial_backoff: Duration::new(1, 0),
             max_backoff: Duration::new(5, 0),
-            max_attempts: 10,
+            max_retries: 10,
         }
     }
 }
 
 impl Retry {
+    /// Build a new retrying driver.
+    ///
+    /// This defaults to 10 retries with 5 seconds maximum backoff.
     pub fn new() -> Self {
         Retry::default()
     }
 
+    /// Set the initial backoff.
     pub fn initial_backoff(mut self, initial_backoff: Duration) -> Self {
         self.initial_backoff = initial_backoff;
         self
     }
 
+    /// Set the maximum backoff.
     pub fn max_backoff(mut self, max_backoff: Duration) -> Self {
         self.max_backoff = max_backoff;
         self
     }
 
-    pub fn max_attempts(mut self, max_attempts: u32) -> Self {
-        self.max_attempts = max_attempts;
+    /// Maximum number of retries to attempt.
+    ///
+    /// If zero, only the initial run will be performed, with no
+    /// additional retries.
+    pub fn max_attempts(mut self, retries: u32) -> Self {
+        self.max_retries = retries;
         self
     }
 
+    /// Retry a function until it either succeeds once or fails all the time.
     pub fn retry<F, R>(self, try_fn: F) -> Result<R>
     where
         F: Fn(u32) -> Result<R>,
@@ -69,16 +79,17 @@ impl Retry {
         loop {
             let res = try_fn(attempts);
 
-            // if the result is ok, we don't need to try again
+            // If the result is ok, there is no need to try again.
             if res.is_ok() {
                 break res;
             }
 
-            // otherwise, perform the retry-backoff logic
-            attempts += 1;
-            if attempts == self.max_attempts {
-                break res.map_err(|e| Error::with_chain(e, "timed out"));
+            // Otherwise, perform "the retry with backoff" logic.
+            if attempts >= self.max_retries {
+                let msg = format!("maximum number of retries ({}) reached", self.max_retries);
+                break res.map_err(|e| Error::with_chain(e, msg.as_str()));
             }
+            attempts = attempts.saturating_add(1);
 
             thread::sleep(delay);
 
