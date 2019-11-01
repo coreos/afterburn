@@ -2,7 +2,6 @@
 
 use std::collections::HashMap;
 use std::net::IpAddr;
-use std::time::Duration;
 
 use openssh_keys::PublicKey;
 use slog_scope::warn;
@@ -24,10 +23,7 @@ pub struct CloudstackNetwork {
 impl CloudstackNetwork {
     pub fn try_new() -> Result<CloudstackNetwork> {
         let server_address = CloudstackNetwork::get_dhcp_server_address()?;
-        let client = retry::Client::try_new()?
-            .initial_backoff(Duration::from_secs(1))
-            .max_backoff(Duration::from_secs(5))
-            .max_attempts(10);
+        let client = retry::Client::try_new()?;
 
         Ok(CloudstackNetwork {
             server_address,

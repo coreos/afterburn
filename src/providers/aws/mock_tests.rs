@@ -9,7 +9,7 @@ fn test_aws_basic() {
     let client = crate::retry::Client::try_new()
         .chain_err(|| "failed to create http client")
         .unwrap()
-        .max_attempts(1)
+        .max_retries(0)
         .return_on_404(true);
     let provider = aws::AwsProvider { client };
 
@@ -76,7 +76,7 @@ fn test_aws_attributes() {
     let client = crate::retry::Client::try_new()
         .chain_err(|| "failed to create http client")
         .unwrap()
-        .max_attempts(1)
+        .max_retries(0)
         .return_on_404(true);
     let provider = aws::AwsProvider { client };
 
