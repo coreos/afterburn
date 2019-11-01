@@ -26,7 +26,7 @@ pub use self::client::*;
 pub struct Retry {
     initial_backoff: Duration,
     max_backoff: Duration,
-    max_retries: u32,
+    max_retries: u8,
 }
 
 impl Default for Retry {
@@ -48,12 +48,14 @@ impl Retry {
     }
 
     /// Set the initial backoff.
+    #[allow(dead_code)]
     pub fn initial_backoff(mut self, initial_backoff: Duration) -> Self {
         self.initial_backoff = initial_backoff;
         self
     }
 
     /// Set the maximum backoff.
+    #[allow(dead_code)]
     pub fn max_backoff(mut self, max_backoff: Duration) -> Self {
         self.max_backoff = max_backoff;
         self
@@ -63,7 +65,7 @@ impl Retry {
     ///
     /// If zero, only the initial run will be performed, with no
     /// additional retries.
-    pub fn max_attempts(mut self, retries: u32) -> Self {
+    pub fn max_retries(mut self, retries: u8) -> Self {
         self.max_retries = retries;
         self
     }
@@ -71,7 +73,7 @@ impl Retry {
     /// Retry a function until it either succeeds once or fails all the time.
     pub fn retry<F, R>(self, try_fn: F) -> Result<R>
     where
-        F: Fn(u32) -> Result<R>,
+        F: Fn(u8) -> Result<R>,
     {
         let mut delay = self.initial_backoff;
         let mut attempts = 0;
@@ -99,5 +101,55 @@ impl Retry {
                 delay * 2
             };
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use error_chain::bail;
+
+    type AttemptResult = Result<u8>;
+
+    #[test]
+    fn test_no_retries() {
+        let retries = 0;
+        let timings = Duration::from_millis(100);
+        let driver = Retry::new()
+            .initial_backoff(timings)
+            .max_backoff(timings)
+            .max_retries(retries);
+
+        let final_res: AttemptResult = driver.retry(|attempt| {
+            if attempt != 0 {
+                panic!("unreachable attempt {}", attempt);
+            }
+
+            bail!("expected error")
+        });
+        final_res.unwrap_err();
+    }
+
+    #[test]
+    fn test_max_retries() {
+        let retries = 3;
+        let timings = Duration::from_millis(100);
+        let driver = Retry::new()
+            .initial_backoff(timings)
+            .max_backoff(timings)
+            .max_retries(retries);
+
+        let final_res = driver.retry(|attempt| {
+            if attempt == retries {
+                return AttemptResult::Ok(attempt);
+            }
+            if attempt > retries {
+                panic!("unreachable attempt {}", attempt);
+            }
+
+            bail!("expected error #{}", attempt)
+        });
+        let total = final_res.unwrap();
+        assert_eq!(total, retries);
     }
 }

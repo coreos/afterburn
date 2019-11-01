@@ -11,7 +11,7 @@ use std::process::Command;
 ///
 /// This can internally retry in case of transient errors.
 pub(crate) fn unmount(target: &Path, retries: u8) -> Result<()> {
-    let driver = retry::Retry::new().max_attempts(u32::from(retries));
+    let driver = retry::Retry::new().max_retries(retries);
     driver.retry(|attempt| {
         debug!(
             "Unmounting '{}': attempt #{}",
@@ -26,7 +26,7 @@ pub(crate) fn unmount(target: &Path, retries: u8) -> Result<()> {
 ///
 /// This can internally wait for udev events settling and retry in case of transient errors.
 pub(crate) fn mount_ro(source: &Path, target: &Path, fstype: &str, retries: u8) -> Result<()> {
-    let driver = retry::Retry::new().max_attempts(u32::from(retries));
+    let driver = retry::Retry::new().max_retries(retries);
     driver.retry(|attempt| {
         debug!("Mounting '{}': attempt #{}", source.display(), attempt + 1);
         let res = mount::mount(

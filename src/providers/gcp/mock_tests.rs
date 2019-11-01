@@ -8,7 +8,7 @@ fn basic_hostname() {
     let hostname = "test-hostname";
 
     let mut provider = gcp::GcpProvider::try_new().unwrap();
-    provider.client = provider.client.max_attempts(1);
+    provider.client = provider.client.max_retries(0);
 
     let _m = mockito::mock("GET", ep).with_status(503).create();
     provider.hostname().unwrap_err();
@@ -59,7 +59,7 @@ fn basic_attributes() {
 
     let client = crate::retry::Client::try_new()
         .unwrap()
-        .max_attempts(1)
+        .max_retries(0)
         .return_on_404(true);
     let provider = gcp::GcpProvider { client };
 

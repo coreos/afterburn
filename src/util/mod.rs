@@ -27,7 +27,7 @@ mod cmdline;
 pub use self::cmdline::get_platform;
 
 mod mount;
-pub(crate) use mount::{unmount, mount_ro};
+pub(crate) use mount::{mount_ro, unmount};
 
 fn key_lookup_line(delim: char, key: &str, line: &str) -> Option<String> {
     match line.find(delim) {
@@ -62,7 +62,7 @@ pub fn dns_lease_key_lookup(key: &str) -> Result<String> {
     retry::Retry::new()
         .initial_backoff(Duration::from_millis(50))
         .max_backoff(Duration::from_millis(500))
-        .max_attempts(60)
+        .max_retries(60)
         .retry(|_| {
             for interface in interfaces.clone() {
                 trace!("looking at interface {:?}", interface);

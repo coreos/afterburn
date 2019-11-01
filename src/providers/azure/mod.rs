@@ -22,7 +22,6 @@ use std::net::IpAddr;
 use openssh_keys::PublicKey;
 use reqwest::header::{HeaderName, HeaderValue};
 use serde_derive::Deserialize;
-use slog_scope::{info, trace, warn};
 
 use self::crypto::x509;
 use crate::errors::*;
@@ -235,6 +234,8 @@ impl Azure {
 
     #[cfg(not(test))]
     fn get_fabric_address() -> IpAddr {
+        use slog_scope::{info, warn};
+
         // try to fetch from dhcp, else use fallback; this is similar to what WALinuxAgent does
         Azure::get_fabric_address_from_dhcp().unwrap_or_else(|e| {
             warn!("Failed to get fabric address from DHCP: {}", e);
@@ -249,7 +250,7 @@ impl Azure {
         // value is an 8 digit hex value. convert it to u32 and
         // then parse that into an ip. Ipv4Addr::from(u32)
         // performs conversion from big-endian
-        trace!("found fabric address in hex - {:?}", v);
+        slog_scope::trace!("found fabric address in hex - {:?}", v);
         let dec = u32::from_str_radix(&v, 16)
             .chain_err(|| format!("failed to convert '{}' from hex", v))?;
         Ok(IpAddr::V4(dec.into()))

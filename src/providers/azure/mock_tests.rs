@@ -92,7 +92,7 @@ fn test_boot_checkin() {
     mockito::reset();
 
     // Check error logic, but fail fast without re-trying.
-    let client = crate::retry::Client::try_new().unwrap().max_attempts(1);
+    let client = crate::retry::Client::try_new().unwrap().max_retries(0);
     azure::Azure::fetch_content(Some(client)).unwrap_err();
 }
 
@@ -122,7 +122,7 @@ fn test_hostname() {
     mockito::reset();
 
     // Check error logic, but fail fast without re-trying.
-    let client = crate::retry::Client::try_new().unwrap().max_attempts(1);
+    let client = crate::retry::Client::try_new().unwrap().max_retries(0);
     azure::Azure::fetch_content(Some(client)).unwrap_err();
 }
 
@@ -153,6 +153,6 @@ fn test_vmsize() {
     mockito::reset();
 
     // Check error logic, but fail fast without re-trying.
-    let client = crate::retry::Client::try_new().unwrap().max_attempts(1);
+    let client = crate::retry::Client::try_new().unwrap().max_retries(0);
     azure::Azure::fetch_content(Some(client)).unwrap_err();
 }

@@ -119,19 +119,25 @@ impl Client {
         self
     }
 
+    #[allow(dead_code)]
     pub fn initial_backoff(mut self, initial_backoff: Duration) -> Self {
         self.retry = self.retry.initial_backoff(initial_backoff);
         self
     }
 
+    #[allow(dead_code)]
     pub fn max_backoff(mut self, max_backoff: Duration) -> Self {
         self.retry = self.retry.max_backoff(max_backoff);
         self
     }
 
-    /// max_attempts will panic if the argument is greater than 500
-    pub fn max_attempts(mut self, max_attempts: u32) -> Self {
-        self.retry = self.retry.max_attempts(max_attempts);
+    /// Maximum number of retries to attempt.
+    ///
+    /// If zero, only the initial request will be performed, with no
+    /// additional retries.
+    #[allow(dead_code)]
+    pub fn max_retries(mut self, retries: u8) -> Self {
+        self.retry = self.retry.max_retries(retries);
         self
     }
 
