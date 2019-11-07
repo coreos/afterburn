@@ -21,7 +21,7 @@ dependencies = [
  "nix 0.15.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "openssh-keys 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "openssl 0.10.25 (registry+https://github.com/rust-lang/crates.io-index)",
- "pnet_base 0.22.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "pnet_base 0.23.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "pnet_datalink 0.23.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "reqwest 0.9.22 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.102 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -939,11 +939,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "pkg-config"
 version = "0.3.14"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-
-[[package]]
-name = "pnet_base"
-version = "0.22.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
@@ -1974,7 +1969,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum parking_lot_core 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)" = "ad7f7e6ebdc79edff6fdcb87a55b620174f7a989e3eb31b65231f4af57f00b8c"
 "checksum percent-encoding 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)" = "31010dd2e1ac33d5b46a5b413495239882813e0369f8ed8a5e266f173602f831"
 "checksum pkg-config 0.3.14 (registry+https://github.com/rust-lang/crates.io-index)" = "676e8eb2b1b4c9043511a9b7bea0915320d7e502b0a079fb03f9635a5252b18c"
-"checksum pnet_base 0.22.0 (registry+https://github.com/rust-lang/crates.io-index)" = "4df28acf2fcc77436dd2b91a9a0c2bb617f9ca5f2acefee1a4135058b9f9801f"
 "checksum pnet_base 0.23.0 (registry+https://github.com/rust-lang/crates.io-index)" = "f7d818b94d0897cd22f7a18f6c2a94f7ae1dfcedc194bf1665880f6c1155e051"
 "checksum pnet_datalink 0.23.0 (registry+https://github.com/rust-lang/crates.io-index)" = "557ff7deb5ad2b35ac17a495d629d64dfeacf02e7f4834974dceb5e2cc544d55"
 "checksum pnet_sys 0.23.0 (registry+https://github.com/rust-lang/crates.io-index)" = "ab2f8311f738773513fc8192a77e8f77461d97333184c23597a23cb9eb0bd0eb"
