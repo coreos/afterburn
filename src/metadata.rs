@@ -21,6 +21,7 @@ use crate::providers::cloudstack::configdrive::ConfigDrive;
 use crate::providers::cloudstack::network::CloudstackNetwork;
 use crate::providers::digitalocean::DigitalOceanProvider;
 use crate::providers::gcp::GcpProvider;
+use crate::providers::ibmcloud;
 use crate::providers::openstack::network::OpenstackProvider;
 use crate::providers::packet::PacketProvider;
 use crate::providers::vagrant_virtualbox::VagrantVirtualboxProvider;
@@ -31,9 +32,11 @@ macro_rules! box_result {
     };
 }
 
-/// `fetch_metadata` is the generic, top-level function that is used by the main
-/// function to fetch metadata. The configured provider is passed in and this
-/// function dispatches the call to the correct provider-specific fetch function
+/// Fetch metadata for the given provider.
+///
+/// This is the generic, top-level function to fetch provider metadata.
+/// The configured provider is passed in and this function dispatches the call
+/// to the provider-specific fetch logic.
 pub fn fetch_metadata(provider: &str) -> errors::Result<Box<dyn providers::MetadataProvider>> {
     match provider {
         "aliyun" => box_result!(AliyunProvider::try_new()?),
@@ -49,6 +52,8 @@ pub fn fetch_metadata(provider: &str) -> errors::Result<Box<dyn providers::Metad
         "gce" => box_result!(GcpProvider::try_new()?),
         #[cfg(not(feature = "cl-legacy"))]
         "gcp" => box_result!(GcpProvider::try_new()?),
+        // ibmcloud has multiple infrastructure types, so this internally tries to auto-detect.
+        "ibmcloud" => ibmcloud::try_autodetect(),
         "openstack-metadata" => box_result!(OpenstackProvider::try_new()?),
         "packet" => box_result!(PacketProvider::try_new()?),
         "vagrant-virtualbox" => box_result!(VagrantVirtualboxProvider::new()),
