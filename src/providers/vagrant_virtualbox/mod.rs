@@ -68,7 +68,10 @@ impl MetadataProvider for VagrantVirtualboxProvider {
     fn attributes(&self) -> Result<HashMap<String, String>> {
         let mut out = HashMap::with_capacity(2);
 
-        let hostname = hostname::get_hostname().ok_or("unable to get hostname")?;
+        let hostname = hostname::get()
+            .chain_err(|| "unable to get hostname")?
+            .to_string_lossy()
+            .into_owned();
         let ip = VagrantVirtualboxProvider::get_ip()?;
 
         out.insert("VAGRANT_VIRTUALBOX_HOSTNAME".to_string(), hostname);
@@ -78,7 +81,11 @@ impl MetadataProvider for VagrantVirtualboxProvider {
     }
 
     fn hostname(&self) -> Result<Option<String>> {
-        Ok(hostname::get_hostname())
+        let hostname = hostname::get()
+            .chain_err(|| "unable to get hostname")?
+            .to_string_lossy()
+            .into_owned();
+        Ok(Some(hostname))
     }
 
     fn ssh_keys(&self) -> Result<Vec<PublicKey>> {
