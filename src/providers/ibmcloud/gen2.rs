@@ -148,9 +148,9 @@ impl MetadataProvider for G2Provider {
 
 impl Drop for G2Provider {
     fn drop(&mut self) {
-        if self.temp_dir.is_some() {
+        if let Some(ref mountpoint) = self.temp_dir {
             if let Err(e) = crate::util::unmount(
-                &self.metadata_dir(),
+                mountpoint.path(),
                 3, // maximum retries
             ) {
                 slog_scope::error!("failed to unmount IBM Cloud (Gen2) config-drive: {}", e);
