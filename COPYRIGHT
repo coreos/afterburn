@@ -1,0 +1,8 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: afterburn
+Source: https://www.github.com/coreos/afterburn
+
+Files: *
+Copyright: 2017-2018, CoreOS Inc.
+           2018-2019, Red Hat Inc.
+License: Apache-2.0
