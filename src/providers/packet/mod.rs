@@ -28,7 +28,7 @@ use serde_derive::Deserialize;
 use slog_scope::warn;
 
 use crate::errors::*;
-use crate::network::{self, Device, Interface, NetworkRoute, Section};
+use crate::network::{self, Interface, NetworkRoute};
 use crate::providers::MetadataProvider;
 use crate::retry;
 use crate::util;
@@ -186,7 +186,7 @@ impl PacketProvider {
         Ok(addrs)
     }
 
-    fn parse_network(&self) -> Result<(Vec<Interface>, Vec<Device>)> {
+    fn parse_network(&self) -> Result<(Vec<Interface>, Vec<network::VirtualNetDev>)> {
         let netinfo = &self.data.network;
         let mut interfaces = Vec::new();
         let mut bonds = Vec::new();
@@ -280,19 +280,21 @@ impl PacketProvider {
 
         let mut network_devices = Vec::with_capacity(bonds.len());
         for (mac, bond) in bonds {
-            network_devices.push(Device {
+            let bond_netdev = network::VirtualNetDev {
                 name: bond
                     .name
                     .clone()
                     .ok_or("bond doesn't have a name, should be impossible")?,
-                kind: "bond".to_owned(),
+                kind: network::NetDevKind::Bond,
                 mac_address: mac,
                 priority: Some(5),
-                sections: vec![Section {
+                sd_netdev_sections: vec![network::SdSection {
                     name: "Bond".to_owned(),
                     attributes: attrs.clone(),
                 }],
-            });
+            };
+            network_devices.push(bond_netdev);
+
             // finally, make sure the bond interfaces are in the interface list
             interfaces.push(bond)
         }
@@ -327,7 +329,7 @@ impl MetadataProvider for PacketProvider {
         Ok(interfaces)
     }
 
-    fn network_devices(&self) -> Result<Vec<network::Device>> {
+    fn virtual_network_devices(&self) -> Result<Vec<network::VirtualNetDev>> {
         let (_interfaces, devices) = self.parse_network()?;
 
         Ok(devices)

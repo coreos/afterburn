@@ -295,7 +295,8 @@ impl MetadataProvider for DigitalOceanProvider {
         self.parse_network()
     }
 
-    fn network_devices(&self) -> Result<Vec<network::Device>> {
+    fn virtual_network_devices(&self) -> Result<Vec<network::VirtualNetDev>> {
+        warn!("virtual network devices metadata requested, but not supported on this platform");
         Ok(vec![])
     }
 

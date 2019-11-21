@@ -22,6 +22,8 @@ use std::net::IpAddr;
 use openssh_keys::PublicKey;
 use reqwest::header::{HeaderName, HeaderValue};
 use serde_derive::Deserialize;
+use slog_scope::warn;
+
 
 use self::crypto::x509;
 use crate::errors::*;
@@ -234,12 +236,10 @@ impl Azure {
 
     #[cfg(not(test))]
     fn get_fabric_address() -> IpAddr {
-        use slog_scope::{info, warn};
-
         // try to fetch from dhcp, else use fallback; this is similar to what WALinuxAgent does
         Azure::get_fabric_address_from_dhcp().unwrap_or_else(|e| {
             warn!("Failed to get fabric address from DHCP: {}", e);
-            info!("Using fallback address");
+            slog_scope::info!("Using fallback address");
             IpAddr::from(FALLBACK_WIRESERVER_ADDR)
         })
     }
@@ -494,7 +494,8 @@ impl MetadataProvider for Azure {
         Ok(vec![])
     }
 
-    fn network_devices(&self) -> Result<Vec<network::Device>> {
+    fn virtual_network_devices(&self) -> Result<Vec<network::VirtualNetDev>> {
+        warn!("virtual network devices metadata requested, but not supported on this platform");
         Ok(vec![])
     }
 
