@@ -57,21 +57,22 @@ Push access to the upstream repository is required in order to publish the new t
 
 - publish this release on GitHub:
   - [ ] open a web browser and create a GitHub Release for the tag above
-  - [ ] write a short changelog (i.e. re-use the PR content) and publish the release
+  - [ ] write a short changelog (i.e. re-use the PR content)
   - [ ] upload `target/afterburn-${RELEASE_VER}-vendor.tar.gz`
   - [ ] record digests of local artifacts:
-    - [ ] `sha256sum target/package/afterburn-${RELEASE_VER}.crate`
-    - [ ] `sha256sum target/afterburn-${RELEASE_VER}-vendor.tar.gz`
+    - `sha256sum target/package/afterburn-${RELEASE_VER}.crate`
+    - `sha256sum target/afterburn-${RELEASE_VER}-vendor.tar.gz`
   - [ ] publish release
 
 - clean up:
-  - [ ] `unset RELEASE_VER`
-  - [ ] `unset UPSTREAM_REMOTE`
   - [ ] `cargo clean`
   - [ ] `rm -rf vendor`
   - [ ] `git checkout master`
   - [ ] `git pull ${UPSTREAM_REMOTE} master`
   - [ ] `git push ${UPSTREAM_REMOTE} :release-${RELEASE_VER}`
+  - [ ] `git branch -d release-${RELEASE_VER}`
+  - [ ] `unset RELEASE_VER`
+  - [ ] `unset UPSTREAM_REMOTE`
 
 [cargo-release]: https://github.com/sunng87/cargo-release
 [rustup]: https://rustup.rs/
