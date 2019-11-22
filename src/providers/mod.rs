@@ -220,8 +220,11 @@ pub trait MetadataProvider {
         let dir_path = Path::new(&network_units_dir);
         fs::create_dir_all(&dir_path)
             .chain_err(|| format!("failed to create directory {:?}", dir_path))?;
+
+        // Write `.network` fragments for network interfaces/links.
         for interface in &self.networks()? {
-            let file_path = dir_path.join(interface.unit_name());
+            let unit_name = interface.sd_network_unit_name()?;
+            let file_path = dir_path.join(unit_name);
             let mut unit_file = File::create(&file_path)
                 .chain_err(|| format!("failed to create file {:?}", file_path))?;
             write!(&mut unit_file, "{}", interface.config()).chain_err(|| {
