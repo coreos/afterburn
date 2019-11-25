@@ -171,8 +171,15 @@ pub trait MetadataProvider {
     fn hostname(&self) -> Result<Option<String>>;
     fn ssh_keys(&self) -> Result<Vec<PublicKey>>;
     fn networks(&self) -> Result<Vec<network::Interface>>;
-    fn network_devices(&self) -> Result<Vec<network::Device>>;
     fn boot_checkin(&self) -> Result<()>;
+
+    /// Return a list of virtual network devices for this machine.
+    ///
+    /// This is used to setup virtual interfaces, e.g. via [systemd.netdev][netdev]
+    /// configuration fragments.
+    ///
+    /// netdev: https://www.freedesktop.org/software/systemd/man/systemd.netdev.html
+    fn virtual_network_devices(&self) -> Result<Vec<network::VirtualNetDev>>;
 
     fn write_attributes(&self, attributes_file_path: String) -> Result<()> {
         let mut attributes_file = create_file(&attributes_file_path)?;
@@ -224,13 +231,14 @@ pub trait MetadataProvider {
                 )
             })?;
         }
-        for device in &self.network_devices()? {
-            let file_path = dir_path.join(device.unit_name());
+
+        // Write `.netdev` fragments for virtual network devices.
+        for device in &self.virtual_network_devices()? {
+            let file_path = dir_path.join(device.netdev_unit_name());
             let mut unit_file = File::create(&file_path)
-                .chain_err(|| format!("failed to create file {:?}", file_path))?;
-            write!(&mut unit_file, "{}", device.config()).chain_err(|| {
-                format!("failed to write network device unit file {:?}", unit_file)
-            })?;
+                .chain_err(|| format!("failed to create netdev unit file {:?}", file_path))?;
+            write!(&mut unit_file, "{}", device.sd_netdev_config())
+                .chain_err(|| format!("failed to write netdev unit file {:?}", unit_file))?;
         }
         Ok(())
     }

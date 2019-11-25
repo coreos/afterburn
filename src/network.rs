@@ -75,19 +75,46 @@ pub struct Interface {
     pub unmanaged: bool,
 }
 
+/// A virtual network interface.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Section {
+pub struct VirtualNetDev {
+    pub name: String,
+    pub kind: NetDevKind,
+    pub mac_address: MacAddr,
+    pub priority: Option<u32>,
+    pub sd_netdev_sections: Vec<SdSection>,
+}
+
+/// A free-form `systemd.netdev` section.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct SdSection {
     pub name: String,
     pub attributes: Vec<(String, String)>,
 }
 
+/// Supported virtual network device kinds.
+#[allow(dead_code)]
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Device {
-    pub name: String,
-    pub kind: String,
-    pub mac_address: MacAddr,
-    pub priority: Option<u32>,
-    pub sections: Vec<Section>,
+pub enum NetDevKind {
+    /// Parent aggregation for physically bonded devices.
+    Bond,
+    /// VLAN child interface for a physical device with 802.1Q.
+    Vlan,
+}
+
+impl NetDevKind {
+    /// Return device kind according to `systemd.netdev`.
+    ///
+    /// See [systemd documentation](kinds) for the full list.
+    ///
+    /// kinds: https://www.freedesktop.org/software/systemd/man/systemd.netdev.html#Supported%20netdev%20kinds
+    fn sd_netdev_kind(&self) -> String {
+        let kind = match *self {
+            NetDevKind::Bond => "bond",
+            NetDevKind::Vlan => "vlan",
+        };
+        kind.to_string()
+    }
 }
 
 impl Interface {
@@ -150,21 +177,24 @@ impl Interface {
     }
 }
 
-impl Device {
-    pub fn unit_name(&self) -> String {
+impl VirtualNetDev {
+    /// Return a deterministic netdev unit name for this device.
+    pub fn netdev_unit_name(&self) -> String {
         format!("{:02}-{}.netdev", self.priority.unwrap_or(10), self.name)
     }
-    pub fn config(&self) -> String {
+
+    /// Return the `systemd.netdev` configuration fragment for this device.
+    pub fn sd_netdev_config(&self) -> String {
         let mut config = String::new();
 
         // [NetDev] section
         config.push_str("[NetDev]\n");
         config.push_str(&format!("Name={}\n", self.name));
-        config.push_str(&format!("Kind={}\n", self.kind));
+        config.push_str(&format!("Kind={}\n", self.kind.sd_netdev_kind()));
         config.push_str(&format!("MACAddress={}\n", self.mac_address));
 
-        // custom sections
-        for section in &self.sections {
+        // Custom sections.
+        for section in &self.sd_netdev_sections {
             config.push_str(&format!("\n[{}]\n", section.name));
             for attr in &section.attributes {
                 config.push_str(&format!("{}={}\n", attr.0, attr.1));
@@ -266,32 +296,32 @@ mod tests {
     }
 
     #[test]
-    fn device_unit_name() {
+    fn virtual_netdev_unit_name() {
         let ds = vec![
             (
-                Device {
+                VirtualNetDev {
                     name: String::from("vlan0"),
-                    kind: String::from("vlan"),
+                    kind: NetDevKind::Vlan,
                     mac_address: MacAddr(0, 0, 0, 0, 0, 0),
                     priority: Some(20),
-                    sections: vec![],
+                    sd_netdev_sections: vec![],
                 },
                 "20-vlan0.netdev",
             ),
             (
-                Device {
+                VirtualNetDev {
                     name: String::from("vlan0"),
-                    kind: String::from("vlan"),
+                    kind: NetDevKind::Vlan,
                     mac_address: MacAddr(0, 0, 0, 0, 0, 0),
                     priority: None,
-                    sections: vec![],
+                    sd_netdev_sections: vec![],
                 },
                 "10-vlan0.netdev",
             ),
         ];
 
         for (d, s) in ds {
-            assert_eq!(d.unit_name(), s);
+            assert_eq!(d.netdev_unit_name(), s);
         }
     }
 
@@ -369,23 +399,23 @@ Gateway=127.0.0.1
     }
 
     #[test]
-    fn device_config() {
+    fn virtual_netdev_config() {
         let ds = vec![
             (
-                Device {
+                VirtualNetDev {
                     name: String::from("vlan0"),
-                    kind: String::from("vlan"),
+                    kind: NetDevKind::Vlan,
                     mac_address: MacAddr(0, 0, 0, 0, 0, 0),
                     priority: Some(20),
-                    sections: vec![
-                        Section {
+                    sd_netdev_sections: vec![
+                        SdSection {
                             name: String::from("Test"),
                             attributes: vec![
                                 (String::from("foo"), String::from("bar")),
                                 (String::from("oingo"), String::from("boingo")),
                             ],
                         },
-                        Section {
+                        SdSection {
                             name: String::from("Empty"),
                             attributes: vec![],
                         },
@@ -404,12 +434,12 @@ oingo=boingo
 ",
             ),
             (
-                Device {
+                VirtualNetDev {
                     name: String::from("vlan0"),
-                    kind: String::from("vlan"),
+                    kind: NetDevKind::Vlan,
                     mac_address: MacAddr(0, 0, 0, 0, 0, 0),
                     priority: Some(20),
-                    sections: vec![],
+                    sd_netdev_sections: vec![],
                 },
                 "[NetDev]
 Name=vlan0
@@ -420,7 +450,7 @@ MACAddress=00:00:00:00:00:00
         ];
 
         for (d, s) in ds {
-            assert_eq!(d.config(), s);
+            assert_eq!(d.sd_netdev_config(), s);
         }
     }
 }
