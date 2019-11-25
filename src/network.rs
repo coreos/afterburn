@@ -12,17 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! network deals abstracts away the manipulation of network device and
+//! network abstracts away the manipulation of network device and
 //! interface unit files. All that is left is to write the resulting string to
 //! the necessary unit.
 
+use crate::errors::*;
+use error_chain::bail;
+use ipnetwork::IpNetwork;
 use pnet_base::MacAddr;
 use std::net::IpAddr;
 use std::string::String;
 use std::string::ToString;
-
-use crate::errors::*;
-use ipnetwork::IpNetwork;
 
 pub const BONDING_MODE_BALANCE_RR: u32 = 0;
 pub const BONDING_MODE_ACTIVE_BACKUP: u32 = 1;
@@ -57,17 +57,18 @@ pub struct NetworkRoute {
     pub gateway: IpAddr,
 }
 
-/// for naming purposes an interface needs either a name or an address.
-/// it can have both. but it can't have neither.
-/// there isn't really a way to express this in the type system
-/// so we just panic! if it's not what we expected.
-/// I guess that there aren't really type systems with inclusive disjunction
-/// so it's not really that big of a deal.
+/// A network interface/link.
+///
+/// Depending on platforms, an interface may be identified by
+/// name or by MAC address (at least one of those must be provided).
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Interface {
+    /// Interface name.
     pub name: Option<String>,
+    /// Interface MAC address.
     pub mac_address: Option<MacAddr>,
-    pub priority: Option<u32>,
+    /// Relative priority for interface configuration.
+    pub priority: u8,
     pub nameservers: Vec<IpAddr>,
     pub ip_addresses: Vec<IpNetwork>,
     pub routes: Vec<NetworkRoute>,
@@ -118,22 +119,17 @@ impl NetDevKind {
 }
 
 impl Interface {
-    pub fn unit_name(&self) -> String {
-        format!(
-            "{:02}-{}.network",
-            self.priority.unwrap_or(10),
-            self.name.clone().unwrap_or_else(
-                // needs to be a lambda or we panic immediately
-                // yay, manual thunking!
-                || self
-                    .mac_address
-                    .unwrap_or_else(|| panic!(
-                        "interface needs either name or mac address (or both)"
-                    ))
-                    .to_string()
-            )
-        )
+    /// Return a deterministic `systemd.network` unit name for this device.
+    pub fn sd_network_unit_name(&self) -> Result<String> {
+        let iface_name = match (&self.name, &self.mac_address) {
+            (Some(ref name), _) => name.clone(),
+            (None, Some(ref addr)) => addr.to_string(),
+            (None, None) => bail!("network interface without name nor MAC address"),
+        };
+        let unit_name = format!("{:02}-{}.network", self.priority, iface_name);
+        Ok(unit_name)
     }
+
     pub fn config(&self) -> String {
         let mut config = String::new();
 
@@ -219,12 +215,12 @@ mod tests {
 
     #[test]
     fn interface_unit_name() {
-        let is = vec![
+        let cases = vec![
             (
                 Interface {
                     name: Some(String::from("lo")),
                     mac_address: Some(MacAddr(0, 0, 0, 0, 0, 0)),
-                    priority: Some(20),
+                    priority: 20,
                     nameservers: vec![],
                     ip_addresses: vec![],
                     routes: vec![],
@@ -237,7 +233,7 @@ mod tests {
                 Interface {
                     name: Some(String::from("lo")),
                     mac_address: Some(MacAddr(0, 0, 0, 0, 0, 0)),
-                    priority: None,
+                    priority: 10,
                     nameservers: vec![],
                     ip_addresses: vec![],
                     routes: vec![],
@@ -250,7 +246,7 @@ mod tests {
                 Interface {
                     name: None,
                     mac_address: Some(MacAddr(0, 0, 0, 0, 0, 0)),
-                    priority: Some(20),
+                    priority: 20,
                     nameservers: vec![],
                     ip_addresses: vec![],
                     routes: vec![],
@@ -263,7 +259,7 @@ mod tests {
                 Interface {
                     name: Some(String::from("lo")),
                     mac_address: None,
-                    priority: Some(20),
+                    priority: 20,
                     nameservers: vec![],
                     ip_addresses: vec![],
                     routes: vec![],
@@ -274,25 +270,25 @@ mod tests {
             ),
         ];
 
-        for (i, s) in is {
-            assert_eq!(i.unit_name(), s);
+        for (iface, expected) in cases {
+            let unit_name = iface.sd_network_unit_name().unwrap();
+            assert_eq!(unit_name, expected);
         }
     }
 
     #[test]
-    #[should_panic]
     fn interface_unit_name_no_name_no_mac() {
         let i = Interface {
             name: None,
             mac_address: None,
-            priority: Some(20),
+            priority: 20,
             nameservers: vec![],
             ip_addresses: vec![],
             routes: vec![],
             bond: None,
             unmanaged: false,
         };
-        let _name = i.unit_name();
+        i.sd_network_unit_name().unwrap_err();
     }
 
     #[test]
@@ -332,7 +328,7 @@ mod tests {
                 Interface {
                     name: Some(String::from("lo")),
                     mac_address: Some(MacAddr(0, 0, 0, 0, 0, 0)),
-                    priority: Some(20),
+                    priority: 20,
                     nameservers: vec![
                         IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)),
                         IpAddr::V6(Ipv6Addr::new(0, 0, 0, 0, 0, 0, 0, 1)),
@@ -379,7 +375,7 @@ Gateway=127.0.0.1
                 Interface {
                     name: None,
                     mac_address: None,
-                    priority: None,
+                    priority: 10,
                     nameservers: vec![],
                     ip_addresses: vec![],
                     routes: vec![],

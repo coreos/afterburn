@@ -199,7 +199,7 @@ impl PacketProvider {
                 mac_address: Some(mac),
                 bond: i.bond.clone(),
                 name: None,
-                priority: None,
+                priority: 10,
                 nameservers: Vec::new(),
                 ip_addresses: Vec::new(),
                 routes: Vec::new(),
@@ -212,7 +212,7 @@ impl PacketProvider {
             if let Some(ref bond_name) = i.bond {
                 let bond = Interface {
                     name: Some(bond_name.clone()),
-                    priority: Some(5),
+                    priority: 5,
                     nameservers: dns_servers.clone(),
                     mac_address: None,
                     bond: None,
@@ -280,11 +280,12 @@ impl PacketProvider {
 
         let mut network_devices = Vec::with_capacity(bonds.len());
         for (mac, bond) in bonds {
+            let name = bond
+                .name
+                .clone()
+                .ok_or("invalid bond interface: bond does not have a name")?;
             let bond_netdev = network::VirtualNetDev {
-                name: bond
-                    .name
-                    .clone()
-                    .ok_or("bond doesn't have a name, should be impossible")?,
+                name,
                 kind: network::NetDevKind::Bond,
                 mac_address: mac,
                 priority: Some(5),

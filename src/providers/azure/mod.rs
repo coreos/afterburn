@@ -24,7 +24,6 @@ use reqwest::header::{HeaderName, HeaderValue};
 use serde_derive::Deserialize;
 use slog_scope::warn;
 
-
 use self::crypto::x509;
 use crate::errors::*;
 use crate::network;
