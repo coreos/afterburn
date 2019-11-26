@@ -1,0 +1,68 @@
+{
+  "links": [
+    {
+      "id": "interface_58965010",
+      "name": "eth0",
+      "mtu": null,
+      "type": "phy",
+      "ethernet_mac_address": "06:52:db:01:ff:d9"
+    },
+    {
+      "id": "interface_58965014",
+      "name": "eth1",
+      "mtu": null,
+      "type": "phy",
+      "ethernet_mac_address": "06:f6:71:3b:64:01"
+    }
+  ],
+  "networks": [
+    {
+      "id": "network_142213448",
+      "link": "interface_58965010",
+      "type": "ipv4",
+      "ip_address": "10.135.202.146",
+      "netmask": "255.255.255.192",
+      "routes": [
+        {
+          "network": "10.0.0.0",
+          "netmask": "255.0.0.0",
+          "gateway": "10.135.202.129"
+        },
+        {
+          "network": "161.26.0.0",
+          "netmask": "255.255.0.0",
+          "gateway": "10.135.202.129"
+        },
+        {
+          "network": "166.8.0.0",
+          "netmask": "255.252.0.0",
+          "gateway": "10.135.202.129"
+        }
+      ]
+    },
+    {
+      "id": "network_142211974",
+      "link": "interface_58965014",
+      "type": "ipv4",
+      "ip_address": "133.133.209.229",
+      "netmask": "255.255.255.240",
+      "routes": [
+        {
+          "network": "0.0.0.0",
+          "netmask": "0.0.0.0",
+          "gateway": "133.133.209.225"
+        }
+      ]
+    }
+  ],
+  "services": [
+    {
+      "type": "dns",
+      "address": "10.0.80.11"
+    },
+    {
+      "type": "dns",
+      "address": "10.0.80.12"
+    }
+  ]
+}

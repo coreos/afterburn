@@ -51,6 +51,12 @@ pub fn bonding_mode_to_string(mode: u32) -> Result<String> {
     Err(format!("no such bonding mode: {}", mode).into())
 }
 
+/// Try to parse an IP+netmask pair into a CIDR network.
+pub fn try_parse_cidr(address: IpAddr, netmask: IpAddr) -> Result<IpNetwork> {
+    let prefix = ipnetwork::ip_mask_to_prefix(netmask)?;
+    IpNetwork::new(address, prefix).chain_err(|| "failed to parse network")
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct NetworkRoute {
     pub destination: IpNetwork,
