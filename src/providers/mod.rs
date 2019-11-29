@@ -154,11 +154,12 @@ fn write_ssh_keys(user: User, ssh_keys: Vec<PublicKey>) -> Result<()> {
     }
 
     // sync parent dir to persist updates
-    let dir_file = File::open(&dir_path)
-        .chain_err(|| format!("failed to open {:?} for syncing", dir_path.display()))?;
-    dir_file
-        .sync_all()
-        .chain_err(|| format!("failed to sync {:?}", dir_path.display()))?;
+    match File::open(&dir_path) {
+        Ok(dir_file) => dir_file.sync_all(),
+        Err(ref e) if e.kind() == NotFound => Ok(()),
+        Err(e) => Err(e),
+    }
+    .chain_err(|| format!("failed to sync '{}'", dir_path.display()))?;
 
     // make clippy happy while fulfilling our interface
     drop(user);
