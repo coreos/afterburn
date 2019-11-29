@@ -15,23 +15,23 @@
 #![allow(deprecated)]
 
 use error_chain::error_chain;
-use reqwest::header;
-use serde_json;
 
 error_chain! {
     links {
-        PublicKey(::openssh_keys::errors::Error, ::openssh_keys::errors::ErrorKind);
         AuthorizedKeys(::update_ssh_keys::errors::Error, ::update_ssh_keys::errors::ErrorKind) #[cfg(feature = "cl-legacy")];
+        PublicKey(::openssh_keys::errors::Error, ::openssh_keys::errors::ErrorKind);
     }
     foreign_links {
-        Log(::slog::Error);
-        XmlDeserialize(::serde_xml_rs::Error);
         Base64Decode(::base64::DecodeError);
+        HeaderValue(reqwest::header::InvalidHeaderValue);
         Io(::std::io::Error);
+        IpNetwork(ipnetwork::IpNetworkError);
         Json(serde_json::Error);
-        Reqwest(::reqwest::Error);
+        Log(::slog::Error);
+        MacAddr(pnet_base::ParseMacAddrErr);
         OpensslStack(::openssl::error::ErrorStack);
-        HeaderValue(header::InvalidHeaderValue);
+        Reqwest(::reqwest::Error);
+        XmlDeserialize(::serde_xml_rs::Error);
     }
     errors {
         UnknownProvider(p: String) {
