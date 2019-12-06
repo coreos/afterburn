@@ -23,6 +23,7 @@ error_chain! {
     }
     foreign_links {
         Base64Decode(::base64::DecodeError);
+        Clap(clap::Error);
         HeaderValue(reqwest::header::InvalidHeaderValue);
         Io(::std::io::Error);
         IpNetwork(ipnetwork::IpNetworkError);
