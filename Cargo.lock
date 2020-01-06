@@ -18,7 +18,7 @@ dependencies = [
  "maplit 1.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "mime 0.3.14 (registry+https://github.com/rust-lang/crates.io-index)",
  "mockito 0.22.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "nix 0.16.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "nix 0.16.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "openssh-keys 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "openssl 0.10.26 (registry+https://github.com/rust-lang/crates.io-index)",
  "pnet_base 0.23.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -848,7 +848,7 @@ dependencies = [
 
 [[package]]
 name = "nix"
-version = "0.16.0"
+version = "0.16.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "bitflags 1.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1953,7 +1953,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum mockito 0.22.0 (registry+https://github.com/rust-lang/crates.io-index)" = "4e524e85ea7c80559354217a6470c14abc2411802a9996aed1821559b9e28e3c"
 "checksum native-tls 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)" = "4b2df1a4c22fd44a62147fd8f13dd0f95c9d8ca7b2610299b2a2f9cf8964274e"
 "checksum net2 0.2.33 (registry+https://github.com/rust-lang/crates.io-index)" = "42550d9fb7b6684a6d404d9fa7250c2eb2646df731d1c06afc06dcee9e1bcf88"
-"checksum nix 0.16.0 (registry+https://github.com/rust-lang/crates.io-index)" = "19a8300bf427d432716764070ff70d5b2b7801c958b9049686e6cbd8b06fad92"
+"checksum nix 0.16.1 (registry+https://github.com/rust-lang/crates.io-index)" = "dd0eaf8df8bab402257e0a5c17a254e4cc1f72a93588a1ddfb5d356c801aa7cb"
 "checksum num-integer 0.1.41 (registry+https://github.com/rust-lang/crates.io-index)" = "b85e541ef8255f6cf42bbfe4ef361305c6c135d10919ecc26126c4e5ae94bc09"
 "checksum num-traits 0.2.10 (registry+https://github.com/rust-lang/crates.io-index)" = "d4c81ffc11c212fa327657cb19dd85eb7419e163b5b076bede2bdb5c974c07e4"
 "checksum num_cpus 1.11.1 (registry+https://github.com/rust-lang/crates.io-index)" = "76dac5ed2a876980778b8b85f75a71b6cbf0db0b1232ee12f826bccb00d09d72"
