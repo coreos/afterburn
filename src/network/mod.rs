@@ -25,6 +25,7 @@ use std::string::String;
 use std::string::ToString;
 
 mod ip_cli;
+pub mod utils;
 
 pub const BONDING_MODE_BALANCE_RR: u32 = 0;
 pub const BONDING_MODE_ACTIVE_BACKUP: u32 = 1;
