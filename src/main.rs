@@ -14,6 +14,7 @@
 
 mod cli;
 mod errors;
+mod initrd;
 mod metadata;
 mod network;
 mod providers;
