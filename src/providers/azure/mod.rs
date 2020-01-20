@@ -475,7 +475,7 @@ impl MetadataProvider for Azure {
             out.insert("AZURE_IPV4_DYNAMIC".to_string(), dynamic_ipv4.to_string());
         }
 
-        out.insert("AZURE_VMSIZE".to_string(), vmsize.to_string());
+        out.insert("AZURE_VMSIZE".to_string(), vmsize);
 
         Ok(out)
     }
