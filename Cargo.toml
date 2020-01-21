@@ -37,8 +37,8 @@ openssh-keys = "^0.4.1"
 openssl = "^0.10.26"
 pnet_base = "^0.25.0"
 pnet_datalink = "^0.25.0"
-reqwest = "^0.9.24"
-serde = "1.0"
+reqwest = { version = "^0.10.1", features = [ "blocking" ] }
+serde =  { version = "1.0", features = [ "derive" ] }
 serde-xml-rs = "0.3"
 serde_derive = "1.0"
 serde_json = "1.0"
