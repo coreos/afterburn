@@ -34,7 +34,7 @@ maplit = "^1.0.2"
 mime = "0.3"
 nix = "^0.16.1"
 openssh-keys = "^0.4.1"
-openssl = "^0.10.26"
+openssl = "^0.10.27"
 pnet_base = "^0.25.0"
 pnet_datalink = "^0.25.0"
 reqwest = { version = "^0.10.1", features = [ "blocking" ] }
