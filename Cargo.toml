@@ -59,4 +59,4 @@ cl-legacy = ["update-ssh-keys"]
 
 [dev-dependencies]
 maplit = "^1.0"
-mockito = "^0.22.0"
+mockito = "^0.23.0"
