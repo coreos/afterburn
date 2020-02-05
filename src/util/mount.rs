@@ -2,6 +2,7 @@
 
 use crate::errors::*;
 use crate::retry;
+use error_chain::ChainedError;
 use nix::mount;
 use slog_scope::{debug, warn};
 use std::path::Path;
@@ -14,11 +15,17 @@ pub(crate) fn unmount(target: &Path, retries: u8) -> Result<()> {
     let driver = retry::Retry::new().max_retries(retries);
     driver.retry(|attempt| {
         debug!(
-            "Unmounting '{}': attempt #{}",
+            "unmounting '{}': attempt #{}",
             target.display(),
             attempt + 1
         );
-        mount::umount(target).chain_err(|| format!("failed to unmount '{}'", target.display()))
+        let res =
+            mount::umount(target).chain_err(|| format!("failed to unmount '{}'", target.display()));
+
+        if let Err(ref e) = res {
+            debug!("{}", e.display_chain());
+        };
+        res
     })
 }
 
@@ -28,7 +35,7 @@ pub(crate) fn unmount(target: &Path, retries: u8) -> Result<()> {
 pub(crate) fn mount_ro(source: &Path, target: &Path, fstype: &str, retries: u8) -> Result<()> {
     let driver = retry::Retry::new().max_retries(retries);
     driver.retry(|attempt| {
-        debug!("Mounting '{}': attempt #{}", source.display(), attempt + 1);
+        debug!("mounting '{}': attempt #{}", source.display(), attempt + 1);
         let res = mount::mount(
             Some(source),
             target,
@@ -47,10 +54,10 @@ pub(crate) fn mount_ro(source: &Path, target: &Path, fstype: &str, retries: u8) 
 
         // If mounting failed, yield back and give a chance to any
         // pending udev events to be processed.
-        if res.is_err() {
+        if let Err(ref e) = res {
+            debug!("{}", e.display_chain());
             settle_udev(None)
         };
-
         res
     })
 }
