@@ -20,6 +20,7 @@ use crate::providers::azure::Azure;
 use crate::providers::cloudstack::configdrive::ConfigDrive;
 use crate::providers::cloudstack::network::CloudstackNetwork;
 use crate::providers::digitalocean::DigitalOceanProvider;
+use crate::providers::exoscale::ExoscaleProvider;
 use crate::providers::gcp::GcpProvider;
 use crate::providers::ibmcloud::IBMGen2Provider;
 use crate::providers::ibmcloud_classic::IBMClassicProvider;
@@ -47,6 +48,7 @@ pub fn fetch_metadata(provider: &str) -> errors::Result<Box<dyn providers::Metad
         "cloudstack-metadata" => box_result!(CloudstackNetwork::try_new()?),
         "cloudstack-configdrive" => box_result!(ConfigDrive::try_new()?),
         "digitalocean" => box_result!(DigitalOceanProvider::try_new()?),
+        "exoscale" => box_result!(ExoscaleProvider::try_new()?),
         #[cfg(feature = "cl-legacy")]
         "ec2" => box_result!(AwsProvider::try_new()?),
         #[cfg(feature = "cl-legacy")]
