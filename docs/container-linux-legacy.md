@@ -84,8 +84,11 @@ On Container Linux, the supported cloud providers and their respective metadata 
       - COREOS_PACKET_HOSTNAME
       - COREOS_PACKET_PLAN
       - COREOS_PACKET_IPV4_PUBLIC_0
+      - COREOS_PACKET_IPV4_PUBLIC_GATEWAY_0
       - COREOS_PACKET_IPV4_PRIVATE_0
+      - COREOS_PACKET_IPV4_PRIVATE_GATEWAY_0
       - COREOS_PACKET_IPV6_PUBLIC_0
+      - COREOS_PACKET_IPV6_PUBLIC_GATEWAY_0
   - vagrant-virtualbox
     - Attributes
       - COREOS_VAGRANT_VIRTUALBOX_PRIVATE_IPV4
