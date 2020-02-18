@@ -35,7 +35,7 @@ static CONFIG_DRIVE_FS_TYPE: &str = "vfat";
 
 /// IBMCloud provider (Classic).
 #[derive(Debug)]
-pub struct ClassicProvider {
+pub struct IBMClassicProvider {
     /// Path to the top directory of the mounted config-drive.
     drive_path: PathBuf,
     /// Temporary directory for own mountpoint (if any).
@@ -112,7 +112,7 @@ pub struct NetServiceJSON {
     pub address: IpAddr,
 }
 
-impl ClassicProvider {
+impl IBMClassicProvider {
     /// Try to build a new provider client.
     ///
     /// This internally tries to mount (and own) the config-drive.
@@ -169,8 +169,8 @@ impl ClassicProvider {
         }
 
         let attrs = maplit::hashmap! {
-            "IBMCLOUD_INSTANCE_ID".to_string() => metadata.instance_id,
-            "IBMCLOUD_LOCAL_HOSTNAME".to_string() => metadata.local_hostname,
+            "IBMCLOUD_CLASSIC_INSTANCE_ID".to_string() => metadata.instance_id,
+            "IBMCLOUD_CLASSIC_LOCAL_HOSTNAME".to_string() => metadata.local_hostname,
 
         };
         Ok(attrs)
@@ -257,7 +257,7 @@ impl ClassicProvider {
     }
 }
 
-impl MetadataProvider for ClassicProvider {
+impl MetadataProvider for IBMClassicProvider {
     fn attributes(&self) -> Result<HashMap<String, String>> {
         let metadata = self.read_metadata()?;
         Self::known_attributes(metadata)
@@ -295,7 +295,7 @@ impl MetadataProvider for ClassicProvider {
     }
 }
 
-impl Drop for ClassicProvider {
+impl Drop for IBMClassicProvider {
     fn drop(&mut self) {
         if let Some(ref mountpoint) = self.temp_dir {
             if let Err(e) = crate::util::unmount(
@@ -327,27 +327,27 @@ mod tests {
 "#;
 
         let bufrd = BufReader::new(Cursor::new(metadata));
-        let parsed = ClassicProvider::parse_metadata(bufrd).unwrap();
+        let parsed = IBMClassicProvider::parse_metadata(bufrd).unwrap();
         assert_eq!(parsed.instance_id, "3c9085db-3eba-4ef2-9d97-d3ffcff6fffe",);
         assert_eq!(parsed.local_hostname, "test_instance-classic",);
 
-        let attrs = ClassicProvider::known_attributes(parsed).unwrap();
+        let attrs = IBMClassicProvider::known_attributes(parsed).unwrap();
         assert_eq!(attrs.len(), 2);
         assert_eq!(
-            attrs.get("IBMCLOUD_INSTANCE_ID"),
+            attrs.get("IBMCLOUD_CLASSIC_INSTANCE_ID"),
             Some(&"3c9085db-3eba-4ef2-9d97-d3ffcff6fffe".to_string())
         );
         assert_eq!(
-            attrs.get("IBMCLOUD_LOCAL_HOSTNAME"),
+            attrs.get("IBMCLOUD_CLASSIC_LOCAL_HOSTNAME"),
             Some(&"test_instance-classic".to_string())
         );
     }
 
     #[test]
     fn test_parse_metadata_json() {
-        let fixture = File::open("./tests/fixtures/ibmcloud/classic/meta_data.json").unwrap();
+        let fixture = File::open("./tests/fixtures/ibmcloud-classic/meta_data.json").unwrap();
         let bufrd = BufReader::new(fixture);
-        let parsed = ClassicProvider::parse_metadata(bufrd).unwrap();
+        let parsed = IBMClassicProvider::parse_metadata(bufrd).unwrap();
 
         assert!(!parsed.instance_id.is_empty());
         assert!(!parsed.local_hostname.is_empty());
@@ -356,11 +356,11 @@ mod tests {
 
     #[test]
     fn test_parse_network_data_json() {
-        let fixture = File::open("./tests/fixtures/ibmcloud/classic/network_data.json").unwrap();
+        let fixture = File::open("./tests/fixtures/ibmcloud-classic/network_data.json").unwrap();
         let bufrd = BufReader::new(fixture);
-        let parsed = ClassicProvider::parse_network_data(bufrd).unwrap();
+        let parsed = IBMClassicProvider::parse_network_data(bufrd).unwrap();
 
-        let interfaces = ClassicProvider::network_interfaces(parsed).unwrap();
+        let interfaces = IBMClassicProvider::network_interfaces(parsed).unwrap();
         assert_eq!(interfaces.len(), 2);
         assert_eq!(interfaces[0].routes.len(), 3);
         assert_eq!(interfaces[1].routes.len(), 1);

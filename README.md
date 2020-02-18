@@ -86,6 +86,10 @@ On CoreOS Container Linux, the supported providers and metadata are [somewhat di
     - Attributes
       - AFTERBURN_IBMCLOUD_INSTANCE_ID
       - AFTERBURN_IBMCLOUD_LOCAL_HOSTNAME
+  - ibmcloud-classic
+    - Attributes
+      - AFTERBURN_IBMCLOUD_CLASSIC_INSTANCE_ID
+      - AFTERBURN_IBMCLOUD_CLASSIC_LOCAL_HOSTNAME
   - openstack-metadata
     - SSH Keys
     - Attributes
