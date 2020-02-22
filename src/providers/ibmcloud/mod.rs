@@ -17,7 +17,7 @@ use std::path::{Path, PathBuf};
 
 use openssh_keys::PublicKey;
 use slog_scope::warn;
-use tempdir::TempDir;
+use tempfile::TempDir;
 
 use crate::errors::*;
 use crate::network;
@@ -39,8 +39,10 @@ impl IBMGen2Provider {
     ///
     /// This internally tries to mount (and own) the config-drive.
     pub fn try_new() -> Result<Self> {
-        let target =
-            TempDir::new("afterburn").chain_err(|| "failed to create temporary directory")?;
+        let target = tempfile::Builder::new()
+            .prefix("afterburn-")
+            .tempdir()
+            .chain_err(|| "failed to create temporary directory")?;
         crate::util::mount_ro(
             &Path::new("/dev/disk/by-label/").join(CONFIG_DRIVE_LABEL),
             target.path(),
