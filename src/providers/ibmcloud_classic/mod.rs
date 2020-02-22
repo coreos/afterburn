@@ -38,8 +38,8 @@ static CONFIG_DRIVE_FS_TYPE: &str = "vfat";
 pub struct IBMClassicProvider {
     /// Path to the top directory of the mounted config-drive.
     drive_path: PathBuf,
-    /// Temporary directory for own mountpoint (if any).
-    temp_dir: Option<TempDir>,
+    /// Temporary directory for own mountpoint.
+    temp_dir: TempDir,
 }
 
 /// Partial object for `meta_data.json`
@@ -130,7 +130,7 @@ impl IBMClassicProvider {
 
         let provider = Self {
             drive_path: target.path().to_owned(),
-            temp_dir: Some(target),
+            temp_dir: target,
         };
         Ok(provider)
     }
@@ -299,14 +299,12 @@ impl MetadataProvider for IBMClassicProvider {
 
 impl Drop for IBMClassicProvider {
     fn drop(&mut self) {
-        if let Some(ref mountpoint) = self.temp_dir {
-            if let Err(e) = crate::util::unmount(
-                mountpoint.path(),
-                3, // maximum retries
-            ) {
-                slog_scope::error!("failed to unmount ibmcloud (Classic) config-drive: {}", e);
-            };
-        }
+        if let Err(e) = crate::util::unmount(
+            self.temp_dir.path(),
+            3, // maximum retries
+        ) {
+            slog_scope::error!("failed to unmount ibmcloud (Classic) config-drive: {}", e);
+        };
     }
 }
 
