@@ -21,7 +21,7 @@ use std::fs::File;
 use std::io::{BufReader, Read};
 use std::net::IpAddr;
 use std::path::{Path, PathBuf};
-use tempdir::TempDir;
+use tempfile::TempDir;
 
 use crate::errors::*;
 use crate::network;
@@ -38,8 +38,8 @@ static CONFIG_DRIVE_FS_TYPE: &str = "vfat";
 pub struct IBMClassicProvider {
     /// Path to the top directory of the mounted config-drive.
     drive_path: PathBuf,
-    /// Temporary directory for own mountpoint (if any).
-    temp_dir: Option<TempDir>,
+    /// Temporary directory for own mountpoint.
+    temp_dir: TempDir,
 }
 
 /// Partial object for `meta_data.json`
@@ -117,8 +117,10 @@ impl IBMClassicProvider {
     ///
     /// This internally tries to mount (and own) the config-drive.
     pub fn try_new() -> Result<Self> {
-        let target =
-            TempDir::new("afterburn").chain_err(|| "failed to create temporary directory")?;
+        let target = tempfile::Builder::new()
+            .prefix("afterburn-")
+            .tempdir()
+            .chain_err(|| "failed to create temporary directory")?;
         crate::util::mount_ro(
             &Path::new("/dev/disk/by-label/").join(CONFIG_DRIVE_FS_LABEL),
             target.path(),
@@ -128,7 +130,7 @@ impl IBMClassicProvider {
 
         let provider = Self {
             drive_path: target.path().to_owned(),
-            temp_dir: Some(target),
+            temp_dir: target,
         };
         Ok(provider)
     }
@@ -297,14 +299,12 @@ impl MetadataProvider for IBMClassicProvider {
 
 impl Drop for IBMClassicProvider {
     fn drop(&mut self) {
-        if let Some(ref mountpoint) = self.temp_dir {
-            if let Err(e) = crate::util::unmount(
-                mountpoint.path(),
-                3, // maximum retries
-            ) {
-                slog_scope::error!("failed to unmount ibmcloud (Classic) config-drive: {}", e);
-            };
-        }
+        if let Err(e) = crate::util::unmount(
+            self.temp_dir.path(),
+            3, // maximum retries
+        ) {
+            slog_scope::error!("failed to unmount ibmcloud (Classic) config-drive: {}", e);
+        };
     }
 }
 

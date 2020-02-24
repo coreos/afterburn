@@ -45,7 +45,6 @@ serde_json = "1.0"
 slog-async = "2.4"
 slog-scope = "~4.3"
 slog-term = "2.5"
-tempdir = "0.3"
 tempfile = "^3.1.0"
 update-ssh-keys = { version = "^0.5.0", optional = true }
 users = "^0.9.1"

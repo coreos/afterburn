@@ -7,7 +7,7 @@ use std::path::{Path, PathBuf};
 
 use openssh_keys::PublicKey;
 use slog_scope::{error, warn};
-use tempdir::TempDir;
+use tempfile::TempDir;
 
 use crate::errors::*;
 use crate::network;
@@ -40,8 +40,10 @@ impl ConfigDrive {
         }
 
         // Otherwise, try and mount with each of the labels.
-        let target =
-            TempDir::new("afterburn").chain_err(|| "failed to create temporary directory")?;
+        let target = tempfile::Builder::new()
+            .prefix("afterburn-")
+            .tempdir()
+            .chain_err(|| "failed to create temporary directory")?;
         crate::util::mount_ro(
             &Path::new("/dev/disk/by-label/").join(CONFIG_DRIVE_LABEL_1),
             target.path(),
