@@ -27,6 +27,7 @@ pub mod aliyun;
 pub mod aws;
 pub mod azure;
 pub mod cloudstack;
+pub mod exoscale;
 pub mod digitalocean;
 pub mod gcp;
 pub mod ibmcloud;

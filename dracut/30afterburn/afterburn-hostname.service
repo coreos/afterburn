@@ -2,6 +2,8 @@
 Description=Afterburn Hostname
 # Azure needs to fetch the hostname in the initramfs
 ConditionKernelCommandLine=|ignition.platform.id=azure
+# Exoscale needs to fetch the hostname in the initramfs
+ConditionKernelCommandLine=|ignition.platform.id=exoscale
 
 # We order this service after sysroot has been mounted
 # but before ignition-files stage has run, so ignition can
