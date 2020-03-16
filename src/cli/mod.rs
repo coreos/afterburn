@@ -138,6 +138,23 @@ fn cli_setup<'a, 'b>() -> App<'a, 'b> {
                                 .global(true)
                                 .help("Read the cloud provider from the kernel cmdline"),
                         ),
+                )
+                .subcommand(
+                    SubCommand::with_name("rd-net-kargs")
+                        .about("Propagate network kargs in initrd")
+                        .arg(
+                            Arg::with_name("provider")
+                                .long("provider")
+                                .help("The name of the cloud provider")
+                                .global(true)
+                                .takes_value(true),
+                        )
+                        .arg(
+                            Arg::with_name("cmdline")
+                                .long("cmdline")
+                                .global(true)
+                                .help("Read the cloud provider from the kernel cmdline"),
+                        ),
                 ),
         )
 }

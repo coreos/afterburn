@@ -35,6 +35,7 @@ pub mod ibmcloud_classic;
 pub mod openstack;
 pub mod packet;
 pub mod vagrant_virtualbox;
+pub mod vmware;
 
 use crate::errors::*;
 use crate::network;
@@ -186,6 +187,12 @@ pub trait MetadataProvider {
     /// Bootstrap initramfs networking.
     fn rd_net_bootstrap(&self) -> Result<()> {
         warn!("initramfs network bootstrap requested, but not supported on this platform");
+        Ok(())
+    }
+
+    /// Propagate initramfs networking kernel arguments (kargs).
+    fn rd_net_kargs(&self) -> Result<()> {
+        warn!("initramfs network kargs requested, but not supported on this platform");
         Ok(())
     }
 

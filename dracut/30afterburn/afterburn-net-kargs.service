@@ -1,0 +1,17 @@
+[Unit]
+Description=Afterburn network kargs augmenting
+# VMware: extra network kargs provided via guestinfo.
+ConditionKernelCommandLine=|ignition.platform.id=vmware
+DefaultDependencies=no
+# This service may produce additional kargs fragments,
+# which are then consumed by dracut-cmdline(8).
+Before=dracut-cmdline.service
+After=systemd-journald.socket
+
+OnFailure=emergency.target
+OnFailureJobMode=isolate
+
+[Service]
+Environment=AFTERBURN_OPT_PROVIDER=--cmdline
+ExecStart=/usr/bin/afterburn exp rd-net-kargs ${AFTERBURN_OPT_PROVIDER}
+Type=oneshot

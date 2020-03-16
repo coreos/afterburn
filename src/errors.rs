@@ -32,6 +32,7 @@ error_chain! {
         MacAddr(pnet_base::ParseMacAddrErr);
         OpensslStack(::openssl::error::ErrorStack);
         Reqwest(::reqwest::Error);
+        VmwBackdoor(vmw_backdoor::VmwError);
         XmlDeserialize(::serde_xml_rs::Error);
     }
     errors {

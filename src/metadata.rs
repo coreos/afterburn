@@ -27,6 +27,7 @@ use crate::providers::ibmcloud_classic::IBMClassicProvider;
 use crate::providers::openstack::network::OpenstackProvider;
 use crate::providers::packet::PacketProvider;
 use crate::providers::vagrant_virtualbox::VagrantVirtualboxProvider;
+use crate::providers::vmware::VmwareProvider;
 
 macro_rules! box_result {
     ($exp:expr) => {
@@ -62,6 +63,7 @@ pub fn fetch_metadata(provider: &str) -> errors::Result<Box<dyn providers::Metad
         "openstack-metadata" => box_result!(OpenstackProvider::try_new()?),
         "packet" => box_result!(PacketProvider::try_new()?),
         "vagrant-virtualbox" => box_result!(VagrantVirtualboxProvider::new()),
+        "vmware" => box_result!(VmwareProvider::try_new()?),
         _ => Err(errors::ErrorKind::UnknownProvider(provider.to_owned()).into()),
     }
 }

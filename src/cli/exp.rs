@@ -8,6 +8,7 @@ use error_chain::bail;
 #[derive(Debug)]
 pub enum CliExp {
     NetBootstrap(CliNetBootstrap),
+    NetKargs(CliNetKargs),
 }
 
 impl CliExp {
@@ -19,6 +20,7 @@ impl CliExp {
 
         let cfg = match app_matches.subcommand() {
             ("rd-net-bootstrap", Some(matches)) => CliNetBootstrap::parse(matches)?,
+            ("rd-net-kargs", Some(matches)) => CliNetKargs::parse(matches)?,
             (x, _) => unreachable!("unrecognized exp subcommand '{}'", x),
         };
 
@@ -29,6 +31,7 @@ impl CliExp {
     pub(crate) fn run(&self) -> Result<()> {
         match self {
             CliExp::NetBootstrap(cmd) => cmd.run()?,
+            CliExp::NetKargs(cmd) => cmd.run()?,
         };
         Ok(())
     }
@@ -53,6 +56,29 @@ impl CliNetBootstrap {
     pub(crate) fn run(&self) -> Result<()> {
         let provider = metadata::fetch_metadata(&self.platform)?;
         provider.rd_net_bootstrap()?;
+        Ok(())
+    }
+}
+
+/// Sub-command for network bootstrap.
+#[derive(Debug)]
+pub struct CliNetKargs {
+    platform: String,
+}
+
+impl CliNetKargs {
+    /// Parse sub-command into configuration.
+    pub(crate) fn parse(matches: &ArgMatches) -> Result<CliExp> {
+        let platform = super::parse_provider(matches)?;
+
+        let cfg = Self { platform };
+        Ok(CliExp::NetKargs(cfg))
+    }
+
+    /// Run the sub-command.
+    pub(crate) fn run(&self) -> Result<()> {
+        let provider = metadata::fetch_metadata(&self.platform)?;
+        provider.rd_net_kargs()?;
         Ok(())
     }
 }

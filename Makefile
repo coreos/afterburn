@@ -22,5 +22,5 @@ install-units: $(units)
 
 .PHONY: install
 install: install-units
-	install -D -t ${DESTDIR}$(PREFIX)/lib/dracut/modules.d/30afterburn dracut/30afterburn/*
-	install -D -t ${DESTDIR}$(PREFIX)/bin target/release/afterburn
+	install -D -m 0444 -t ${DESTDIR}$(PREFIX)/lib/dracut/modules.d/30afterburn dracut/30afterburn/*
+	install -D -t ${DESTDIR}$(PREFIX)/bin target/debug/afterburn
