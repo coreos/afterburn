@@ -29,7 +29,7 @@ dependencies = [
  "slog-term",
  "tempfile",
  "update-ssh-keys",
- "users",
+ "users 0.10.0",
 ]
 
 [[package]]
@@ -1581,7 +1581,7 @@ dependencies = [
  "error-chain",
  "fs2",
  "openssh-keys",
- "users",
+ "users 0.9.1",
 ]
 
 [[package]]
@@ -1602,6 +1602,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c72f4267aea0c3ec6d07eaabea6ead7c5ddacfafc5e22bcf8d186706851fb4cf"
 dependencies = [
  "libc",
+]
+
+[[package]]
+name = "users"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "aa4227e95324a443c9fcb06e03d4d85e91aabe9a5a02aa818688b6918b6af486"
+dependencies = [
+ "libc",
+ "log",
 ]
 
 [[package]]

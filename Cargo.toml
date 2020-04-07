@@ -47,7 +47,7 @@ slog-scope = "^4.3"
 slog-term = "^2.5"
 tempfile = "^3.1"
 update-ssh-keys = { version = "^0.5", optional = true }
-users = "^0.9"
+users = "^0.10"
 
 [dependencies.slog]
 version = "^2.5"
