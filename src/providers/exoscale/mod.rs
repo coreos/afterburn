@@ -38,9 +38,7 @@ impl ExoscaleProvider {
     pub fn try_new() -> Result<ExoscaleProvider> {
         let client = retry::Client::try_new()?;
 
-        Ok(ExoscaleProvider {
-            client,
-        })
+        Ok(ExoscaleProvider { client })
     }
 
     #[cfg(test)]
@@ -74,11 +72,7 @@ impl MetadataProvider for ExoscaleProvider {
         add_value(&mut out, "EXOSCALE_INSTANCE_ID", "instance-id")?;
         add_value(&mut out, "EXOSCALE_LOCAL_HOSTNAME", "local-hostname")?;
         add_value(&mut out, "EXOSCALE_PUBLIC_HOSTNAME", "public-hostname")?;
-        add_value(
-            &mut out,
-            "EXOSCALE_AVAILABILITY_ZONE",
-            "availability-zone",
-        )?;
+        add_value(&mut out, "EXOSCALE_AVAILABILITY_ZONE", "availability-zone")?;
         add_value(&mut out, "EXOSCALE_PUBLIC_IPV4", "public-ipv4")?;
         add_value(&mut out, "EXOSCALE_LOCAL_IPV4", "local-ipv4")?;
         add_value(&mut out, "EXOSCALE_SERVICE_OFFERING", "service-offering")?;
