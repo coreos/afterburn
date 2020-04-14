@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.org/coreos/afterburn.svg?branch=master)](https://travis-ci.org/coreos/afterburn)
 [![crates.io](https://img.shields.io/crates/v/afterburn.svg)](https://crates.io/crates/afterburn)
-![minimum rust 1.37](https://img.shields.io/badge/rust-1.37%2B-orange.svg)
+![minimum rust 1.39](https://img.shields.io/badge/rust-1.39%2B-orange.svg)
 
 This is a small utility, typically used in conjunction with [Ignition][ignition], which reads metadata from a given cloud-provider and applies it to the system.
 This can include adding SSH keys and writing cloud-specific attributes into an environment file (e.g. `/run/metadata/afterburn`), which can then be consumed by systemd service units via `EnvironmentFile=`.
