@@ -35,6 +35,7 @@ pub mod ibmcloud_classic;
 pub mod openstack;
 pub mod packet;
 pub mod vagrant_virtualbox;
+pub mod vmware;
 
 use std::collections::HashMap;
 use std::fs::{self, File};
