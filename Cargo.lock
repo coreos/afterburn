@@ -30,6 +30,7 @@ dependencies = [
  "tempfile",
  "update-ssh-keys",
  "users",
+ "vmw_backdoor",
 ]
 
 [[package]]
@@ -1568,6 +1569,19 @@ name = "version_check"
 version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "078775d0255232fb988e6fccf26ddc9d1ac274299aaedcedce21c6f72cc533ce"
+
+[[package]]
+name = "vmw_backdoor"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "96046ba681815732119358af55ebd277d694d866a88c5db05869f4eefa2f8072"
+dependencies = [
+ "cc",
+ "cfg-if",
+ "libc",
+ "log",
+ "thiserror",
+]
 
 [[package]]
 name = "void"
