@@ -34,10 +34,4 @@ error_chain! {
         Reqwest(::reqwest::Error);
         XmlDeserialize(::serde_xml_rs::Error);
     }
-    errors {
-        UnknownProvider(p: String) {
-            description("unknown provider")
-            display("unknown provider '{}'", p)
-        }
-    }
 }

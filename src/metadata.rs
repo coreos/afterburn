@@ -19,6 +19,7 @@ use crate::providers::aws::AwsProvider;
 use crate::providers::azure::Azure;
 use crate::providers::cloudstack::configdrive::ConfigDrive;
 use crate::providers::cloudstack::network::CloudstackNetwork;
+use crate::providers::default::DefaultProvider;
 use crate::providers::digitalocean::DigitalOceanProvider;
 use crate::providers::exoscale::ExoscaleProvider;
 use crate::providers::gcp::GcpProvider;
@@ -62,6 +63,22 @@ pub fn fetch_metadata(provider: &str) -> errors::Result<Box<dyn providers::Metad
         "openstack-metadata" => box_result!(OpenstackProvider::try_new()?),
         "packet" => box_result!(PacketProvider::try_new()?),
         "vagrant-virtualbox" => box_result!(VagrantVirtualboxProvider::new()),
-        _ => Err(errors::ErrorKind::UnknownProvider(provider.to_owned()).into()),
+        name => box_result!(DefaultProvider::try_new(name)?),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_missing_provider() {
+        assert!(fetch_metadata("").is_err());
+    }
+
+    #[test]
+    fn test_unknown_provider() {
+        let provider = fetch_metadata("non-existent").unwrap();
+        assert_eq!(provider.hostname().unwrap(), None);
     }
 }
