@@ -15,7 +15,7 @@
 //! Kernel cmdline parsing - utility functions
 //!
 //! NOTE(lucab): this is not a complete/correct cmdline parser, as it implements
-//!  just enough logic to extract the OEM ID value. In particular, it doesn't
+//!  just enough logic to extract a few interesting values. In particular, it doesn't
 //!  handle separator quoting/escaping, list of values, and merging of repeated
 //!  flags.
 
@@ -32,20 +32,11 @@ const CMDLINE_PLATFORM_FLAG: &str = "ignition.platform.id";
 #[cfg(feature = "cl-legacy")]
 const CMDLINE_PLATFORM_FLAG: &str = "coreos.oem.id";
 
-// Get platform/OEM value from cmdline file.
+/// Get platform/OEM value from cmdline file.
 pub fn get_platform(fpath: &str) -> Result<String> {
-    // open the cmdline file
-    let file =
-        fs::File::open(fpath).chain_err(|| format!("Failed to open cmdline file ({})", fpath))?;
+    let content = read_cmdline_path(fpath)?;
 
-    // read the contents
-    let mut bufrd = io::BufReader::new(file);
-    let mut contents = String::new();
-    bufrd
-        .read_to_string(&mut contents)
-        .chain_err(|| format!("Failed to read cmdline file ({})", fpath))?;
-
-    match find_flag_value(CMDLINE_PLATFORM_FLAG, &contents) {
+    match find_flag_value(CMDLINE_PLATFORM_FLAG, &content) {
         Some(platform) => {
             trace!("found '{}' flag: {}", CMDLINE_PLATFORM_FLAG, platform);
             Ok(platform)
@@ -56,6 +47,37 @@ pub fn get_platform(fpath: &str) -> Result<String> {
             fpath
         ),
     }
+}
+
+/// Check whether kernel cmdline file contains flags for network configuration.
+#[allow(unused)]
+pub fn has_network_kargs(fpath: &str) -> Result<bool> {
+    const IP_PREFIX: &str = "ip=";
+
+    let content = read_cmdline_path(fpath)?;
+    let has_ip = contains_flag_prefix(&content, IP_PREFIX);
+    Ok(has_ip)
+}
+
+/// Open cmdline file at path and return its content.
+pub fn read_cmdline_path(fpath: &str) -> Result<String> {
+    let file =
+        fs::File::open(fpath).chain_err(|| format!("Failed to open cmdline file ({})", fpath))?;
+
+    let mut bufrd = io::BufReader::new(file);
+    let mut content = String::new();
+    bufrd
+        .read_to_string(&mut content)
+        .chain_err(|| format!("Failed to read cmdline file ({})", fpath))?;
+    Ok(content)
+}
+
+/// Check whether cmdline contains any flag starting with the given prefix.
+///
+/// This splits `cmdline` content into flag elements and match each with `prefix`,
+/// short-circuiting to `true` on the first match.
+fn contains_flag_prefix(cmdline: &str, prefix: &str) -> bool {
+    cmdline.split(' ').any(|s| s.starts_with(prefix))
 }
 
 // Find OEM ID flag value in cmdline string.
@@ -88,6 +110,7 @@ fn find_flag_value(flagname: &str, cmdline: &str) -> Option<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
     #[test]
     fn test_find_flag() {
         let flagname = "coreos.oem.id";
@@ -105,6 +128,23 @@ mod tests {
         ];
         for (tcase, tres) in tests {
             let res = find_flag_value(flagname, tcase);
+            assert_eq!(res, tres, "failed testcase: '{}'", tcase);
+        }
+    }
+
+    #[test]
+    fn test_contains_flag_prefix() {
+        let prefix = "ip=";
+        let tests = vec![
+            ("", false),
+            ("ip=foo", true),
+            ("ip=\n", true),
+            ("coreos.oem.id=", false),
+            ("coreos.oem.id=ec2", false),
+            ("coreos.oem.id=ip ip=bar\n", true),
+        ];
+        for (tcase, tres) in tests {
+            let res = contains_flag_prefix(tcase, prefix);
             assert_eq!(res, tres, "failed testcase: '{}'", tcase);
         }
     }

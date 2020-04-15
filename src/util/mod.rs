@@ -24,7 +24,7 @@ use std::path::Path;
 use std::time::Duration;
 
 mod cmdline;
-pub use self::cmdline::get_platform;
+pub use self::cmdline::{get_platform, has_network_kargs};
 
 mod mount;
 pub(crate) use mount::{mount_ro, unmount};
