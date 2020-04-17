@@ -30,6 +30,7 @@ clap = "^2.33"
 error-chain = { version = "^0.12", default-features = false }
 hostname = "^0.3"
 ipnetwork = "^0.16"
+libsystemd = "^0.2.0"
 maplit = "^1.0"
 mime = "^0.3"
 nix = "^0.17"
