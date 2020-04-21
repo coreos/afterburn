@@ -1,7 +1,7 @@
 language: rust
 rust:
   - 1.42.0  # pinned toolchain for clippy
-  - 1.39.0  # minimum supported toolchain
+  - 1.40.0  # minimum supported toolchain (https://github.com/rust-lang/rust/pull/63803)
   - stable
   - beta
   - nightly
