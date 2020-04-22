@@ -1,30 +1,50 @@
+---
 language: rust
-rust:
-  - 1.42.0  # pinned toolchain for clippy
-  - 1.40.0  # minimum supported toolchain (https://github.com/rust-lang/rust/pull/63803)
-  - stable
-  - beta
-  - nightly
+os: linux
 
-matrix:
+jobs:
   allow_failures:
     - rust: nightly
-
-env:
-  global:
-    - CLIPPY_RUST_VERSION=1.42.0
-
-before_script:
-  - bash -c 'if [[ "$TRAVIS_RUST_VERSION" == "$CLIPPY_RUST_VERSION" ]]; then
-      rustup component add clippy;
-    fi'
-
-script:
-  - cargo test
-  - cargo test --features cl-legacy
-  - bash -c 'if [[ "$TRAVIS_RUST_VERSION" == "$CLIPPY_RUST_VERSION" ]]; then
-      cargo clippy -- -D warnings;
-    fi'
-  - bash -c 'if [[ "$TRAVIS_RUST_VERSION" == "$CLIPPY_RUST_VERSION" ]]; then
-      cargo clippy --features cl-legacy -- -D warnings;
-    fi'
+  include:
+    - name: "Test with nightly toolchain"
+      arch: amd64
+      rust: nightly
+      script:
+        - cargo test
+    - name: "Test with stable toolchain"
+      arch: amd64
+      rust: stable
+      script:
+        - cargo test
+    - name: "Test with beta toolchain"
+      arch: amd64
+      rust: beta
+      script:
+        - cargo test
+    - name: "Test a secondary architecture (aarch64)"
+      arch: arm64
+      rust: stable
+      script:
+        - cargo test
+    - name: "Test with minimum supported toolchain"
+      arch: amd64
+      rust: 1.40.0
+      script:
+        - cargo test --release
+    - name: "Test CL legacy feature"
+      arch: amd64
+      rust: 1.42.0
+      before_script:
+        - rustup component add clippy
+      script:
+        - cargo test --features cl-legacy
+        - cargo clippy --features cl-legacy -- -D warnings;
+    - name: "Lints with pinned toolchain"
+      arch: amd64
+      rust: 1.42.0
+      before_script:
+        - rustup component add clippy
+        - rustup component add rustfmt
+      script:
+        - cargo clippy -- -D warnings
+        - cargo fmt -- --check -l
