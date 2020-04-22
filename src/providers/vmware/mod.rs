@@ -1,10 +1,7 @@
 //! VMware provider.
-//!
-//! This uses the guest->host backdoor protocol for introspection.
 
 use std::collections::HashMap;
 
-use error_chain::bail;
 use openssh_keys::PublicKey;
 use slog_scope::warn;
 
@@ -19,25 +16,12 @@ pub struct VmwareProvider {
     guestinfo_net_kargs: Option<String>,
 }
 
-impl VmwareProvider {
-    pub fn try_new() -> Result<Self> {
-        if !vmw_backdoor::is_vmware_cpu() {
-            bail!("not running on VMWare CPU");
-        }
-
-        let mut backdoor = vmw_backdoor::probe_backdoor()?;
-        let mut erpc = backdoor.open_enhanced_chan()?;
-        let guestinfo_net_kargs = Self::get_net_kargs(&mut erpc)?;
-
-        let provider = Self {
-            guestinfo_net_kargs,
-        };
-        Ok(provider)
-    }
-
-    fn get_net_kargs(_erpc: &mut vmw_backdoor::EnhancedChan) -> Result<Option<String>> {
-        // TODO(lucab): pick a stable key name and implement this logic.
-        Ok(None)
+// Architecture-specific implementation.
+cfg_if::cfg_if! {
+    if #[cfg(all(target_os = "linux", target_arch = "x86_64"))] {
+        mod amd64;
+    } else {
+        mod unsupported;
     }
 }
 
