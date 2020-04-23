@@ -37,12 +37,13 @@ pub mod packet;
 pub mod vagrant_virtualbox;
 pub mod vmware;
 
+use libsystemd::logging;
+use openssh_keys::PublicKey;
+use slog_scope::warn;
 use std::collections::HashMap;
 use std::fs::{self, File};
 use std::io::prelude::*;
 use std::path::Path;
-
-use openssh_keys::PublicKey;
 use users::{self, User};
 
 use crate::errors::*;
@@ -52,6 +53,8 @@ use crate::network;
 const ENV_PREFIX: &str = "AFTERBURN_";
 #[cfg(feature = "cl-legacy")]
 const ENV_PREFIX: &str = "COREOS_";
+/// Message ID marker for authorized-keys entries in journal.
+const AFTERBURN_SSH_AUTHORIZED_KEYS_MESSAGEID: &str = "0f7d7a502f2d433caa1323440a6b4190";
 
 fn create_file(filename: &str) -> Result<File> {
     let file_path = Path::new(&filename);
@@ -64,6 +67,20 @@ fn create_file(filename: &str) -> Result<File> {
     File::create(file_path).chain_err(|| format!("failed to create file {:?}", file_path))
 }
 
+/// Add a message to the journal logging SSH key additions; this
+/// will be used by at least Fedora CoreOS to display in the console
+/// if no ssh keys are present.
+fn write_ssh_key_journal_entry(log: logging::Priority, name: &str, path: &str) {
+    let message = format!("wrote ssh authorized keys file for user: {}", name);
+    let map = maplit::hashmap! {
+        "AFTERBURN_USER_NAME" => name.as_ref(),
+        "AFTERBURN_PATH" => path.as_ref(),
+        "MESSAGE_ID" => AFTERBURN_SSH_AUTHORIZED_KEYS_MESSAGEID,
+    };
+    if let Err(e) = logging::journal_send(log, &message, map.iter()) {
+        warn!("failed to send information to journald: {}", e);
+    }
+}
 #[cfg(feature = "cl-legacy")]
 fn write_ssh_keys(user: User, ssh_keys: Vec<PublicKey>) -> Result<()> {
     use update_ssh_keys::{AuthorizedKeyEntry, AuthorizedKeys};
@@ -95,6 +112,8 @@ fn write_ssh_keys(user: User, ssh_keys: Vec<PublicKey>) -> Result<()> {
         authorized_keys_dir
             .sync()
             .chain_err(|| "failed to update authorized keys")?;
+        let path = authorized_keys_dir.ssh_dir.display().to_string();
+        write_ssh_key_journal_entry(logging::Priority::Info, &user_name, &path);
     }
 
     Ok(())
@@ -155,6 +174,10 @@ fn write_ssh_keys(user: User, ssh_keys: Vec<PublicKey>) -> Result<()> {
         }
         .chain_err(|| format!("failed to remove file {:?}", file_path.display()))?;
     }
+
+    let username = user.name().to_string_lossy();
+    let path = file_path.to_string_lossy();
+    write_ssh_key_journal_entry(logging::Priority::Info, &username, &path);
 
     // sync parent dir to persist updates
     match File::open(&dir_path) {
