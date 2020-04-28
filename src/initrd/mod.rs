@@ -1,10 +1,12 @@
-/// Agent logic running at early boot.
-///
-/// This is run early-on in initrd, possibly before networking and other
-/// services are configured, so it may not be able to use all usual metadata
-/// fetcher.
-use crate::errors::*;
+//! Agent logic running at early boot.
+//!
+//! This is run early-on in initrd, possibly before networking and other
+//! services are configured, so it may not be able to use all usual metadata
+//! fetcher.
 
+use crate::errors::*;
+use crate::providers::vmware::VmwareProvider;
+use crate::providers::MetadataProvider;
 use std::fs::File;
 use std::io::Write;
 
@@ -14,8 +16,7 @@ static KARGS_PATH: &str = "/etc/cmdline.d/50-afterburn-network-kargs.conf";
 /// Fetch network kargs for the given provider.
 pub(crate) fn fetch_network_kargs(provider: &str) -> Result<Option<String>> {
     match provider {
-        // TODO(lucab): wire-in vmware guestinfo logic.
-        "vmware" => Ok(None),
+        "vmware" => VmwareProvider::try_new()?.rd_network_kargs(),
         _ => Ok(None),
     }
 }
