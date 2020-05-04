@@ -10,7 +10,7 @@ dependencies = [
  "clap",
  "error-chain",
  "hostname",
- "ipnetwork 0.16.0",
+ "ipnetwork",
  "libsystemd",
  "maplit",
  "mime",
@@ -621,15 +621,6 @@ dependencies = [
 
 [[package]]
 name = "ipnetwork"
-version = "0.15.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a69dd5e3613374e74da81c251750153abe3bd0ad17641ea63d43d1e21d0dbd4d"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "ipnetwork"
 version = "0.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b8eca9f51da27bc908ef3dd85c21e1bbba794edaf94d7841e37356275b82d31e"
@@ -973,34 +964,34 @@ checksum = "05da548ad6865900e60eaba7f589cc0783590a92e940c26953ff81ddbab2d677"
 
 [[package]]
 name = "pnet_base"
-version = "0.22.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4df28acf2fcc77436dd2b91a9a0c2bb617f9ca5f2acefee1a4135058b9f9801f"
-
-[[package]]
-name = "pnet_base"
 version = "0.25.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "aa93ec6a1fda3c901a3aa7986990a7e2a513841c4815c2b8ef564dd43771d967"
 
 [[package]]
-name = "pnet_datalink"
-version = "0.25.0"
+name = "pnet_base"
+version = "0.26.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "545f8df67cbc53438f37f56e68ae5ca49beb3990e9fd7e9e214c8ffd36c0e0ea"
+checksum = "b7cd5f7e15220afa66b0a9a62841ea10089f39dcaa1c29752c0b22dfc03111b5"
+
+[[package]]
+name = "pnet_datalink"
+version = "0.26.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7318ae1d6e0b7fa1e49933233c9473f2b72d3d18b97e70e2716c6415dde5f915"
 dependencies = [
- "ipnetwork 0.15.1",
+ "ipnetwork",
  "libc",
- "pnet_base 0.22.0",
+ "pnet_base 0.26.0",
  "pnet_sys",
  "winapi 0.2.8",
 ]
 
 [[package]]
 name = "pnet_sys"
-version = "0.25.0"
+version = "0.26.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "82f881a6d75ac98c5541db6144682d1773bb14c6fc50c6ebac7086c8f7f23c29"
+checksum = "73f0de0c52609f157b25d79ce24d9016ab1bbf10cde761397200d634a833872c"
 dependencies = [
  "libc",
  "winapi 0.2.8",
