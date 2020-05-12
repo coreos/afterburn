@@ -37,7 +37,7 @@ mime = "^0.3"
 nix = "^0.17"
 openssh-keys = "^0.4"
 openssl = "^0.10"
-pnet_base = "^0.25"
+pnet_base = "^0.26"
 pnet_datalink = "^0.26"
 reqwest = { version = "^0.10", features = [ "blocking" ] }
 serde =  { version = "^1.0", features = [ "derive" ] }
