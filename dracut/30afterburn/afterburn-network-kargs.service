@@ -1,0 +1,20 @@
+[Unit]
+Description=Afterburn Initrd Setup Network Kernel Arguments
+
+# This service may produce additional kargs fragments,
+# which are then consumed by dracut-cmdline(8).
+DefaultDependencies=no
+Before=dracut-cmdline.service
+Before=ignition-fetch.service
+After=systemd-journald.socket
+
+OnFailure=emergency.target
+OnFailureJobMode=isolate
+
+[Service]
+Environment=AFTERBURN_OPT_PROVIDER=--cmdline
+# AFTERBURN_NETWORK_KARGS_DEFAULT must be set externally by distributions.
+# If unset, variable expansion results in a missing argument and service
+# hard-failure, on purpose.
+ExecStart=/usr/bin/afterburn exp rd-network-kargs ${AFTERBURN_OPT_PROVIDER} --default-value $AFTERBURN_NETWORK_KARGS_DEFAULT
+Type=oneshot

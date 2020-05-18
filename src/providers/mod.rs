@@ -37,6 +37,8 @@ pub mod packet;
 pub mod vagrant_virtualbox;
 pub mod vmware;
 
+use crate::errors::*;
+use crate::network;
 use libsystemd::logging;
 use openssh_keys::PublicKey;
 use slog_scope::warn;
@@ -45,9 +47,6 @@ use std::fs::{self, File};
 use std::io::prelude::*;
 use std::path::Path;
 use users::{self, User};
-
-use crate::errors::*;
-use crate::network;
 
 #[cfg(not(feature = "cl-legacy"))]
 const ENV_PREFIX: &str = "AFTERBURN_";
@@ -207,6 +206,11 @@ pub trait MetadataProvider {
     ///
     /// netdev: https://www.freedesktop.org/software/systemd/man/systemd.netdev.html
     fn virtual_network_devices(&self) -> Result<Vec<network::VirtualNetDev>>;
+
+    /// Return custom initrd network kernel arguments, if any.
+    fn rd_network_kargs(&self) -> Result<Option<String>> {
+        Ok(None)
+    }
 
     fn write_attributes(&self, attributes_file_path: String) -> Result<()> {
         let mut attributes_file = create_file(&attributes_file_path)?;

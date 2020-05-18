@@ -42,6 +42,10 @@ impl MetadataProvider for VmwareProvider {
         Ok(vec![])
     }
 
+    fn rd_network_kargs(&self) -> Result<Option<String>> {
+        Ok(self.guestinfo_net_kargs.clone())
+    }
+
     fn virtual_network_devices(&self) -> Result<Vec<network::VirtualNetDev>> {
         warn!("virtual network devices metadata requested, but not supported on this platform");
         Ok(vec![])
