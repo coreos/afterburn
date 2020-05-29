@@ -62,7 +62,7 @@ impl AwsProvider {
 
     #[cfg(not(test))]
     fn endpoint_for(key: &str) -> String {
-        const URL: &str = "http://169.254.169.254/2009-04-04";
+        const URL: &str = "http://169.254.169.254/2019-10-01";
         format!("{}/{}", URL, key)
     }
 
