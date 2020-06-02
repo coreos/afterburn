@@ -86,3 +86,98 @@ fn test_aws_attributes() {
     mockito::reset();
     provider.attributes().unwrap_err();
 }
+
+#[test]
+fn test_aws_imds_versions() {
+    let instance_id = "test-instance-id";
+    let instance_type = "test-instance-type";
+    let ipv4_local = "test-ipv4-local";
+    let ipv4_public = "test-ipv4-public";
+    let availability_zone = "test-availability-zone";
+    let hostname = "test-hostname";
+    let public_hostname = "test-public-hostname";
+    let instance_id_doc = r#"{"region": "test-region"}"#;
+    let region = "test-region";
+
+    let attributes = maplit::hashmap! {
+        format!("{}_INSTANCE_ID", aws::ENV_PREFIX) => instance_id.to_string(),
+        format!("{}_INSTANCE_TYPE", aws::ENV_PREFIX) => instance_type.to_string(),
+        format!("{}_IPV4_LOCAL", aws::ENV_PREFIX) => ipv4_local.to_string(),
+        format!("{}_IPV4_PUBLIC", aws::ENV_PREFIX) => ipv4_public.to_string(),
+        format!("{}_AVAILABILITY_ZONE", aws::ENV_PREFIX) => availability_zone.to_string(),
+        format!("{}_HOSTNAME", aws::ENV_PREFIX) => hostname.to_string(),
+        format!("{}_PUBLIC_HOSTNAME", aws::ENV_PREFIX) => public_hostname.to_string(),
+        format!("{}_REGION", aws::ENV_PREFIX) => region.to_string(),
+    };
+
+    let endpoints = maplit::btreemap! {
+        "/meta-data/instance-id" => instance_id,
+        "/meta-data/instance-type" => instance_type,
+        "/meta-data/local-ipv4" => ipv4_local,
+        "/meta-data/public-ipv4" => ipv4_public,
+        "/meta-data/placement/availability-zone" => availability_zone,
+        "/meta-data/hostname" => hostname,
+        "/meta-data/public-hostname" => public_hostname,
+        "/dynamic/instance-identity/document" => instance_id_doc,
+    };
+
+    let client = crate::retry::Client::try_new()
+        .chain_err(|| "failed to create http client")
+        .unwrap()
+        .max_retries(0)
+        .return_on_404(true);
+
+    // first test imdsv1
+    {
+        let mut mocks = Vec::with_capacity(endpoints.len());
+        for (endpoint, body) in endpoints.clone() {
+            let m = mockito::mock("GET", endpoint)
+                .with_status(200)
+                .with_body(body)
+                .create();
+            mocks.push(m);
+        }
+
+        let _m = mockito::mock("PUT", "/api/token")
+            .match_header("X-aws-ec2-metadata-token-ttl-seconds", "21600")
+            .with_status(403)
+            .with_body("Forbidden")
+            .create();
+
+        let provider = aws::AwsProvider::with_client(client.clone()).unwrap();
+
+        let v = provider.attributes().unwrap();
+        assert_eq!(v, attributes);
+
+        mockito::reset();
+        provider.attributes().unwrap_err();
+    }
+
+    {
+        // then test imdsv2
+        let token = "test-api-token";
+        let mut mocks = Vec::with_capacity(endpoints.len());
+        for (endpoint, body) in endpoints.clone() {
+            let m = mockito::mock("GET", endpoint)
+                .match_header("X-aws-ec2-metadata-token", token)
+                .with_status(200)
+                .with_body(body)
+                .create();
+            mocks.push(m);
+        }
+
+        let _m = mockito::mock("PUT", "/api/token")
+            .match_header("X-aws-ec2-metadata-token-ttl-seconds", "21600")
+            .with_status(200)
+            .with_body(token)
+            .create();
+
+        let provider = aws::AwsProvider::with_client(client.clone()).unwrap();
+
+        let v = provider.attributes().unwrap();
+        assert_eq!(v, attributes);
+
+        mockito::reset();
+        provider.attributes().unwrap_err();
+    }
+}

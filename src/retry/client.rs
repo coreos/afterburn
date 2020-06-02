@@ -170,6 +170,21 @@ impl Client {
             return_on_404: self.return_on_404,
         }
     }
+
+    pub fn put<D>(&self, d: D, url: String, body: Option<Cow<str>>) -> RequestBuilder<D>
+    where
+        D: Deserializer,
+    {
+        RequestBuilder {
+            url,
+            body: body.map(Cow::into_owned),
+            d,
+            client: self.client.clone(),
+            headers: self.headers.clone(),
+            retry: self.retry.clone(),
+            return_on_404: self.return_on_404,
+        }
+    }
 }
 
 pub struct RequestBuilder<D>
@@ -205,6 +220,41 @@ where
         self.retry.clone().retry(|attempt| {
             info!("Fetching {}: Attempt #{}", req.url(), attempt + 1);
             self.dispatch_request(&req)
+        })
+    }
+
+    pub fn dispatch_put<T>(self) -> Result<Option<T>>
+    where
+        T: for<'de> serde::Deserialize<'de>,
+    {
+        let url = reqwest::Url::parse(self.url.as_str()).chain_err(|| "failed to parse uri")?;
+
+        self.retry.clone().retry(|attempt| {
+            let mut builder = blocking::Client::new()
+                .put(url.clone())
+                .headers(self.headers.clone())
+                .header(header::CONTENT_TYPE, self.d.content_type());
+            if let Some(ref content) = self.body {
+                builder = builder.body(content.clone());
+            };
+            let req = builder
+                .build()
+                .chain_err(|| "failed to build PUT request")?;
+
+            info!("Putting {}: Attempt #{}", req.url(), attempt + 1);
+            let response = self
+                .client
+                .execute(req)
+                .chain_err(|| "failed to PUT request")?;
+            let status = response.status();
+            if status.is_success() {
+                self.d
+                    .deserialize(response)
+                    .map(Some)
+                    .chain_err(|| "failed to deserialize data")
+            } else {
+                Err(format!("PUT failed: {}", status).into())
+            }
         })
     }
 
