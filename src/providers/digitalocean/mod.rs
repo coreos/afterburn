@@ -18,7 +18,6 @@ use std::collections::HashMap;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 use std::str::FromStr;
 
-use ipnetwork;
 use ipnetwork::{IpNetwork, Ipv4Network, Ipv6Network};
 use openssh_keys::PublicKey;
 use pnet_base::MacAddr;

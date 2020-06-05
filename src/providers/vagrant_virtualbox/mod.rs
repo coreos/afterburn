@@ -19,9 +19,7 @@ use std::net::IpAddr;
 use std::thread;
 use std::time::Duration;
 
-use hostname;
 use openssh_keys::PublicKey;
-use pnet_datalink;
 use slog_scope::{info, warn};
 
 use crate::errors::*;

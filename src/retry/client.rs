@@ -26,10 +26,6 @@ use std::time::Duration;
 use reqwest::{self, blocking, header, Method};
 use slog_scope::info;
 
-use serde;
-use serde_json;
-use serde_xml_rs;
-
 use crate::errors::*;
 use crate::retry::Retry;
 
