@@ -16,7 +16,6 @@
 
 use crate::errors::*;
 use crate::retry;
-use pnet_datalink;
 use slog_scope::{debug, trace};
 use std::fs::File;
 use std::io::{BufRead, BufReader, Read};

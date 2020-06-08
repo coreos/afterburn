@@ -38,10 +38,10 @@ jobs:
         - rustup component add clippy
       script:
         - cargo test --features cl-legacy
-        - cargo clippy --features cl-legacy -- -D warnings;
+        - cargo clippy --features cl-legacy -- -D warnings
     - name: "Lints with pinned toolchain"
       arch: amd64
-      rust: 1.42.0
+      rust: 1.44.0
       before_script:
         - rustup component add clippy
         - rustup component add rustfmt
