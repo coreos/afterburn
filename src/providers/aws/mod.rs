@@ -20,6 +20,7 @@ use std::collections::HashMap;
 #[cfg(test)]
 use mockito;
 use openssh_keys::PublicKey;
+use reqwest::header;
 use serde_derive::Deserialize;
 use slog_scope::warn;
 
@@ -50,20 +51,66 @@ pub struct AwsProvider {
 impl AwsProvider {
     pub fn try_new() -> Result<AwsProvider> {
         let client = retry::Client::try_new()?.return_on_404(true);
+        AwsProvider::with_client(client)
+    }
+
+    fn with_client(client: retry::Client) -> Result<AwsProvider> {
+        let mut client = client;
+        let token = AwsProvider::fetch_imdsv2_token(client.clone());
+
+        // If IMDSv2 token is fetched successfully, set the header.
+        // Otherwise, proceed with IMDSv1 mechanism.
+        match token {
+            Ok(t) => {
+                client = client.header(
+                    header::HeaderName::from_bytes(b"X-aws-ec2-metadata-token")
+                        .chain_err(|| "setting header name for aws imdsv2 metadata")?,
+                    header::HeaderValue::from_bytes(t.as_bytes())
+                        .chain_err(|| "setting header value for aws imdsv2 metadata")?,
+                );
+            }
+            Err(err) => {
+                warn!("failed to fetch aws imdsv2 session token with: {}", err);
+            }
+        }
 
         Ok(AwsProvider { client })
     }
 
     #[cfg(test)]
-    fn endpoint_for(key: &str) -> String {
+    fn endpoint_for(key: &str, _use_latest: bool) -> String {
         let url = mockito::server_url();
         format!("{}/{}", url, key)
     }
 
     #[cfg(not(test))]
-    fn endpoint_for(key: &str) -> String {
+    fn endpoint_for(key: &str, use_latest: bool) -> String {
         const URL: &str = "http://169.254.169.254/2019-10-01";
-        format!("{}/{}", URL, key)
+        const URL_LATEST: &str = "http://169.254.169.254/latest";
+        if use_latest {
+            format!("{}/{}", URL_LATEST, key)
+        } else {
+            format!("{}/{}", URL, key)
+        }
+    }
+
+    fn fetch_imdsv2_token(client: retry::Client) -> Result<String> {
+        let token: String = client
+            .header(
+                header::HeaderName::from_bytes(b"X-aws-ec2-metadata-token-ttl-seconds")
+                    .chain_err(|| "setting header name for aws imdsv2 token")?,
+                header::HeaderValue::from_bytes(b"21600")
+                    .chain_err(|| "setting header value for aws imdsv2 token")?,
+            )
+            .put(
+                retry::Raw,
+                // NOTE(zonggen): Use `latest` here since other versions would return "403 - Forbidden"
+                AwsProvider::endpoint_for("api/token", true),
+                None,
+            )
+            .dispatch_put()?
+            .chain_err(|| "unwrapping aws imdsv2 token")?;
+        Ok(token)
     }
 
     fn fetch_ssh_keys(&self) -> Result<Vec<String>> {
@@ -71,7 +118,7 @@ impl AwsProvider {
             .client
             .get(
                 retry::Raw,
-                AwsProvider::endpoint_for("meta-data/public-keys"),
+                AwsProvider::endpoint_for("meta-data/public-keys", false),
             )
             .send()?;
 
@@ -86,10 +133,10 @@ impl AwsProvider {
                     .client
                     .get(
                         retry::Raw,
-                        AwsProvider::endpoint_for(&format!(
-                            "meta-data/public-keys/{}/openssh-key",
-                            tokens[0]
-                        )),
+                        AwsProvider::endpoint_for(
+                            &format!("meta-data/public-keys/{}/openssh-key", tokens[0]),
+                            false,
+                        ),
                     )
                     .send()?
                     .ok_or("missing ssh key")?;
@@ -107,7 +154,7 @@ impl MetadataProvider for AwsProvider {
         let add_value = |map: &mut HashMap<_, _>, key: &str, name| -> Result<()> {
             let value = self
                 .client
-                .get(retry::Raw, AwsProvider::endpoint_for(name))
+                .get(retry::Raw, AwsProvider::endpoint_for(name, false))
                 .send()?;
 
             if let Some(value) = value {
@@ -157,7 +204,7 @@ impl MetadataProvider for AwsProvider {
             .client
             .get(
                 retry::Json,
-                AwsProvider::endpoint_for("dynamic/instance-identity/document"),
+                AwsProvider::endpoint_for("dynamic/instance-identity/document", false),
             )
             .send()?
             .map(|instance_id_doc: InstanceIdDoc| instance_id_doc.region);
@@ -170,7 +217,10 @@ impl MetadataProvider for AwsProvider {
 
     fn hostname(&self) -> Result<Option<String>> {
         self.client
-            .get(retry::Raw, AwsProvider::endpoint_for("meta-data/hostname"))
+            .get(
+                retry::Raw,
+                AwsProvider::endpoint_for("meta-data/hostname", false),
+            )
             .send()
     }
 
