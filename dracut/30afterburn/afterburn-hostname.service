@@ -1,8 +1,10 @@
 [Unit]
 Description=Afterburn Hostname
-# Azure needs to fetch the hostname in the initramfs
+# These platforms do not provide the hostname via DHCP
+# options, thus it needs to be fetched from the metadata
+# and statically applied on first-boot.
 ConditionKernelCommandLine=|ignition.platform.id=azure
-# Exoscale needs to fetch the hostname in the initramfs
+ConditionKernelCommandLine=|ignition.platform.id=digitalocean
 ConditionKernelCommandLine=|ignition.platform.id=exoscale
 
 # We order this service after sysroot has been mounted
