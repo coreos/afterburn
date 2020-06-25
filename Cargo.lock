@@ -1590,9 +1590,9 @@ checksum = "826e7639553986605ec5979c7dd957c7895e93eabed50ab2ffa7f6128a75097c"
 
 [[package]]
 name = "update-ssh-keys"
-version = "0.6.0"
+version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4a2dd8fbc6366af9d1cd59b4d782530eff64cf8afa88c14bee1e74c625b2af38"
+checksum = "5e038f0ddaaed3ebc6f1279905d9fc9106be511a72123e91429b9dcc00dfdf3e"
 dependencies = [
  "clap",
  "error-chain",
