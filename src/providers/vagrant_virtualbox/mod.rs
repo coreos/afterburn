@@ -30,15 +30,14 @@ use crate::providers::MetadataProvider;
 pub struct VagrantVirtualboxProvider;
 
 impl VagrantVirtualboxProvider {
-    pub fn new() -> VagrantVirtualboxProvider {
-        VagrantVirtualboxProvider
+    pub fn new() -> Self {
+        Self
     }
 
     fn get_ip() -> Result<String> {
         let max_attempts = 30;
         for _ in 0..max_attempts {
-            let iface = VagrantVirtualboxProvider::find_eth1();
-            if let Some(iface) = iface {
+            if let Some(iface) = Self::find_eth1() {
                 for a in iface.ips {
                     if let IpAddr::V4(a) = a.ip() {
                         return Ok(format!("{}", a));
@@ -52,38 +51,36 @@ impl VagrantVirtualboxProvider {
     }
 
     fn find_eth1() -> Option<pnet_datalink::NetworkInterface> {
-        let mut ifaces = pnet_datalink::interfaces();
-        ifaces.retain(|i| i.name == "eth1");
-        if !ifaces.is_empty() {
-            Some(ifaces[0].clone())
-        } else {
-            None
-        }
+        pnet_datalink::interfaces()
+            .into_iter()
+            .find(|i| i.name == "eth1")
+    }
+
+    /// Get the hostname from local system settings.
+    fn system_hostname() -> Result<String> {
+        let hostname = hostname::get()
+            .chain_err(|| "unable to get hostname")?
+            .to_string_lossy()
+            .into_owned();
+        Ok(hostname)
     }
 }
 
 impl MetadataProvider for VagrantVirtualboxProvider {
     fn attributes(&self) -> Result<HashMap<String, String>> {
-        let mut out = HashMap::with_capacity(2);
+        let hostname = Self::system_hostname()?;
+        let ip = Self::get_ip()?;
 
-        let hostname = hostname::get()
-            .chain_err(|| "unable to get hostname")?
-            .to_string_lossy()
-            .into_owned();
-        let ip = VagrantVirtualboxProvider::get_ip()?;
+        let attributes = maplit::hashmap! {
+            "VAGRANT_VIRTUALBOX_HOSTNAME".to_string() => hostname,
+            "VAGRANT_VIRTUALBOX_PRIVATE_IPV4".to_string() => ip,
+        };
 
-        out.insert("VAGRANT_VIRTUALBOX_HOSTNAME".to_string(), hostname);
-        out.insert("VAGRANT_VIRTUALBOX_PRIVATE_IPV4".to_string(), ip);
-
-        Ok(out)
+        Ok(attributes)
     }
 
     fn hostname(&self) -> Result<Option<String>> {
-        let hostname = hostname::get()
-            .chain_err(|| "unable to get hostname")?
-            .to_string_lossy()
-            .into_owned();
-        Ok(Some(hostname))
+        Ok(None)
     }
 
     fn ssh_keys(&self) -> Result<Vec<PublicKey>> {
