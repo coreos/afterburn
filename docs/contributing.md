@@ -1,4 +1,4 @@
-# How to Contribute
+# Contributing
 
 CoreOS projects are [Apache 2.0 licensed](LICENSE) and accept contributions via
 GitHub pull requests.  This document outlines some of the conventions on
@@ -11,10 +11,6 @@ By contributing to this project you agree to the Developer Certificate of
 Origin (DCO). This document was created by the Linux Kernel community and is a
 simple statement that you, as a contributor, have the legal right to make the
 contribution. See the [DCO](DCO) file for details.
-
-## Reporting a security vulnerability
-
-Due to their public nature, GitHub and mailing lists are not appropriate places for reporting vulnerabilities. Please refer to CoreOS's [security disclosure][disclosure] process when reporting issues that may be security related.
 
 ## Getting Started
 
@@ -34,6 +30,12 @@ This is a rough outline of what a contributor's workflow looks like:
 - Submit a pull request to the original repository.
 
 Thanks for your contributions!
+
+## Project architecture
+
+[Development doc-pages][devdocs] cover several aspects of this project, both at low-level (code and logic) and high-level (architecture and design).
+
+[devdocs]: ./development/
 
 ### Code Style
 
@@ -69,5 +71,9 @@ second line is always blank, and other lines should be wrapped at 80 characters.
 This allows the message to be easier to read on GitHub as well as in various
 git tools.
 
+## Release process
 
-[disclosure]: https://coreos.com/security/disclosure/
+Release can be performed by [creating a new release ticket][new-release-ticket] and following the steps in the checklist there.
+
+[new-release-ticket]: https://github.com/coreos/afterburn/issues/new?labels=kind/release&template=release-checklist.md
+
