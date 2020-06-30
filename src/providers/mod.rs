@@ -34,6 +34,7 @@ pub mod ibmcloud;
 pub mod ibmcloud_classic;
 pub mod openstack;
 pub mod packet;
+#[cfg(feature = "cl-legacy")]
 pub mod vagrant_virtualbox;
 pub mod vmware;
 
