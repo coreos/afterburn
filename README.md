@@ -61,7 +61,5 @@ The following platforms are supported, with a different set of features availabl
   - Attributes
   - First-boot check-in
   - SSH Keys
-* vagrant-virtualbox
-  - Attributes
 * vmware
   - Custom network command-line arguments

@@ -26,6 +26,7 @@ use crate::providers::ibmcloud::IBMGen2Provider;
 use crate::providers::ibmcloud_classic::IBMClassicProvider;
 use crate::providers::openstack::network::OpenstackProvider;
 use crate::providers::packet::PacketProvider;
+#[cfg(feature = "cl-legacy")]
 use crate::providers::vagrant_virtualbox::VagrantVirtualboxProvider;
 use crate::providers::vmware::VmwareProvider;
 
@@ -62,6 +63,7 @@ pub fn fetch_metadata(provider: &str) -> errors::Result<Box<dyn providers::Metad
         "ibmcloud-classic" => box_result!(IBMClassicProvider::try_new()?),
         "openstack-metadata" => box_result!(OpenstackProvider::try_new()?),
         "packet" => box_result!(PacketProvider::try_new()?),
+        #[cfg(feature = "cl-legacy")]
         "vagrant-virtualbox" => box_result!(VagrantVirtualboxProvider::new()),
         "vmware" => box_result!(VmwareProvider::try_new()?),
         _ => Err(errors::ErrorKind::UnknownProvider(provider.to_owned()).into()),
