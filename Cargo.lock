@@ -1651,9 +1651,9 @@ checksum = "078775d0255232fb988e6fccf26ddc9d1ac274299aaedcedce21c6f72cc533ce"
 
 [[package]]
 name = "vmw_backdoor"
-version = "0.1.2"
+version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f5ba76627133ce7ceca7ff5ff2a97cba44cf9254b6eac40e5e6648412d2635bd"
+checksum = "62a285ffd5ddbf0d4fb5f5d581498b4340678ca82d41da2e3678600591c0583e"
 dependencies = [
  "cc",
  "cfg-if",
