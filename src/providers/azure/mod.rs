@@ -19,6 +19,7 @@ mod crypto;
 use std::collections::HashMap;
 use std::net::IpAddr;
 
+use error_chain::bail;
 use openssh_keys::PublicKey;
 use reqwest::header::{HeaderName, HeaderValue};
 use serde_derive::Deserialize;
@@ -105,8 +106,8 @@ struct RoleInstance {
 
 #[derive(Debug, Deserialize, Clone)]
 struct Configuration {
-    #[serde(rename = "Certificates", default)]
-    pub certificates: String,
+    #[serde(rename = "Certificates")]
+    pub certificates: Option<String>,
     #[serde(rename = "SharedConfig", default)]
     pub shared_config: String,
 }
@@ -304,23 +305,27 @@ impl Azure {
         URL.to_string()
     }
 
-    fn get_certs_endpoint(&self) -> Result<String> {
-        // grab the certificates endpoint from the xml and return it
-        let cert_endpoint: &str = &self.goal_state.container.role_instance_list.role_instances[0]
-            .configuration
-            .certificates;
-        Ok(String::from(cert_endpoint))
+    /// Return the certificates endpoint (if any) from the cached XML.
+    fn get_certs_endpoint(&self) -> Option<String> {
+        let role = match self
+            .goal_state
+            .container
+            .role_instance_list
+            .role_instances
+            .get(0)
+        {
+            Some(r) => r,
+            None => return None,
+        };
+
+        role.configuration.certificates.clone()
     }
 
-    fn get_certs<S: AsRef<str>>(&self, mangled_pem: S) -> Result<String> {
-        // get the certificates
-        let endpoint = self
-            .get_certs_endpoint()
-            .chain_err(|| "failed to get certs endpoint")?;
-
+    // Fetch the certificate.
+    fn get_certs(&self, certs_endpoint: String, mangled_pem: impl AsRef<str>) -> Result<String> {
         let certs: CertificatesFile = self
             .client
-            .get(retry::Xml, endpoint)
+            .get(retry::Xml, certs_endpoint)
             .header(
                 HeaderName::from_static(HDR_CIPHER_NAME),
                 HeaderValue::from_static("DES_EDE3_CBC"),
@@ -342,8 +347,7 @@ impl Azure {
     }
 
     // put it all together
-    fn get_ssh_pubkey(&self) -> Result<PublicKey> {
-        // first we have to get the certificates endoint.
+    fn get_ssh_pubkey(&self, certs_endpoint: String) -> Result<PublicKey> {
         // we have to generate the rsa public/private keypair and the x509 cert
         // that we use to make the request. this is equivalent to
         // `openssl req -x509 -nodes -subj /CN=LinuxTransport -days 365 -newkey rsa:2048 -keyout private.pem -out cert.pem`
@@ -355,7 +359,7 @@ impl Azure {
 
         // fetch the encrypted cms blob from the certs endpoint
         let smime = self
-            .get_certs(mangled_pem)
+            .get_certs(certs_endpoint, mangled_pem)
             .chain_err(|| "failed to get certs")?;
 
         // decrypt the cms blob
@@ -485,7 +489,19 @@ impl MetadataProvider for Azure {
     }
 
     fn ssh_keys(&self) -> Result<Vec<PublicKey>> {
-        let key = self.get_ssh_pubkey()?;
+        let certs_endpoint = match self.get_certs_endpoint() {
+            Some(ep) => ep,
+            None => {
+                warn!("SSH pubkeys requested, but not provisioned for this instance");
+                return Ok(vec![]);
+            }
+        };
+
+        if certs_endpoint.is_empty() {
+            bail!("unexpected empty certificates endpoint");
+        }
+
+        let key = self.get_ssh_pubkey(certs_endpoint)?;
         Ok(vec![key])
     }
 
