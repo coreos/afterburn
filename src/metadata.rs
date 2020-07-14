@@ -29,6 +29,7 @@ use crate::providers::packet::PacketProvider;
 #[cfg(feature = "cl-legacy")]
 use crate::providers::vagrant_virtualbox::VagrantVirtualboxProvider;
 use crate::providers::vmware::VmwareProvider;
+use crate::providers::vultr::VultrProvider;
 
 macro_rules! box_result {
     ($exp:expr) => {
@@ -66,6 +67,7 @@ pub fn fetch_metadata(provider: &str) -> errors::Result<Box<dyn providers::Metad
         #[cfg(feature = "cl-legacy")]
         "vagrant-virtualbox" => box_result!(VagrantVirtualboxProvider::new()),
         "vmware" => box_result!(VmwareProvider::try_new()?),
+        "vultr" => box_result!(VultrProvider::try_new()?),
         _ => Err(errors::ErrorKind::UnknownProvider(provider.to_owned()).into()),
     }
 }
