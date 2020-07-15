@@ -93,6 +93,12 @@ On legacy `coreos-metadata` versions, the supported cloud providers and their re
     - Attributes
       - COREOS_VAGRANT_VIRTUALBOX_PRIVATE_IPV4
       - COREOS_VAGRANT_VIRTUALBOX_HOSTNAME
+  - vultr
+    - SSH Keys
+    - Attributes
+      - COREOS_VULTR_HOSTNAME
+      - COREOS_VULTR_INSTANCE_ID
+      - COREOS_VULTR_REGION_CODE
 
 Additionally, some attribute names are reserved for usage by [custom metadata providers][custom-metadata].
 These can be safely used by external providers on a platform not supported by Afterburn:

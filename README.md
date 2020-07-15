@@ -63,3 +63,6 @@ The following platforms are supported, with a different set of features availabl
   - SSH Keys
 * vmware
   - Custom network command-line arguments
+* vultr
+  - Attributes
+  - SSH Keys

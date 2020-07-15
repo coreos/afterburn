@@ -37,6 +37,7 @@ pub mod packet;
 #[cfg(feature = "cl-legacy")]
 pub mod vagrant_virtualbox;
 pub mod vmware;
+pub mod vultr;
 
 use crate::errors::*;
 use crate::network;

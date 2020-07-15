@@ -89,6 +89,10 @@ Cloud providers with supported metadata endpoints and their respective attribute
   - AFTERBURN_PACKET_IPV4_PRIVATE_GATEWAY_0
   - AFTERBURN_PACKET_IPV6_PUBLIC_0
   - AFTERBURN_PACKET_IPV6_PUBLIC_GATEWAY_0
+* vultr
+  - AFTERBURN_VULTR_HOSTNAME
+  - AFTERBURN_VULTR_INSTANCE_ID
+  - AFTERBURN_VULTR_REGION_CODE
 
 Additionally, some attribute names are reserved for custom metadata providers.
 These can be safely used by external providers on platforms not supported by Afterburn:
