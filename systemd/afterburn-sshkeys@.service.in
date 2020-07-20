@@ -1,9 +1,10 @@
 [Unit]
 Description=Afterburn (SSH Keys)
-# Platforms which support SSH keys and provide a consistent source of metadata.
-# Platforms which support SSH keys but require selecting from multiple metadata
-# sources are not listed here; for those platforms, CT writes a drop-in which
-# adds the appropriate triggering condition and sets AFTERBURN_OPT_PROVIDER.
+# These platforms support SSH keys and provide a consistent source for them.
+# There may be additional platforms which support SSH keys only in some cases
+# (e.g. via optional platform components); those platforms need a user-provided
+# dropin, adding an appropriate triggering condition and setting the value of
+# `AFTERBURN_OPT_PROVIDER` as needed.
 ConditionKernelCommandLine=|ignition.platform.id=aliyun
 ConditionKernelCommandLine=|ignition.platform.id=aws
 ConditionKernelCommandLine=|ignition.platform.id=azure
@@ -11,6 +12,7 @@ ConditionKernelCommandLine=|ignition.platform.id=digitalocean
 ConditionKernelCommandLine=|ignition.platform.id=exoscale
 ConditionKernelCommandLine=|ignition.platform.id=gcp
 ConditionKernelCommandLine=|ignition.platform.id=packet
+ConditionKernelCommandLine=|ignition.platform.id=vultr
 
 [Service]
 Type=oneshot
