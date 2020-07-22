@@ -1,0 +1,28 @@
+{
+    "reservation-id": "r-bxkh1822",
+    "security-groups": [
+        "wide-open",
+        "default",
+        "wide-open",
+        "default"
+    ],
+    "public-ipv4": "",
+    "ami-manifest-path": "FIXME",
+    "instance-type": "m1.small",
+    "instance-id": "i-022da7a2",
+    "local-ipv4": "10.0.151.35",
+    "local-hostname": "abai-fcos-afterburn-test",
+    "placement": {
+        "availability-zone": "nova"
+    },
+    "ami-launch-index": 0,
+    "public-hostname": "abai-fcos-afterburn-test",
+    "hostname": "abai-fcos-afterburn-test",
+    "ami-id": null,
+    "instance-action": "none",
+    "block-device-mapping": {
+        "ami": "vda",
+        "ebs0": "/dev/vda",
+        "root": "/dev/vda"
+    }
+}
