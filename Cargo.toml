@@ -61,4 +61,4 @@ features = ["max_level_trace", "release_max_level_info"]
 cl-legacy = ["update-ssh-keys"]
 
 [dev-dependencies]
-mockito = "^0.26"
+mockito = "^0.27"
