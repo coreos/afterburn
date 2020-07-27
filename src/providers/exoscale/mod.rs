@@ -19,10 +19,8 @@
 use std::collections::HashMap;
 
 use openssh_keys::PublicKey;
-use slog_scope::warn;
 
 use crate::errors::*;
-use crate::network;
 use crate::providers::MetadataProvider;
 use crate::retry;
 
@@ -105,19 +103,5 @@ impl MetadataProvider for ExoscaleProvider {
         Ok(keys
             .map(|s| PublicKey::read_keys(s.as_bytes()))
             .unwrap_or_else(|| Ok(vec![]))?)
-    }
-
-    fn networks(&self) -> Result<Vec<network::Interface>> {
-        Ok(vec![])
-    }
-
-    fn virtual_network_devices(&self) -> Result<Vec<network::VirtualNetDev>> {
-        warn!("virtual network devices metadata requested, but not supported on this platform");
-        Ok(vec![])
-    }
-
-    fn boot_checkin(&self) -> Result<()> {
-        warn!("boot check-in requested, but not supported on this platform");
-        Ok(())
     }
 }

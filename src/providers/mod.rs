@@ -26,6 +26,7 @@
 pub mod aliyun;
 pub mod aws;
 pub mod azure;
+pub mod azurestack;
 pub mod cloudstack;
 pub mod digitalocean;
 pub mod exoscale;
@@ -195,11 +196,28 @@ fn write_ssh_keys(user: User, ssh_keys: Vec<PublicKey>) -> Result<()> {
 }
 
 pub trait MetadataProvider {
-    fn attributes(&self) -> Result<HashMap<String, String>>;
-    fn hostname(&self) -> Result<Option<String>>;
-    fn ssh_keys(&self) -> Result<Vec<PublicKey>>;
-    fn networks(&self) -> Result<Vec<network::Interface>>;
-    fn boot_checkin(&self) -> Result<()>;
+    fn attributes(&self) -> Result<HashMap<String, String>> {
+        let attributes = maplit::hashmap! { };
+        Ok(attributes)
+    }
+
+    fn hostname(&self) -> Result<Option<String>> {
+        Ok(None)
+    }
+
+    fn ssh_keys(&self) -> Result<Vec<PublicKey>> {
+        warn!("ssh-keys requested, but not supported on this platform");
+        Ok(vec![])
+    }
+
+    fn networks(&self) -> Result<Vec<network::Interface>> {
+        Ok(vec![])
+    }
+
+    fn boot_checkin(&self) -> Result<()> {
+        warn!("boot check-in requested, but not supported on this platform");
+        Ok(())
+    }
 
     /// Return a list of virtual network devices for this machine.
     ///
@@ -207,7 +225,9 @@ pub trait MetadataProvider {
     /// configuration fragments.
     ///
     /// netdev: https://www.freedesktop.org/software/systemd/man/systemd.netdev.html
-    fn virtual_network_devices(&self) -> Result<Vec<network::VirtualNetDev>>;
+    fn virtual_network_devices(&self) -> Result<Vec<network::VirtualNetDev>> {
+        Ok(vec![])
+    }
 
     /// Return custom initrd network kernel arguments, if any.
     fn rd_network_kargs(&self) -> Result<Option<String>> {
