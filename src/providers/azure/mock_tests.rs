@@ -5,7 +5,7 @@ use mockito::{self, Matcher};
 static GOALSTATE_BODY: &str = r#"<?xml version="1.0" encoding="utf-8"?>
 <GoalState xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="goalstate10.xsd">
   <Version>2012-11-30</Version>
-  <Incarnation>1</Incarnation>
+  <Incarnation>42</Incarnation>
   <Machine>
     <ExpectedState>Started</ExpectedState>
     <StopRolesDeadlineHint>300000</StopRolesDeadlineHint>
@@ -38,7 +38,7 @@ static GOALSTATE_BODY: &str = r#"<?xml version="1.0" encoding="utf-8"?>
 static GOALSTATE_BODY_NO_CERTS: &str = r#"<?xml version="1.0" encoding="utf-8"?>
 <GoalState xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="goalstate10.xsd">
   <Version>2012-11-30</Version>
-  <Incarnation>1</Incarnation>
+  <Incarnation>42</Incarnation>
   <Machine>
     <ExpectedState>Started</ExpectedState>
     <StopRolesDeadlineHint>300000</StopRolesDeadlineHint>
@@ -118,6 +118,9 @@ fn test_boot_checkin() {
         .match_header("content-type", Matcher::Regex("text/xml".to_string()))
         .match_header("x-ms-version", Matcher::Regex("2012-11-30".to_string()))
         .match_body(Matcher::Regex("<State>Ready</State>".to_string()))
+        .match_body(Matcher::Regex(
+            "<GoalStateIncarnation>42</GoalStateIncarnation>".to_string(),
+        ))
         .with_status(200)
         .create();
 
@@ -133,13 +136,12 @@ fn test_boot_checkin() {
 
     // Check error logic, but fail fast without re-trying.
     let client = crate::retry::Client::try_new().unwrap().max_retries(0);
-    azure::Azure::fetch_content(Some(client)).unwrap_err();
+    azure::Azure::with_client(Some(client)).unwrap_err();
 }
 
 #[test]
 fn test_hostname() {
     let m_version = mock_fab_version();
-    let m_goalstate = mock_goalstate(true);
 
     let testname = "testname";
     let endpoint = "/metadata/instance/compute/name?api-version=2017-08-01&format=text";
@@ -153,7 +155,6 @@ fn test_hostname() {
     let r = provider.unwrap().hostname().unwrap();
 
     m_version.assert();
-    m_goalstate.assert();
 
     m_hostname.assert();
     let hostname = r.unwrap();
@@ -163,13 +164,12 @@ fn test_hostname() {
 
     // Check error logic, but fail fast without re-trying.
     let client = crate::retry::Client::try_new().unwrap().max_retries(0);
-    azure::Azure::fetch_content(Some(client)).unwrap_err();
+    azure::Azure::with_client(Some(client)).unwrap_err();
 }
 
 #[test]
 fn test_vmsize() {
     let m_version = mock_fab_version();
-    let m_goalstate = mock_goalstate(true);
 
     let testvmsize = "testvmsize";
     let endpoint = "/metadata/instance/compute/vmSize?api-version=2017-08-01&format=text";
@@ -184,7 +184,6 @@ fn test_vmsize() {
     let r = attributes.get("AZURE_VMSIZE");
 
     m_version.assert();
-    m_goalstate.assert();
 
     m_vmsize.assert();
     let vmsize = r.unwrap();
@@ -194,7 +193,7 @@ fn test_vmsize() {
 
     // Check error logic, but fail fast without re-trying.
     let client = crate::retry::Client::try_new().unwrap().max_retries(0);
-    azure::Azure::fetch_content(Some(client)).unwrap_err();
+    azure::Azure::with_client(Some(client)).unwrap_err();
 }
 
 #[test]
@@ -203,11 +202,12 @@ fn test_goalstate_certs() {
     let m_goalstate = mock_goalstate(true);
 
     let provider = azure::Azure::try_new().unwrap();
+    let goalstate = provider.fetch_goalstate().unwrap();
 
     m_version.assert();
     m_goalstate.assert();
 
-    let ep = provider.get_certs_endpoint().unwrap();
+    let ep = goalstate.certs_endpoint().unwrap();
     let certs_url = reqwest::Url::parse(&ep).unwrap();
     assert_eq!(certs_url.scheme(), "http");
 
@@ -220,11 +220,12 @@ fn test_goalstate_no_certs() {
     let m_goalstate = mock_goalstate(false);
 
     let provider = azure::Azure::try_new().unwrap();
+    let goalstate = provider.fetch_goalstate().unwrap();
 
     m_version.assert();
     m_goalstate.assert();
 
-    assert_eq!(provider.get_certs_endpoint(), None);
+    assert_eq!(goalstate.certs_endpoint(), None);
 
     mockito::reset();
 }
