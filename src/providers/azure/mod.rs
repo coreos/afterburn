@@ -30,6 +30,7 @@ use crate::errors::*;
 use crate::network;
 use crate::providers::MetadataProvider;
 use crate::retry;
+use nix::unistd::Uid;
 
 #[cfg(test)]
 mod mock_tests;
@@ -216,6 +217,15 @@ impl Azure {
         // make sure the metadata service is compatible with our version
         azure
             .is_fabric_compatible(MS_VERSION)
+            .map_err(|e| {
+                //It may require to run as root in order to reach the metadata endpoint on Azure, more details: https://github.com/coreos/bugs/issues/2468
+                let is_root = Uid::current().is_root();
+                if !is_root {
+                    warn!("unable to reach Azure endpoints, please check whether firewall rules are blocking access to them");
+                }
+
+                e
+            })
             .chain_err(|| "failed version compatibility check")?;
 
         // populate goalstate
