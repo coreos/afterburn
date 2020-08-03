@@ -13,14 +13,14 @@ use crate::retry;
 const URL: &str = "http://169.254.169.254/latest/meta-data";
 
 #[derive(Clone, Debug)]
-pub struct OpenstackProvider {
+pub struct OpenstackProviderNetwork {
     client: retry::Client,
 }
 
-impl OpenstackProvider {
-    pub fn try_new() -> Result<OpenstackProvider> {
+impl OpenstackProviderNetwork {
+    pub fn try_new() -> Result<OpenstackProviderNetwork> {
         let client = retry::Client::try_new()?;
-        Ok(OpenstackProvider { client })
+        Ok(OpenstackProviderNetwork { client })
     }
 
     fn endpoint_for(key: &str) -> String {
@@ -30,7 +30,10 @@ impl OpenstackProvider {
     fn fetch_keys(&self) -> Result<Vec<String>> {
         let keys_list: Option<String> = self
             .client
-            .get(retry::Raw, OpenstackProvider::endpoint_for("public-keys"))
+            .get(
+                retry::Raw,
+                OpenstackProviderNetwork::endpoint_for("public-keys"),
+            )
             .send()?;
         let mut keys = Vec::new();
         if let Some(keys_list) = keys_list {
@@ -43,7 +46,7 @@ impl OpenstackProvider {
                     .client
                     .get(
                         retry::Raw,
-                        OpenstackProvider::endpoint_for(&format!(
+                        OpenstackProviderNetwork::endpoint_for(&format!(
                             "public-keys/{}/openssh-key",
                             tokens[0]
                         )),
@@ -57,14 +60,14 @@ impl OpenstackProvider {
     }
 }
 
-impl MetadataProvider for OpenstackProvider {
+impl MetadataProvider for OpenstackProviderNetwork {
     fn attributes(&self) -> Result<HashMap<String, String>> {
-        let mut out = HashMap::with_capacity(4);
+        let mut out = HashMap::with_capacity(5);
 
         let add_value = |map: &mut HashMap<_, _>, key: &str, name| -> Result<()> {
             let value = self
                 .client
-                .get(retry::Raw, OpenstackProvider::endpoint_for(name))
+                .get(retry::Raw, OpenstackProviderNetwork::endpoint_for(name))
                 .send()?;
             if let Some(value) = value {
                 map.insert(key.to_string(), value);
@@ -83,7 +86,10 @@ impl MetadataProvider for OpenstackProvider {
 
     fn hostname(&self) -> Result<Option<String>> {
         self.client
-            .get(retry::Raw, OpenstackProvider::endpoint_for("hostname"))
+            .get(
+                retry::Raw,
+                OpenstackProviderNetwork::endpoint_for("hostname"),
+            )
             .send()
     }
 
