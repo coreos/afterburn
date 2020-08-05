@@ -15,6 +15,7 @@
 //! Azure provider, metadata and wireserver fetcher.
 
 mod crypto;
+mod goalstate;
 
 use std::collections::HashMap;
 use std::net::IpAddr;
@@ -56,10 +57,10 @@ Content-Transfer-Encoding: base64
 const FALLBACK_WIRESERVER_ADDR: [u8; 4] = [168, 63, 129, 16]; // for grep: 168.63.129.16
 
 macro_rules! ready_state {
-    ($container:expr, $instance:expr) => {
+    ($container:expr, $instance:expr, $incarnation:expr) => {
         format!(r#"<?xml version="1.0" encoding="utf-8"?>
 <Health xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
-  <GoalStateIncarnation>1</GoalStateIncarnation>
+  <GoalStateIncarnation>{}</GoalStateIncarnation>
   <Container>
     <ContainerId>{}</ContainerId>
     <RoleInstanceList>
@@ -73,50 +74,8 @@ macro_rules! ready_state {
   </Container>
 </Health>
 "#,
-                $container, $instance)
+                $incarnation, $container, $instance)
     }
-}
-
-#[derive(Debug, Deserialize, Clone, Default)]
-struct GoalState {
-    #[serde(rename = "Container")]
-    pub container: Container,
-}
-
-#[derive(Debug, Deserialize, Clone, Default)]
-struct Container {
-    #[serde(rename = "ContainerId")]
-    pub container_id: String,
-    #[serde(rename = "RoleInstanceList")]
-    pub role_instance_list: RoleInstanceList,
-}
-
-#[derive(Debug, Deserialize, Clone, Default)]
-struct RoleInstanceList {
-    #[serde(rename = "RoleInstance", default)]
-    pub role_instances: Vec<RoleInstance>,
-}
-
-#[derive(Debug, Deserialize, Clone)]
-struct RoleInstance {
-    #[serde(rename = "Configuration")]
-    pub configuration: Configuration,
-    #[serde(rename = "InstanceId")]
-    pub instance_id: String,
-}
-
-#[derive(Debug, Deserialize, Clone)]
-struct Configuration {
-    #[serde(rename = "Certificates")]
-    pub certificates: Option<String>,
-    #[serde(rename = "SharedConfig", default)]
-    pub shared_config: String,
-}
-
-#[derive(Debug, Deserialize, Clone)]
-struct CertificatesFile {
-    #[serde(rename = "Data", default)]
-    pub data: String,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -131,72 +90,42 @@ struct Supported {
     pub versions: Vec<String>,
 }
 
-#[derive(Debug, Deserialize, Clone)]
-struct SharedConfig {
-    #[serde(rename = "Incarnation")]
-    pub incarnation: Incarnation,
-    #[serde(rename = "Instances")]
-    pub instances: Instances,
+#[derive(Debug, Clone)]
+pub struct Azure {
+    client: retry::Client,
+    endpoint: IpAddr,
 }
 
-#[derive(Debug, Deserialize, Clone)]
-struct Incarnation {
-    pub instance: String,
-}
-
-#[derive(Debug, Deserialize, Clone)]
-struct Instances {
-    #[serde(rename = "Instance", default)]
-    pub instances: Vec<Instance>,
-}
-
-#[derive(Debug, Deserialize, Clone)]
-struct Instance {
-    pub id: String,
-    pub address: String,
-    #[serde(rename = "InputEndpoints")]
-    pub input_endpoints: InputEndpoints,
-}
-
-#[derive(Debug, Deserialize, Clone)]
-struct InputEndpoints {
-    #[serde(rename = "Endpoint", default)]
-    pub endpoints: Vec<Endpoint>,
-}
-
-#[derive(Debug, Deserialize, Clone)]
-struct Endpoint {
-    #[serde(rename = "loadBalancedPublicAddress", default)]
-    pub load_balanced_public_address: String,
-}
-
-#[derive(Debug, Copy, Clone, Default)]
+#[derive(Debug, Default)]
 struct Attributes {
     pub virtual_ipv4: Option<IpAddr>,
     pub dynamic_ipv4: Option<IpAddr>,
 }
 
-#[derive(Debug, Clone)]
-pub struct Azure {
-    client: retry::Client,
-    endpoint: IpAddr,
-    goal_state: GoalState,
-}
-
 impl Azure {
-    /// Try to build a new provider client.
+    /// Try to build a new provider agent for Azure.
     ///
-    /// This internally tries to fetch and cache the goal-state content.
+    /// This internally tries to reach the WireServer and verify compatibility.
     pub fn try_new() -> Result<Self> {
-        Self::fetch_content(None)
+        Self::with_client(None)
     }
 
-    /// Fetch metadata content from Azure internal API (fabric).
-    pub(crate) fn fetch_content(client: Option<retry::Client>) -> Result<Azure> {
+    /// Try to build a new provider agent for Azure, with a given client.
+    pub(crate) fn with_client(client: Option<retry::Client>) -> Result<Azure> {
+        let wireserver_ip = Azure::get_fabric_address();
+        Self::verify_platform(client, wireserver_ip)
+    }
+
+    /// Try to reach cloud endpoint to ensure we are on a compatible Azure platform.
+    pub(crate) fn verify_platform(
+        client: Option<retry::Client>,
+        endpoint: IpAddr,
+    ) -> Result<Azure> {
         let mut client = match client {
             Some(c) => c,
             None => retry::Client::try_new()?,
         };
+
         // Add headers required by API.
         client = client
             .header(
@@ -208,19 +137,16 @@ impl Azure {
                 HeaderValue::from_static(MS_VERSION),
             );
 
-        let mut azure = Azure {
-            client,
-            endpoint: Azure::get_fabric_address(),
-            goal_state: GoalState::default(),
-        };
+        let azure = Azure { client, endpoint };
 
-        // make sure the metadata service is compatible with our version
+        // Make sure WireServer API version is compatible with our logic.
         azure
             .is_fabric_compatible(MS_VERSION)
             .map_err(|e| {
-                //It may require to run as root in order to reach the metadata endpoint on Azure, more details: https://github.com/coreos/bugs/issues/2468
                 let is_root = Uid::current().is_root();
                 if !is_root {
+                    // Firewall rules may be blocking requests from non-root
+                    // processes, see https://github.com/coreos/bugs/issues/2468.
                     warn!("unable to reach Azure endpoints, please check whether firewall rules are blocking access to them");
                 }
 
@@ -228,12 +154,11 @@ impl Azure {
             })
             .chain_err(|| "failed version compatibility check")?;
 
-        // populate goalstate
-        azure.goal_state = azure.get_goal_state()?;
         Ok(azure)
     }
 
-    fn get_goal_state(&self) -> Result<GoalState> {
+    /// Retrieve `goalstate` content from the WireServer.
+    fn fetch_goalstate(&self) -> Result<goalstate::GoalState> {
         self.client
             .get(
                 retry::Xml,
@@ -279,7 +204,7 @@ impl Azure {
 
     #[cfg(test)]
     fn fabric_base_url(&self) -> String {
-        ::mockito::server_url().to_string()
+        mockito::server_url().to_string()
     }
 
     fn is_fabric_compatible(&self, version: &str) -> Result<()> {
@@ -297,8 +222,8 @@ impl Azure {
             Ok(())
         } else {
             Err(format!(
-                "fabric version {} not compatible with fabric address {}",
-                MS_VERSION, self.endpoint
+                "fabric version '{}' not supported by the WireServer at '{}'",
+                version, self.endpoint
             )
             .into())
         }
@@ -315,25 +240,9 @@ impl Azure {
         URL.to_string()
     }
 
-    /// Return the certificates endpoint (if any) from the cached XML.
-    fn get_certs_endpoint(&self) -> Option<String> {
-        let role = match self
-            .goal_state
-            .container
-            .role_instance_list
-            .role_instances
-            .get(0)
-        {
-            Some(r) => r,
-            None => return None,
-        };
-
-        role.configuration.certificates.clone()
-    }
-
     // Fetch the certificate.
-    fn get_certs(&self, certs_endpoint: String, mangled_pem: impl AsRef<str>) -> Result<String> {
-        let certs: CertificatesFile = self
+    fn fetch_cert(&self, certs_endpoint: String, mangled_pem: impl AsRef<str>) -> Result<String> {
+        let certs: goalstate::CertificatesFile = self
             .client
             .get(retry::Xml, certs_endpoint)
             .header(
@@ -349,7 +258,7 @@ impl Azure {
             .ok_or_else(|| "failed to get certificates: not found")?;
 
         // the cms decryption expects it to have MIME information on the top
-        // since cms is really for email attachments...don't tell the cops.
+        // since cms is really for email attachments....
         let mut smime = String::from(SMIME_HEADER);
         smime.push_str(&certs.data);
 
@@ -369,8 +278,8 @@ impl Azure {
 
         // fetch the encrypted cms blob from the certs endpoint
         let smime = self
-            .get_certs(certs_endpoint, mangled_pem)
-            .chain_err(|| "failed to get certs")?;
+            .fetch_cert(certs_endpoint, mangled_pem)
+            .chain_err(|| "failed to fetch certificate")?;
 
         // decrypt the cms blob
         let p12 = crypto::decrypt_cms(smime.as_bytes(), &pkey, &x509)
@@ -395,11 +304,12 @@ impl Azure {
     fn get_attributes(&self) -> Result<Attributes> {
         use std::net::SocketAddr;
 
-        let endpoint = &self.goal_state.container.role_instance_list.role_instances[0]
+        let goalstate = self.fetch_goalstate()?;
+        let endpoint = &goalstate.container.role_instance_list.role_instances[0]
             .configuration
             .shared_config;
 
-        let shared_config: SharedConfig = self
+        let shared_config: goalstate::SharedConfig = self
             .client
             .get(retry::Xml, endpoint.to_string())
             .send()
@@ -424,23 +334,6 @@ impl Azure {
         }
 
         Ok(attributes)
-    }
-
-    /// Return this instance `ContainerId`.
-    pub(crate) fn container_id(&self) -> &str {
-        &self.goal_state.container.container_id
-    }
-
-    /// Return this instance `InstanceId`.
-    pub(crate) fn instance_id(&self) -> Result<&str> {
-        Ok(&self
-            .goal_state
-            .container
-            .role_instance_list
-            .role_instances
-            .get(0)
-            .ok_or_else(|| "empty RoleInstanceList".to_string())?
-            .instance_id)
     }
 
     fn fetch_hostname(&self) -> Result<Option<String>> {
@@ -473,6 +366,24 @@ impl Azure {
             .chain_err(|| "failed to get vmsize")?;
         Ok(vmsize)
     }
+
+    /// Report ready state to the WireServer.
+    ///
+    /// This is used to signal to the cloud platform that the VM has
+    /// booted into userland. The definition of "ready" is fuzzy.
+    fn report_ready_state(&self) -> Result<()> {
+        let goalstate = self.fetch_goalstate()?;
+        let body = ready_state!(
+            goalstate.container_id(),
+            goalstate.instance_id()?,
+            goalstate.incarnation()
+        );
+        let url = self.fabric_base_url() + "/machine/?comp=health";
+        self.client
+            .post(retry::Xml, url, Some(body.into()))
+            .dispatch_post()?;
+        Ok(())
+    }
 }
 
 impl MetadataProvider for Azure {
@@ -499,7 +410,8 @@ impl MetadataProvider for Azure {
     }
 
     fn ssh_keys(&self) -> Result<Vec<PublicKey>> {
-        let certs_endpoint = match self.get_certs_endpoint() {
+        let goalstate = self.fetch_goalstate()?;
+        let certs_endpoint = match goalstate.certs_endpoint() {
             Some(ep) => ep,
             None => {
                 warn!("SSH pubkeys requested, but not provisioned for this instance");
@@ -525,11 +437,12 @@ impl MetadataProvider for Azure {
     }
 
     fn boot_checkin(&self) -> Result<()> {
-        let body = ready_state!(self.container_id(), self.instance_id()?);
-        let url = self.fabric_base_url() + "/machine/?comp=health";
-        self.client
-            .post(retry::Xml, url, Some(body.into()))
-            .dispatch_post()?;
-        Ok(())
+        let controller = retry::Retry::new().max_retries(5);
+        controller.retry(|n| {
+            if n > 0 {
+                warn!("Retrying ready state report: Attempt #{}", n);
+            }
+            self.report_ready_state()
+        })
     }
 }
