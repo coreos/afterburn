@@ -10,15 +10,20 @@
 //!
 //! nocloud: https://cloudinit.readthedocs.io/en/latest/topics/datasources/nocloud.html
 
+use openssh_keys::PublicKey;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Read};
 use std::path::{Path, PathBuf};
+use std::str;
 
 use tempfile::TempDir;
 
 use crate::errors::*;
 use crate::providers::MetadataProvider;
+
+use mailparse::*;
+use serde_derive::Deserialize;
 
 const CONFIG_DRIVE_LABEL: &str = "cidata";
 
@@ -90,6 +95,16 @@ impl IBMGen2Provider {
         Ok(output)
     }
 
+    /// Read vendordata file into a string
+    fn read_vendordata(&self) -> Result<Vec<u8>> {
+        let filename = self.metadata_dir().join("vendor-data");
+        let mut file = File::open(&filename)
+            .chain_err(|| format!("Failed to open vendordata '{:?}'", filename))?;
+        let mut contents = String::new();
+        let _ = file.read_to_string(&mut contents);
+        Ok(contents.into_bytes())
+    }
+
     /// Extract supported metadata values and convert to Afterburn attributes.
     ///
     /// The `AFTERBURN_` prefix is added later on, so it is not part of the
@@ -109,6 +124,37 @@ impl IBMGen2Provider {
         }
         output
     }
+
+    /// Find the SSH keys in the vendordata file
+    fn fetch_ssh_keys(vendordata_vec: Vec<u8>) -> Result<Vec<String>> {
+        // Parse MIME format from vendor-data file
+        let vendor_data_mail =
+            parse_mail(&vendordata_vec).chain_err(|| "failed to parse MIME vendor-data")?;
+        let mut cloud_config = String::new();
+        for section in vendor_data_mail.subparts {
+            for header in &section.headers {
+                if let "text/cloud-config" = header.get_value().as_str() {
+                    if section
+                        .get_body()
+                        .unwrap_or_default()
+                        .contains("ssh_authorized_keys")
+                    {
+                        cloud_config = section
+                            .get_body()
+                            .chain_err(|| "failed to get cloud-config content")?;
+                        break;
+                    }
+                }
+            }
+        }
+        // Parse YAML to find SSH keys
+        if cloud_config.is_empty() {
+            return Err("no cloud-config section found in vendor-data".into());
+        }
+        let deserialized_cloud_config: VendorDataCloudConfig = serde_yaml::from_str(&cloud_config)
+            .chain_err(|| "failed to deserialize cloud-config content")?;
+        Ok(deserialized_cloud_config.ssh_authorized_keys)
+    }
 }
 
 impl MetadataProvider for IBMGen2Provider {
@@ -123,6 +169,18 @@ impl MetadataProvider for IBMGen2Provider {
         let hostname = metadata.get("local-hostname").map(String::from);
         Ok(hostname)
     }
+
+    fn ssh_keys(&self) -> Result<Vec<PublicKey>> {
+        let mut out = Vec::new();
+
+        let vendordata = self.read_vendordata()?;
+        for key in IBMGen2Provider::fetch_ssh_keys(vendordata)? {
+            let key = PublicKey::parse(&key)?;
+            out.push(key);
+        }
+
+        Ok(out)
+    }
 }
 
 impl Drop for IBMGen2Provider {
@@ -136,9 +194,19 @@ impl Drop for IBMGen2Provider {
     }
 }
 
+/// This struct represents the portion of the vendor-data file we will be deserializing.
+/// This data is in the "cloud-config" portion of the vendor-data file.
+/// The cloud-config can have fields not defined here, they will be ignored.
+/// The vendor-data file is in MIME format, the cloud-config data is in YAML format.
+#[derive(Debug, Deserialize, Clone)]
+struct VendorDataCloudConfig {
+    ssh_authorized_keys: Vec<String>,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::fs;
     use std::io::Cursor;
 
     #[test]
@@ -172,5 +240,18 @@ foo:      ba:r
             attrs.get("IBMCLOUD_LOCAL_HOSTNAME"),
             Some(&"test_instance-vpc-gen2".to_string())
         );
+    }
+
+    #[test]
+    fn test_fetch_ssh_keys() {
+        let vendordata = fs::read("./tests/fixtures/ibmcloud/vendor-data")
+            .expect("Unable to read vendor-data fixture");
+        let ssh_keys = IBMGen2Provider::fetch_ssh_keys(vendordata).unwrap();
+        assert!(ssh_keys
+            .iter()
+            .any(|i| i == "ssh-rsa AAAAB3NzaC1yc2 <<snip>> 3TIX+eesnqasq9w== testuser@test.com"));
+        assert!(ssh_keys
+            .iter()
+            .any(|i| i == "ssh-rsa AAAAB4NzaC2yc3 <<snip>> 3TIX+eesnqasq9w== testuser2@test.com"));
     }
 }

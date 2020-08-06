@@ -1,0 +1,99 @@
+Content-Type: multipart/form-data; boundary=3efa30189c9e0e8ebc24a4decbbf4c2be7b26120c1cdd7cb7bc2ecb0c07c
+MIME-Version: 1.0
+
+--3efa30189c9e0e8ebc24a4decbbf4c2be7b26120c1cdd7cb7bc2ecb0c07c
+Content-Type: text/cloud-config
+
+#cloud-config
+disable_root: false
+ssh_authorized_keys:
+- ssh-rsa AAAAB3NzaC1yc2 <<snip>> 3TIX+eesnqasq9w==
+  testuser@test.com
+- ssh-rsa AAAAB4NzaC2yc3 <<snip>> 3TIX+eesnqasq9w==
+  testuser2@test.com
+users:
+- default
+- name: root
+  lock-passwd: false
+  ssh_pwauth: true
+
+--3efa30189c9e0e8ebc24a4decbbf4c2be7b26120c1cdd7cb7bc2ecb0c07c
+Content-Type: text/x-shellscript
+
+#!/bin/bash
+PER_BOOT_SCRIPTS_DIR=/var/lib/cloud/scripts/per-boot
+IFACE_CONFIG_PATH=$PER_BOOT_SCRIPTS_DIR/iface-config
+mkdir -p $PER_BOOT_SCRIPTS_DIR
+cat << EOT > $IFACE_CONFIG_PATH
+#!/bin/bash
+for iface in \$(ip -br link show | cut -d ' ' -f1 | sed '/^lo\$/d')
+do
+    if [ -x "\$(command -v ethtool)" ]; then
+        CPU_COUNT=`getconf _NPROCESSORS_ONLN`
+        if [ "\$CPU_COUNT" -gt 2 ]; then
+            QUEUE_COUNT=3
+        else
+            QUEUE_COUNT=1
+        fi
+        ethtool -L \$iface combined \$QUEUE_COUNT
+    fi
+    ip link set \$iface up
+done
+dhclient > /dev/null 2>&1 || true # prevents exit code 1 when dhclient is already running
+EOT
+chmod +x $IFACE_CONFIG_PATH
+$IFACE_CONFIG_PATH
+
+--3efa30189c9e0e8ebc24a4decbbf4c2be7b26120c1cdd7cb7bc2ecb0c07c
+Content-Type: text/cloud-config
+
+#cloud-config
+
+write_files:
+  -
+    content: |
+        [base]
+        name=CentOS-$releasever - Base
+        baseurl=http://mirrors.adn.networklayer.com/centos/$releasever/os/$basearch/
+        #mirrorlist=http://#mirrorlist.centos.org/?release=$releasever&arch=$basearch&repo=os
+        gpgcheck=1
+        gpgkey=http://mirrors.adn.networklayer.com/centos/RPM-GPG-KEY-CentOS-7
+
+        #released updates
+        [updates]
+        name=CentOS-$releasever - Updates
+        baseurl=http://mirrors.adn.networklayer.com/centos/$releasever/updates/$basearch/
+        #mirrorlist=http://#mirrorlist.centos.org/?release=$releasever&arch=$basearch&repo=updates
+        gpgcheck=1
+        gpgkey=http://mirrors.adn.networklayer.com/centos/RPM-GPG-KEY-CentOS-7
+
+        #additional packages that may be useful
+        [extras]\n",
+        name=CentOS-$releasever - Extras
+        baseurl=http://mirrors.adn.networklayer.com/centos/$releasever/extras/$basearch/
+        #mirrorlist=http://#mirrorlist.centos.org/?release=$releasever&arch=$basearch&repo=extras
+        gpgcheck=1
+        gpgkey=http://mirrors.adn.networklayer.com/centos/RPM-GPG-KEY-CentOS-7
+
+        #additional packages that extend functionality of existing packages
+        [centosplus]
+        name=CentOS-$releasever - Plus
+        baseurl=http://mirrors.adn.networklayer.com/centos/$releasever/centosplus/$basearch/
+        #mirrorlist=http://#mirrorlist.centos.org/?release=$releasever&arch=$basearch&repo=centosplus
+        gpgcheck=1
+        enabled=0
+        gpgkey=http://mirrors.adn.networklayer.com/centos/RPM-GPG-KEY-CentOS-7
+
+        #contrib - packages by Centos Users
+        [contrib]
+        name=CentOS-$releasever - Contrib
+        baseurl=http://mirrors.adn.networklayer.com/centos/$releasever/contrib/$basearch/
+        #mirrorlist=http://#mirrorlist.centos.org/?release=$releasever&arch=$basearch&repo=contrib
+        gpgcheck=1
+        enabled=0
+        gpgkey=http://mirrors.adn.networklayer.com/centos/RPM-GPG-KEY-CentOS-7
+    owner: "root:root"
+    path: /etc/yum.repos.d/CentOS-Base.repo
+    permissions: "0644"
+
+--3efa30189c9e0e8ebc24a4decbbf4c2be7b26120c1cdd7cb7bc2ecb0c07c

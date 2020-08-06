@@ -13,6 +13,7 @@ ConditionKernelCommandLine=|ignition.platform.id=exoscale
 ConditionKernelCommandLine=|ignition.platform.id=gcp
 ConditionKernelCommandLine=|ignition.platform.id=packet
 ConditionKernelCommandLine=|ignition.platform.id=vultr
+ConditionKernelCommandLine=|ignition.platform.id=ibmcloud
 
 [Service]
 Type=oneshot

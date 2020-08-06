@@ -52,6 +52,7 @@ The following platforms are supported, with a different set of features availabl
   - SSH Keys
 * ibmcloud
   - Attributes
+  - SSH Keys
 * ibmcloud-classic
   - Attributes
 * openstack
