@@ -32,6 +32,7 @@ pub mod exoscale;
 pub mod gcp;
 pub mod ibmcloud;
 pub mod ibmcloud_classic;
+pub mod opennebula;
 pub mod openstack;
 pub mod packet;
 #[cfg(feature = "cl-legacy")]
