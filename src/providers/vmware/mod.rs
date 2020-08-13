@@ -2,11 +2,7 @@
 
 use std::collections::HashMap;
 
-use openssh_keys::PublicKey;
-use slog_scope::warn;
-
 use crate::errors::*;
-use crate::network;
 use crate::providers::MetadataProvider;
 
 /// VMware provider.
@@ -30,29 +26,7 @@ impl MetadataProvider for VmwareProvider {
         Ok(HashMap::new())
     }
 
-    fn hostname(&self) -> Result<Option<String>> {
-        Ok(None)
-    }
-
-    fn ssh_keys(&self) -> Result<Vec<PublicKey>> {
-        Ok(vec![])
-    }
-
-    fn networks(&self) -> Result<Vec<network::Interface>> {
-        Ok(vec![])
-    }
-
     fn rd_network_kargs(&self) -> Result<Option<String>> {
         Ok(self.guestinfo_net_kargs.clone())
-    }
-
-    fn virtual_network_devices(&self) -> Result<Vec<network::VirtualNetDev>> {
-        warn!("virtual network devices metadata requested, but not supported on this platform");
-        Ok(vec![])
-    }
-
-    fn boot_checkin(&self) -> Result<()> {
-        warn!("boot check-in requested, but not supported on this platform");
-        Ok(())
     }
 }

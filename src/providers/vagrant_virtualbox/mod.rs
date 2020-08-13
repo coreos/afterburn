@@ -19,11 +19,9 @@ use std::net::IpAddr;
 use std::thread;
 use std::time::Duration;
 
-use openssh_keys::PublicKey;
-use slog_scope::{info, warn};
+use slog_scope::info;
 
 use crate::errors::*;
-use crate::network;
 use crate::providers::MetadataProvider;
 
 #[derive(Clone, Copy, Debug)]
@@ -77,27 +75,5 @@ impl MetadataProvider for VagrantVirtualboxProvider {
         };
 
         Ok(attributes)
-    }
-
-    fn hostname(&self) -> Result<Option<String>> {
-        Ok(None)
-    }
-
-    fn ssh_keys(&self) -> Result<Vec<PublicKey>> {
-        Ok(vec![])
-    }
-
-    fn networks(&self) -> Result<Vec<network::Interface>> {
-        Ok(vec![])
-    }
-
-    fn virtual_network_devices(&self) -> Result<Vec<network::VirtualNetDev>> {
-        warn!("virtual network devices metadata requested, but not supported on this platform");
-        Ok(vec![])
-    }
-
-    fn boot_checkin(&self) -> Result<()> {
-        warn!("boot check-in requested, but not supported on this platform");
-        Ok(())
     }
 }
