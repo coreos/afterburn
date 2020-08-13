@@ -22,7 +22,6 @@ use ipnetwork::{IpNetwork, Ipv4Network, Ipv6Network};
 use openssh_keys::PublicKey;
 use pnet_base::MacAddr;
 use serde_derive::Deserialize;
-use slog_scope::warn;
 
 use crate::errors::*;
 use crate::network;
@@ -292,15 +291,5 @@ impl MetadataProvider for DigitalOceanProvider {
 
     fn networks(&self) -> Result<Vec<network::Interface>> {
         self.parse_network()
-    }
-
-    fn virtual_network_devices(&self) -> Result<Vec<network::VirtualNetDev>> {
-        warn!("virtual network devices metadata requested, but not supported on this platform");
-        Ok(vec![])
-    }
-
-    fn boot_checkin(&self) -> Result<()> {
-        warn!("boot check-in requested, but not supported on this platform");
-        Ok(())
     }
 }

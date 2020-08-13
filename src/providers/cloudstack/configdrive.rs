@@ -6,11 +6,10 @@ use std::io::Read;
 use std::path::{Path, PathBuf};
 
 use openssh_keys::PublicKey;
-use slog_scope::{error, warn};
+use slog_scope::error;
 use tempfile::TempDir;
 
 use crate::errors::*;
-use crate::network;
 use crate::providers::MetadataProvider;
 
 const CONFIG_DRIVE_LABEL_1: &str = "config-2";
@@ -124,26 +123,8 @@ impl MetadataProvider for ConfigDrive {
         Ok(out)
     }
 
-    fn hostname(&self) -> Result<Option<String>> {
-        Ok(None)
-    }
-
     fn ssh_keys(&self) -> Result<Vec<PublicKey>> {
         self.fetch_publickeys()
-    }
-
-    fn networks(&self) -> Result<Vec<network::Interface>> {
-        Ok(vec![])
-    }
-
-    fn virtual_network_devices(&self) -> Result<Vec<network::VirtualNetDev>> {
-        warn!("virtual network devices metadata requested, but not supported on this platform");
-        Ok(vec![])
-    }
-
-    fn boot_checkin(&self) -> Result<()> {
-        warn!("boot check-in requested, but not supported on this platform");
-        Ok(())
     }
 }
 

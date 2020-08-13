@@ -18,11 +18,9 @@
 use mockito;
 use openssh_keys::PublicKey;
 use reqwest::header::{HeaderName, HeaderValue};
-use slog_scope::warn;
 use std::collections::HashMap;
 
 use crate::errors::*;
-use crate::network;
 use crate::providers::MetadataProvider;
 use crate::retry;
 
@@ -188,19 +186,5 @@ impl MetadataProvider for GcpProvider {
         }
 
         Ok(out)
-    }
-
-    fn networks(&self) -> Result<Vec<network::Interface>> {
-        Ok(vec![])
-    }
-
-    fn virtual_network_devices(&self) -> Result<Vec<network::VirtualNetDev>> {
-        warn!("virtual network devices metadata requested, but not supported on this platform");
-        Ok(vec![])
-    }
-
-    fn boot_checkin(&self) -> Result<()> {
-        warn!("boot check-in requested, but not supported on this platform");
-        Ok(())
     }
 }

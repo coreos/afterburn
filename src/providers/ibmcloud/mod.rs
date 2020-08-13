@@ -15,12 +15,9 @@ use std::fs::File;
 use std::io::{BufRead, BufReader, Read};
 use std::path::{Path, PathBuf};
 
-use openssh_keys::PublicKey;
-use slog_scope::warn;
 use tempfile::TempDir;
 
 use crate::errors::*;
-use crate::network;
 use crate::providers::MetadataProvider;
 
 const CONFIG_DRIVE_LABEL: &str = "cidata";
@@ -125,26 +122,6 @@ impl MetadataProvider for IBMGen2Provider {
         let metadata = self.read_metadata()?;
         let hostname = metadata.get("local-hostname").map(String::from);
         Ok(hostname)
-    }
-
-    fn ssh_keys(&self) -> Result<Vec<PublicKey>> {
-        warn!("cloud SSH keys requested, but not supported on this platform");
-        Ok(vec![])
-    }
-
-    fn networks(&self) -> Result<Vec<network::Interface>> {
-        warn!("network metadata requested, but not supported on this platform");
-        Ok(vec![])
-    }
-
-    fn virtual_network_devices(&self) -> Result<Vec<network::VirtualNetDev>> {
-        warn!("virtual network devices metadata requested, but not supported on this platform");
-        Ok(vec![])
-    }
-
-    fn boot_checkin(&self) -> Result<()> {
-        warn!("boot check-in requested, but not supported on this platform");
-        Ok(())
     }
 }
 

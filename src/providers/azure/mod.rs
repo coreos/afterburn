@@ -28,7 +28,6 @@ use slog_scope::warn;
 
 use self::crypto::x509;
 use crate::errors::*;
-use crate::network;
 use crate::providers::MetadataProvider;
 use crate::retry;
 use nix::unistd::Uid;
@@ -425,15 +424,6 @@ impl MetadataProvider for Azure {
 
         let key = self.get_ssh_pubkey(certs_endpoint)?;
         Ok(vec![key])
-    }
-
-    fn networks(&self) -> Result<Vec<network::Interface>> {
-        Ok(vec![])
-    }
-
-    fn virtual_network_devices(&self) -> Result<Vec<network::VirtualNetDev>> {
-        warn!("virtual network devices metadata requested, but not supported on this platform");
-        Ok(vec![])
     }
 
     fn boot_checkin(&self) -> Result<()> {

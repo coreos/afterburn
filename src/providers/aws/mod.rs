@@ -25,7 +25,6 @@ use serde_derive::Deserialize;
 use slog_scope::warn;
 
 use crate::errors::*;
-use crate::network;
 use crate::providers::MetadataProvider;
 use crate::retry;
 
@@ -233,19 +232,5 @@ impl MetadataProvider for AwsProvider {
                 })
                 .collect::<Result<Vec<_>>>()
         })?
-    }
-
-    fn networks(&self) -> Result<Vec<network::Interface>> {
-        Ok(vec![])
-    }
-
-    fn virtual_network_devices(&self) -> Result<Vec<network::VirtualNetDev>> {
-        warn!("virtual network devices metadata requested, but not supported on this platform");
-        Ok(vec![])
-    }
-
-    fn boot_checkin(&self) -> Result<()> {
-        warn!("boot check-in requested, but not supported on this platform");
-        Ok(())
     }
 }
