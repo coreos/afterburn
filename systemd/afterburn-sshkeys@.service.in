@@ -21,4 +21,4 @@ ExecStart=/usr/bin/afterburn ${AFTERBURN_OPT_PROVIDER} --ssh-keys=%i
 
 [Install]
 DefaultInstance=@DEFAULT_INSTANCE@
-RequiredBy=multi-user.target
+RequiredBy=afterburn-sshkeys.target
