@@ -15,7 +15,8 @@ units = $(addprefix systemd/, \
 	afterburn-checkin.service \
 	afterburn-firstboot-checkin.service \
 	afterburn.service \
-	afterburn-sshkeys@.service)
+	afterburn-sshkeys@.service \
+	afterburn-sshkeys.target)
 
 .PHONY: all
 all: $(units)
