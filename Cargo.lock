@@ -12,6 +12,7 @@ dependencies = [
  "hostname",
  "ipnetwork 0.17.0",
  "libsystemd",
+ "mailparse",
  "maplit",
  "mime",
  "mockito",
@@ -25,6 +26,7 @@ dependencies = [
  "serde-xml-rs",
  "serde_derive",
  "serde_json",
+ "serde_yaml",
  "slog",
  "slog-async",
  "slog-scope",
@@ -33,7 +35,6 @@ dependencies = [
  "update-ssh-keys",
  "users",
  "vmw_backdoor",
- "yaml-rust",
 ]
 
 [[package]]
@@ -99,6 +100,15 @@ name = "autocfg"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f8aac770f1885fd7e387acedd76065302551364496e46b3dd00860b2f8359b9d"
+
+[[package]]
+name = "base64"
+version = "0.10.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0b25d992356d2eb0ed82172f5248873db5560c4721f564b13cb5193bda5e668e"
+dependencies = [
+ "byteorder",
+]
 
 [[package]]
 name = "base64"
@@ -197,6 +207,16 @@ name = "cfg-if"
 version = "0.1.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4785bdd1c96b2a846b2bd7cc02e86b6b3dbf14e7e53446c4f54c92a361040822"
+
+[[package]]
+name = "charset"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4f426e64df1c3de26cbf44593c6ffff5dbfd43bbf9de0d075058558126b3fc73"
+dependencies = [
+ "base64 0.10.1",
+ "encoding_rs",
+]
 
 [[package]]
 name = "chrono"
@@ -738,6 +758,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "mailparse"
+version = "0.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "479b94621ea0fe875638d27f4a0b68213174b63e1ff9355d0948a04f71a5055a"
+dependencies = [
+ "base64 0.12.3",
+ "charset",
+ "quoted_printable",
+]
+
+[[package]]
 name = "maplit"
 version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1109,6 +1140,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "quoted_printable"
+version = "0.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "47b080c5db639b292ac79cbd34be0cfc5d36694768d8341109634d90b86930e2"
+
+[[package]]
 name = "rand"
 version = "0.7.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1195,9 +1232,9 @@ dependencies = [
 
 [[package]]
 name = "reqwest"
-version = "0.10.7"
+version = "0.10.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "12427a5577082c24419c9c417db35cfeb65962efc7675bb6b0d5f1f9d315bfe6"
+checksum = "e9eaa17ac5d7b838b7503d118fa16ad88f440498bf9ffe5424e621f93190d61e"
 dependencies = [
  "base64 0.12.3",
  "bytes",
@@ -1332,6 +1369,18 @@ dependencies = [
  "itoa",
  "serde",
  "url",
+]
+
+[[package]]
+name = "serde_yaml"
+version = "0.8.13"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ae3e2dd40a7cdc18ca80db804b7f461a39bb721160a85c9a1fa30134bf3c02a5"
+dependencies = [
+ "dtoa",
+ "linked-hash-map",
+ "serde",
+ "yaml-rust",
 ]
 
 [[package]]
