@@ -33,18 +33,16 @@ jobs:
         - cargo test --release
     - name: "Test CL legacy feature"
       arch: amd64
-      rust: 1.42.0
-      before_script:
-        - rustup component add clippy
+      rust: stable
       script:
         - cargo test --features cl-legacy
-        - cargo clippy --features cl-legacy -- -D warnings
     - name: "Lints with pinned toolchain"
       arch: amd64
-      rust: 1.44.0
+      rust: 1.46.0
       before_script:
         - rustup component add clippy
         - rustup component add rustfmt
       script:
-        - cargo clippy -- -D warnings
         - cargo fmt -- --check -l
+        - cargo clippy -- -D warnings
+        - cargo clippy --features cl-legacy -- -D warnings
