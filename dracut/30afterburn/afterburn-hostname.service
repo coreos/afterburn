@@ -3,6 +3,7 @@ Description=Afterburn Hostname
 # These platforms do not provide the hostname via DHCP
 # options, thus it needs to be fetched from the metadata
 # and statically applied on first-boot.
+ConditionKernelCommandLine=|ignition.platform.id=aliyun
 ConditionKernelCommandLine=|ignition.platform.id=azure
 ConditionKernelCommandLine=|ignition.platform.id=digitalocean
 ConditionKernelCommandLine=|ignition.platform.id=exoscale
