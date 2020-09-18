@@ -1,5 +1,8 @@
+# Note this unit is normally not enabled by default. It is instead pulled in as
+# needed by dependent services.
 [Unit]
 Description=Afterburn (Metadata)
+Documentation=https://github.com/coreos/afterburn
 
 [Service]
 Type=oneshot
