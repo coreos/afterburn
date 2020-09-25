@@ -1,3 +1,7 @@
+---
+nav_order: 9
+---
+
 # Contributing
 
 CoreOS projects are [Apache 2.0 licensed](LICENSE) and accept contributions via

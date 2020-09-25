@@ -1,3 +1,8 @@
+---
+nav_order: 2
+parent: Usage
+---
+
 # Metadata attributes
 
 Afterburn can consume cloud-specific metadata and serialize instance attributes into an environment file (e.g. `/run/metadata/afterburn`), which can then be consumed by systemd service units via `EnvironmentFile=`.
