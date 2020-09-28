@@ -1,3 +1,7 @@
+---
+nav_order: 1
+---
+
 # Afterburn
 
 [![Build Status](https://travis-ci.org/coreos/afterburn.svg?branch=master)](https://travis-ci.org/coreos/afterburn)
@@ -11,15 +15,15 @@ It is typically used in conjunction with [Ignition](https://github.com/coreos/ig
 
 It comprises several modules which may run at different times during the lifecycle of an instance.
 
-Depending on the specific platform, the following services may run in the [initramfs](dracut/30afterburn/) on first boot:
+Depending on the specific platform, the following services may run in the [initramfs](https://github.com/coreos/afterburn/tree/master/dracut/30afterburn) on first boot:
  * setting local hostname
- * injecting [network command-line arguments](docs/usage/initrd-network-cmdline.md)
+ * injecting [network command-line arguments](usage/initrd-network-cmdline.md)
 
-The following features are conditionally available on some platforms as [systemd service units](systemd/):
+The following features are conditionally available on some platforms as [systemd service units](https://github.com/coreos/afterburn/tree/master/systemd):
  * installing public SSH keys for local system users
- * retrieving [attributes](docs/usage/attributes.md) from instance metadata
+ * retrieving [attributes](usage/attributes.md) from instance metadata
  * checking in to the provider in order to report a successful boot or instance provisioning
 
 ## Supported platforms
 
-See [Supported platforms](docs/platforms.md).
+See [Supported platforms](platforms.md).

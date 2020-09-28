@@ -1,3 +1,8 @@
+---
+nav_order: 3
+parent: Usage
+---
+
 # Afterburn and coreos-metadata (legacy)
 
 This is a small utility, typically used in conjunction with [Ignition][ignition], which reads metadata from a given cloud-provider and applies it to the system.

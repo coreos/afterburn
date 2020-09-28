@@ -1,6 +1,10 @@
+---
+nav_order: 9
+---
+
 # Contributing
 
-CoreOS projects are [Apache 2.0 licensed](LICENSE) and accept contributions via
+CoreOS projects are [Apache 2.0 licensed][LICENSE] and accept contributions via
 GitHub pull requests.  This document outlines some of the conventions on
 development workflow, commit message formatting, contact points and other
 resources to make it easier to get your contribution accepted.
@@ -10,12 +14,12 @@ resources to make it easier to get your contribution accepted.
 By contributing to this project you agree to the Developer Certificate of
 Origin (DCO). This document was created by the Linux Kernel community and is a
 simple statement that you, as a contributor, have the legal right to make the
-contribution. See the [DCO](DCO) file for details.
+contribution. See the [DCO][DCO] file for details.
 
 ## Getting Started
 
 - Fork the repository on GitHub
-- Read the [README](README.md) for build and test instructions
+- Read the [documentation][docs].
 - Play with the project, submit bugs, submit patches!
 
 ### Contribution Flow
@@ -34,8 +38,6 @@ Thanks for your contributions!
 ## Project architecture
 
 [Development doc-pages][devdocs] cover several aspects of this project, both at low-level (code and logic) and high-level (architecture and design).
-
-[devdocs]: ./development/
 
 ### Code Style
 
@@ -75,5 +77,9 @@ git tools.
 
 Release can be performed by [creating a new release ticket][new-release-ticket] and following the steps in the checklist there.
 
+[LICENSE]: https://github.com/coreos/afterburn/blob/master/LICENSE
+[DCO]: https://github.com/coreos/afterburn/blob/master/DCO
+[docs]: https://coreos.github.io/afterburn
+[devdocs]: development.md
 [new-release-ticket]: https://github.com/coreos/afterburn/issues/new?labels=kind/release&template=release-checklist.md
 

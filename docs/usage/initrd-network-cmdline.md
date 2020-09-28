@@ -1,3 +1,8 @@
+---
+nav_order: 1
+parent: Usage
+---
+
 # Initrd first-boot network arguments
 
 Afterburn supports injecting arguments for dracut-cmdline, in order to setup networking in initrd for the first boot.

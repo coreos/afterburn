@@ -1,3 +1,8 @@
+---
+nav_order: 1
+parent: Development
+---
+
 # Integrating Afterburn into a distribution
 
 ## SSH keys
