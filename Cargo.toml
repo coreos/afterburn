@@ -51,8 +51,8 @@ slog-async = "2.5"
 slog-scope = "4.3"
 slog-term = "2.6"
 tempfile = "3.1"
-update-ssh-keys = { version = "0.6", optional = true }
-users = "0.10"
+update-ssh-keys = { version = "0.7", optional = true }
+users = "0.11"
 vmw_backdoor = "0.2"
 
 [dependencies.slog]
