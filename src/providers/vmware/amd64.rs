@@ -16,7 +16,15 @@ impl VmwareProvider {
             bail!("not running on VMWare CPU");
         }
 
-        let mut backdoor = vmw_backdoor::probe_backdoor()?;
+        // NOTE(lucab): privileged mode is in theory more reliable but
+        //  `kernel_lockdown(7)` may block it due to `iopl()` usage.
+        //  Thus, we try that first and fall back if kernel blocks it.
+        let mut backdoor = vmw_backdoor::probe_backdoor_privileged().or_else(|e| {
+            slog_scope::warn!("failed to probe backdoor in privileged mode: {}", e);
+            slog_scope::warn!("falling back to unprivileged backdoor access");
+            vmw_backdoor::probe_backdoor()
+        })?;
+
         let mut erpc = backdoor.open_enhanced_chan()?;
         let guestinfo_net_kargs = Self::fetch_guestinfo(&mut erpc, INITRD_NET_KARGS)?;
 
