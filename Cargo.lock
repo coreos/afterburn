@@ -33,7 +33,7 @@ dependencies = [
  "slog-term",
  "tempfile",
  "update-ssh-keys",
- "users",
+ "users 0.10.0",
  "vmw_backdoor",
 ]
 
@@ -1752,15 +1752,15 @@ checksum = "f7fe0bb3479651439c9112f72b6c505038574c9fbb575ed1bf3b797fa39dd564"
 
 [[package]]
 name = "update-ssh-keys"
-version = "0.6.1"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5e038f0ddaaed3ebc6f1279905d9fc9106be511a72123e91429b9dcc00dfdf3e"
+checksum = "f820aa350cc8607d78bc402def1ab39db4f5e9a8b6da746d12809731f99bd34e"
 dependencies = [
  "clap",
  "error-chain",
  "fs2",
  "openssh-keys",
- "users",
+ "users 0.11.0",
 ]
 
 [[package]]
@@ -1779,6 +1779,16 @@ name = "users"
 version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "aa4227e95324a443c9fcb06e03d4d85e91aabe9a5a02aa818688b6918b6af486"
+dependencies = [
+ "libc",
+ "log",
+]
+
+[[package]]
+name = "users"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "24cc0f6d6f267b73e5a2cadf007ba8f9bc39c6a6f9666f8cf25ea809a153b032"
 dependencies = [
  "libc",
  "log",
