@@ -72,6 +72,8 @@ pub struct Interface {
     pub name: Option<String>,
     /// Interface MAC address.
     pub mac_address: Option<MacAddr>,
+    /// Path as identifier
+    pub path: Option<String>,
     /// Relative priority for interface configuration.
     pub priority: u8,
     pub nameservers: Vec<IpAddr>,
@@ -79,6 +81,8 @@ pub struct Interface {
     pub routes: Vec<NetworkRoute>,
     pub bond: Option<String>,
     pub unmanaged: bool,
+    /// Optional requirement setting instead of the default
+    pub required_for_online: Option<String>,
 }
 
 /// A virtual network interface.
@@ -126,10 +130,11 @@ impl NetDevKind {
 impl Interface {
     /// Return a deterministic `systemd.network` unit name for this device.
     pub fn sd_network_unit_name(&self) -> Result<String> {
-        let iface_name = match (&self.name, &self.mac_address) {
-            (Some(ref name), _) => name.clone(),
-            (None, Some(ref addr)) => addr.to_string(),
-            (None, None) => bail!("network interface without name nor MAC address"),
+        let iface_name = match (&self.name, &self.mac_address, &self.path) {
+            (Some(ref name), _, _) => name.clone(),
+            (None, Some(ref addr), _) => addr.to_string(),
+            (None, None, Some(ref path)) => path.to_string(),
+            (None, None, None) => bail!("network interface without name, MAC address, or path"),
         };
         let unit_name = format!("{:02}-{}.network", self.priority, iface_name);
         Ok(unit_name)
@@ -146,6 +151,9 @@ impl Interface {
         if let Some(mac) = self.mac_address {
             config.push_str(&format!("MACAddress={}\n", mac));
         }
+        if let Some(path) = &self.path {
+            config.push_str(&format!("Path={}\n", path));
+        }
 
         // [Network] section
         config.push_str("\n[Network]\n");
@@ -157,8 +165,14 @@ impl Interface {
         }
 
         // [Link] section
+        if self.unmanaged || self.required_for_online.is_some() {
+            config.push_str("\n[Link]\n");
+        }
         if self.unmanaged {
-            config.push_str("\n[Link]\nUnmanaged=yes\n");
+            config.push_str("Unmanaged=yes\n");
+        }
+        if let Some(operational_state) = &self.required_for_online {
+            config.push_str(&format!("RequiredForOnline={}\n", operational_state));
         }
 
         // [Address] sections
@@ -225,12 +239,14 @@ mod tests {
                 Interface {
                     name: Some(String::from("lo")),
                     mac_address: Some(MacAddr(0, 0, 0, 0, 0, 0)),
+                    path: None,
                     priority: 20,
                     nameservers: vec![],
                     ip_addresses: vec![],
                     routes: vec![],
                     bond: None,
                     unmanaged: false,
+                    required_for_online: None,
                 },
                 "20-lo.network",
             ),
@@ -238,12 +254,14 @@ mod tests {
                 Interface {
                     name: Some(String::from("lo")),
                     mac_address: Some(MacAddr(0, 0, 0, 0, 0, 0)),
+                    path: None,
                     priority: 10,
                     nameservers: vec![],
                     ip_addresses: vec![],
                     routes: vec![],
                     bond: None,
                     unmanaged: false,
+                    required_for_online: None,
                 },
                 "10-lo.network",
             ),
@@ -251,12 +269,14 @@ mod tests {
                 Interface {
                     name: None,
                     mac_address: Some(MacAddr(0, 0, 0, 0, 0, 0)),
+                    path: None,
                     priority: 20,
                     nameservers: vec![],
                     ip_addresses: vec![],
                     routes: vec![],
                     bond: None,
                     unmanaged: false,
+                    required_for_online: None,
                 },
                 "20-00:00:00:00:00:00.network",
             ),
@@ -264,14 +284,31 @@ mod tests {
                 Interface {
                     name: Some(String::from("lo")),
                     mac_address: None,
+                    path: None,
                     priority: 20,
                     nameservers: vec![],
                     ip_addresses: vec![],
                     routes: vec![],
                     bond: None,
                     unmanaged: false,
+                    required_for_online: None,
                 },
                 "20-lo.network",
+            ),
+            (
+                Interface {
+                    name: None,
+                    mac_address: None,
+                    path: Some("pci-*".to_owned()),
+                    priority: 20,
+                    nameservers: vec![],
+                    ip_addresses: vec![],
+                    routes: vec![],
+                    bond: None,
+                    unmanaged: false,
+                    required_for_online: None,
+                },
+                "20-pci-*.network",
             ),
         ];
 
@@ -286,12 +323,14 @@ mod tests {
         let i = Interface {
             name: None,
             mac_address: None,
+            path: None,
             priority: 20,
             nameservers: vec![],
             ip_addresses: vec![],
             routes: vec![],
             bond: None,
             unmanaged: false,
+            required_for_online: None,
         };
         i.sd_network_unit_name().unwrap_err();
     }
@@ -333,6 +372,7 @@ mod tests {
                 Interface {
                     name: Some(String::from("lo")),
                     mac_address: Some(MacAddr(0, 0, 0, 0, 0, 0)),
+                    path: None,
                     priority: 20,
                     nameservers: vec![
                         IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)),
@@ -352,6 +392,7 @@ mod tests {
                     }],
                     bond: Some(String::from("james")),
                     unmanaged: false,
+                    required_for_online: None,
                 },
                 "[Match]
 Name=lo
@@ -380,16 +421,64 @@ Gateway=127.0.0.1
                 Interface {
                     name: None,
                     mac_address: None,
+                    path: None,
                     priority: 10,
                     nameservers: vec![],
                     ip_addresses: vec![],
                     routes: vec![],
                     bond: None,
                     unmanaged: false,
+                    required_for_online: None,
                 },
                 "[Match]
 
 [Network]
+",
+            ),
+            // test the path and required_for_online settings
+            (
+                Interface {
+                    name: None,
+                    mac_address: None,
+                    path: Some("pci-*".to_owned()),
+                    priority: 10,
+                    nameservers: vec![],
+                    ip_addresses: vec![],
+                    routes: vec![],
+                    bond: None,
+                    unmanaged: false,
+                    required_for_online: Some("no".to_owned()),
+                },
+                "[Match]
+Path=pci-*
+
+[Network]
+
+[Link]
+RequiredForOnline=no
+",
+            ),
+            // test the unmanaged setting
+            (
+                Interface {
+                    name: Some("*".to_owned()),
+                    mac_address: None,
+                    path: None,
+                    priority: 10,
+                    nameservers: vec![],
+                    ip_addresses: vec![],
+                    routes: vec![],
+                    bond: None,
+                    unmanaged: true,
+                    required_for_online: None,
+                },
+                "[Match]
+Name=*
+
+[Network]
+
+[Link]
+Unmanaged=yes
 ",
             ),
         ];
