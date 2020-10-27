@@ -30,7 +30,7 @@ Push access to the upstream repository is required in order to publish the new t
   - [ ] `RELEASE_VER=x.y.z`
   - [ ] `UPSTREAM_REMOTE=origin`
 
-:warning:: `UPSTREAM_REMOTE` should reference the locally configured remote that points to the upstream git repository.
+:warning:: `UPSTREAM_REMOTE` should reference the locally configured remote that points to the upstream git repository i.e. `git@github.com:coreos/afterburn.git`.
 
 - create release commits on a dedicated branch and tag it:
   - [ ] `git checkout -b release-${RELEASE_VER}`
@@ -55,7 +55,7 @@ Push access to the upstream repository is required in order to publish the new t
   - [ ] `tar -czf target/afterburn-${RELEASE_VER}-vendor.tar.gz vendor`
 
 - publish this release on GitHub:
-  - [ ] open a web browser and [create a GitHub Release](https://github.com/coreos/afterburn/releases/new) for the tag above
+  - [ ] find the new tag in the [GitHub tag list](https://github.com/coreos/afterburn/tags) and click the triple dots menu, and create a release for it 
   - [ ] write a short changelog (i.e. re-use the PR content)
   - [ ] upload `target/afterburn-${RELEASE_VER}-vendor.tar.gz`
   - [ ] record digests of local artifacts:
