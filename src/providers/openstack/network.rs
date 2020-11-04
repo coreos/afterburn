@@ -17,7 +17,7 @@ pub struct OpenstackProviderNetwork {
 
 impl OpenstackProviderNetwork {
     pub fn try_new() -> Result<OpenstackProviderNetwork> {
-        let client = retry::Client::try_new()?;
+        let client = retry::Client::try_new()?.return_on_404(true);
         Ok(OpenstackProviderNetwork { client })
     }
 

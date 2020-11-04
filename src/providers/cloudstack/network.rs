@@ -21,7 +21,7 @@ pub struct CloudstackNetwork {
 impl CloudstackNetwork {
     pub fn try_new() -> Result<CloudstackNetwork> {
         let server_address = CloudstackNetwork::get_dhcp_server_address()?;
-        let client = retry::Client::try_new()?;
+        let client = retry::Client::try_new()?.return_on_404(true);
 
         Ok(CloudstackNetwork {
             server_address,
