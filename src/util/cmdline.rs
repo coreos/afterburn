@@ -22,8 +22,6 @@
 use crate::errors::*;
 use error_chain::bail;
 use slog_scope::trace;
-use std::io::Read;
-use std::{fs, io};
 
 /// Platform key.
 #[cfg(not(feature = "cl-legacy"))]
@@ -34,7 +32,8 @@ const CMDLINE_PLATFORM_FLAG: &str = "coreos.oem.id";
 
 /// Get platform/OEM value from cmdline file.
 pub fn get_platform(fpath: &str) -> Result<String> {
-    let content = read_cmdline_path(fpath)?;
+    let content = std::fs::read_to_string(fpath)
+        .chain_err(|| format!("Failed to read cmdline file ({})", fpath))?;
 
     match find_flag_value(CMDLINE_PLATFORM_FLAG, &content) {
         Some(platform) => {
@@ -54,22 +53,10 @@ pub fn get_platform(fpath: &str) -> Result<String> {
 pub fn has_network_kargs(fpath: &str) -> Result<bool> {
     const IP_PREFIX: &str = "ip=";
 
-    let content = read_cmdline_path(fpath)?;
+    let content = std::fs::read_to_string(fpath)
+        .chain_err(|| format!("Failed to read cmdline file ({})", fpath))?;
     let has_ip = contains_flag_prefix(&content, IP_PREFIX);
     Ok(has_ip)
-}
-
-/// Open cmdline file at path and return its content.
-pub fn read_cmdline_path(fpath: &str) -> Result<String> {
-    let file =
-        fs::File::open(fpath).chain_err(|| format!("Failed to open cmdline file ({})", fpath))?;
-
-    let mut bufrd = io::BufReader::new(file);
-    let mut content = String::new();
-    bufrd
-        .read_to_string(&mut content)
-        .chain_err(|| format!("Failed to read cmdline file ({})", fpath))?;
-    Ok(content)
 }
 
 /// Check whether cmdline contains any flag starting with the given prefix.
