@@ -23,6 +23,9 @@ use slog_scope::warn;
 pub mod configdrive;
 pub mod network;
 
+#[cfg(test)]
+mod mock_tests;
+
 /// Read metadata from the config-drive first then fallback to fetch from metadata server.
 ///
 /// Reference: https://github.com/coreos/fedora-coreos-tracker/issues/422

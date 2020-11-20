@@ -14,31 +14,35 @@ const SERVER_ADDRESS: &str = "SERVER_ADDRESS";
 
 #[derive(Clone, Debug)]
 pub struct CloudstackNetwork {
-    server_address: IpAddr,
-    client: retry::Client,
+    server_base_url: String,
+    pub(crate) client: retry::Client,
 }
 
 impl CloudstackNetwork {
     pub fn try_new() -> Result<CloudstackNetwork> {
-        let server_address = CloudstackNetwork::get_dhcp_server_address()?;
-        let client = retry::Client::try_new()?;
+        let server_base_url = CloudstackNetwork::get_server_base_url_from_dhcp()?;
+        let client = retry::Client::try_new()?.return_on_404(true);
 
         Ok(CloudstackNetwork {
-            server_address,
+            server_base_url,
             client,
         })
     }
 
     fn endpoint_for(&self, key: &str) -> String {
-        format!("http://{}/latest/meta-data/{}", self.server_address, key)
+        format!("{}/latest/meta-data/{}", self.server_base_url, key)
     }
 
-    fn get_dhcp_server_address() -> Result<IpAddr> {
+    fn get_server_base_url_from_dhcp() -> Result<String> {
+        if cfg!(test) {
+            #[cfg(test)]
+            return Ok(mockito::server_url());
+        }
         let server = util::dns_lease_key_lookup(SERVER_ADDRESS)?;
         let ip = server
-            .parse()
+            .parse::<IpAddr>()
             .chain_err(|| format!("failed to parse server ip address: {}", server))?;
-        Ok(IpAddr::V4(ip))
+        Ok(format!("http://{}", ip))
     }
 }
 

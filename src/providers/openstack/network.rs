@@ -8,19 +8,26 @@ use crate::errors::*;
 use crate::providers::MetadataProvider;
 use crate::retry;
 
+#[cfg(not(test))]
 const URL: &str = "http://169.254.169.254/latest/meta-data";
 
 #[derive(Clone, Debug)]
 pub struct OpenstackProviderNetwork {
-    client: retry::Client,
+    pub(crate) client: retry::Client,
 }
 
 impl OpenstackProviderNetwork {
     pub fn try_new() -> Result<OpenstackProviderNetwork> {
-        let client = retry::Client::try_new()?;
+        let client = retry::Client::try_new()?.return_on_404(true);
         Ok(OpenstackProviderNetwork { client })
     }
 
+    #[cfg(test)]
+    fn endpoint_for(key: &str) -> String {
+        format!("{}/{}", &mockito::server_url(), key)
+    }
+
+    #[cfg(not(test))]
     fn endpoint_for(key: &str) -> String {
         format!("{}/{}", URL, key)
     }
