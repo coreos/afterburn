@@ -48,7 +48,7 @@ impl CliRdNetworkKargs {
         let platform = super::parse_provider(matches)?;
         let default_kargs = matches
             .value_of("default-value")
-            .ok_or_else(|| "missing network kargs default value")?
+            .ok_or("missing network kargs default value")?
             .to_string();
 
         let cfg = Self {
@@ -66,9 +66,7 @@ impl CliRdNetworkKargs {
         };
 
         let provider_kargs = initrd::fetch_network_kargs(&self.platform)?;
-        let kargs = provider_kargs
-            .as_ref()
-            .unwrap_or_else(|| &self.default_kargs);
+        let kargs = provider_kargs.as_ref().unwrap_or(&self.default_kargs);
         initrd::write_network_kargs(kargs)
     }
 }

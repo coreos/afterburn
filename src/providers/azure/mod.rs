@@ -215,7 +215,7 @@ impl Azure {
             )
             .send()
             .chain_err(|| "failed to get versions")?
-            .ok_or_else(|| "failed to get versions: not found")?;
+            .ok_or("failed to get versions: not found")?;
 
         if versions.supported.versions.iter().any(|v| v == version) {
             Ok(())
@@ -254,7 +254,7 @@ impl Azure {
             )
             .send()
             .chain_err(|| "failed to get certificates")?
-            .ok_or_else(|| "failed to get certificates: not found")?;
+            .ok_or("failed to get certificates: not found")?;
 
         // the cms decryption expects it to have MIME information on the top
         // since cms is really for email attachments....
@@ -313,7 +313,7 @@ impl Azure {
             .get(retry::Xml, endpoint.to_string())
             .send()
             .chain_err(|| "failed to get shared configuration")?
-            .ok_or_else(|| "failed to get shared configuration: not found")?;
+            .ok_or("failed to get shared configuration: not found")?;
 
         let mut attributes = Attributes::default();
 
