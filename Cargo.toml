@@ -7,7 +7,7 @@ exclude = ["/.cci.jenkinsfile", "/.github", "/.gitignore", "/.travis.yml"]
 authors = [ "Stephen Demos <stephen.demos@coreos.com>",
             "Luca Bruno <lucab@debian.org>" ]
 description = "A simple cloud provider agent"
-version = "4.5.4-alpha.0"
+version = "4.6.0"
 
 [package.metadata.release]
 sign-commit = true
