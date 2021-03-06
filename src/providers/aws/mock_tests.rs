@@ -63,14 +63,14 @@ fn test_aws_attributes() {
     }
 
     let attributes = maplit::hashmap! {
-        format!("{}_INSTANCE_ID", aws::ENV_PREFIX) => instance_id.to_string(),
-        format!("{}_INSTANCE_TYPE", aws::ENV_PREFIX) => instance_type.to_string(),
-        format!("{}_IPV4_LOCAL", aws::ENV_PREFIX) => ipv4_local.to_string(),
-        format!("{}_IPV4_PUBLIC", aws::ENV_PREFIX) => ipv4_public.to_string(),
-        format!("{}_AVAILABILITY_ZONE", aws::ENV_PREFIX) => availability_zone.to_string(),
-        format!("{}_HOSTNAME", aws::ENV_PREFIX) => hostname.to_string(),
-        format!("{}_PUBLIC_HOSTNAME", aws::ENV_PREFIX) => public_hostname.to_string(),
-        format!("{}_REGION", aws::ENV_PREFIX) => region.to_string(),
+        "AWS_INSTANCE_ID".to_string() => instance_id.to_string(),
+        "AWS_INSTANCE_TYPE".to_string() => instance_type.to_string(),
+        "AWS_IPV4_LOCAL".to_string() => ipv4_local.to_string(),
+        "AWS_IPV4_PUBLIC".to_string() => ipv4_public.to_string(),
+        "AWS_AVAILABILITY_ZONE".to_string() => availability_zone.to_string(),
+        "AWS_HOSTNAME".to_string() => hostname.to_string(),
+        "AWS_PUBLIC_HOSTNAME".to_string() => public_hostname.to_string(),
+        "AWS_REGION".to_string() => region.to_string(),
     };
 
     let client = crate::retry::Client::try_new()
@@ -100,14 +100,14 @@ fn test_aws_imds_versions() {
     let region = "test-region";
 
     let attributes = maplit::hashmap! {
-        format!("{}_INSTANCE_ID", aws::ENV_PREFIX) => instance_id.to_string(),
-        format!("{}_INSTANCE_TYPE", aws::ENV_PREFIX) => instance_type.to_string(),
-        format!("{}_IPV4_LOCAL", aws::ENV_PREFIX) => ipv4_local.to_string(),
-        format!("{}_IPV4_PUBLIC", aws::ENV_PREFIX) => ipv4_public.to_string(),
-        format!("{}_AVAILABILITY_ZONE", aws::ENV_PREFIX) => availability_zone.to_string(),
-        format!("{}_HOSTNAME", aws::ENV_PREFIX) => hostname.to_string(),
-        format!("{}_PUBLIC_HOSTNAME", aws::ENV_PREFIX) => public_hostname.to_string(),
-        format!("{}_REGION", aws::ENV_PREFIX) => region.to_string(),
+        "AWS_INSTANCE_ID".to_string() => instance_id.to_string(),
+        "AWS_INSTANCE_TYPE".to_string() => instance_type.to_string(),
+        "AWS_IPV4_LOCAL".to_string() => ipv4_local.to_string(),
+        "AWS_IPV4_PUBLIC".to_string() => ipv4_public.to_string(),
+        "AWS_AVAILABILITY_ZONE".to_string() => availability_zone.to_string(),
+        "AWS_HOSTNAME".to_string() => hostname.to_string(),
+        "AWS_PUBLIC_HOSTNAME".to_string() => public_hostname.to_string(),
+        "AWS_REGION".to_string() => region.to_string(),
     };
 
     let endpoints = maplit::btreemap! {

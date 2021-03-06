@@ -13,7 +13,3 @@ See [Initrd first-boot network arguments](usage/initrd-network-cmdline.md).
 ## Metadata attributes
 
 See [Metadata attributes](usage/attributes.md).
-
-## Afterburn and coreos-metadata (legacy)
-
-See [Afterburn and coreos-metadata (legacy)](usage/legacy-attributes.md).

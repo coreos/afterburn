@@ -29,10 +29,6 @@ jobs:
         run: cargo build
       - name: cargo test
         run: cargo test
-      - name: cargo build (cl-legacy)
-        run: cargo build --features cl-legacy
-      - name: cargo test (cl-legacy)
-        run: cargo test --features cl-legacy
   tests-release-stable:
     name: "Tests (release), stable toolchain"
     runs-on: ubuntu-latest
@@ -79,8 +75,6 @@ jobs:
         run: cargo fmt -- --check -l
       - name: cargo clippy (warnings)
         run: cargo clippy -- -D warnings
-      - name: cargo clippy (cl-legacy, warnings)
-        run: cargo clippy --features cl-legacy -- -D warnings
   tests-other-channels:
     name: "Tests, unstable toolchain"
     runs-on: ubuntu-latest

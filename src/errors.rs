@@ -18,7 +18,6 @@ use error_chain::error_chain;
 
 error_chain! {
     links {
-        AuthorizedKeys(::update_ssh_keys::errors::Error, ::update_ssh_keys::errors::ErrorKind) #[cfg(feature = "cl-legacy")];
         PublicKey(::openssh_keys::errors::Error, ::openssh_keys::errors::ErrorKind);
     }
     foreign_links {
