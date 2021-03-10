@@ -4,7 +4,6 @@ nav_order: 1
 
 # Afterburn
 
-[![Build Status](https://travis-ci.org/coreos/afterburn.svg?branch=master)](https://travis-ci.org/coreos/afterburn)
 [![crates.io](https://img.shields.io/crates/v/afterburn.svg)](https://crates.io/crates/afterburn)
 ![minimum rust 1.44](https://img.shields.io/badge/rust-1.44%2B-orange.svg)
 
