@@ -123,7 +123,7 @@ impl PacketProvider {
         format!("{}/{}", url, name)
     }
 
-    fn get_attrs(&self) -> Result<Vec<(String, String)>> {
+    fn get_attrs(&self) -> Vec<(String, String)> {
         let mut attrs = Vec::new();
         let mut v4_public_counter = 0;
         let mut v4_private_counter = 0;
@@ -183,7 +183,7 @@ impl PacketProvider {
             self.data.phone_home_url.clone(),
         ));
         attrs.push(("PACKET_PLAN".to_owned(), self.data.plan.clone()));
-        Ok(attrs)
+        attrs
     }
 
     fn get_dns_servers() -> Result<Vec<IpAddr>> {
@@ -322,7 +322,7 @@ impl PacketProvider {
 
 impl MetadataProvider for PacketProvider {
     fn attributes(&self) -> Result<HashMap<String, String>> {
-        self.get_attrs().map(|attrs| attrs.into_iter().collect())
+        Ok(self.get_attrs().into_iter().collect())
     }
 
     fn hostname(&self) -> Result<Option<String>> {

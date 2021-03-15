@@ -80,7 +80,8 @@ impl IBMGen2Provider {
     fn parse_metadata<T: Read>(input: BufReader<T>) -> Result<HashMap<String, String>> {
         let mut output = HashMap::new();
 
-        for line in input.lines().filter_map(|l| l.ok()) {
+        for line in input.lines() {
+            let line = line.chain_err(|| "reading metadata")?;
             let parts: Vec<&str> = line.splitn(2, ':').collect();
             if parts.len() != 2 {
                 continue;

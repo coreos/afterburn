@@ -80,7 +80,7 @@ impl DigitalOceanProvider {
         Ok(data)
     }
 
-    fn parse_attrs(&self) -> Result<Vec<(String, String)>> {
+    fn parse_attrs(&self) -> Vec<(String, String)> {
         let mut attrs = Vec::new();
 
         attrs.push(("DIGITALOCEAN_HOSTNAME".to_owned(), self.hostname.clone()));
@@ -126,7 +126,7 @@ impl DigitalOceanProvider {
             }
         }
 
-        Ok(attrs)
+        attrs
     }
 
     fn parse_network(&self) -> Result<Vec<network::Interface>> {
@@ -271,7 +271,7 @@ impl DigitalOceanProvider {
 
 impl MetadataProvider for DigitalOceanProvider {
     fn attributes(&self) -> Result<HashMap<String, String>> {
-        self.parse_attrs().map(|attrs| attrs.into_iter().collect())
+        Ok(self.parse_attrs().into_iter().collect())
     }
 
     fn hostname(&self) -> Result<Option<String>> {
