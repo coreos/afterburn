@@ -24,11 +24,7 @@ use error_chain::bail;
 use slog_scope::trace;
 
 /// Platform key.
-#[cfg(not(feature = "cl-legacy"))]
 const CMDLINE_PLATFORM_FLAG: &str = "ignition.platform.id";
-/// Platform key (CL and RHCOS legacy name: "OEM").
-#[cfg(feature = "cl-legacy")]
-const CMDLINE_PLATFORM_FLAG: &str = "coreos.oem.id";
 
 /// Get platform/OEM value from cmdline file.
 pub fn get_platform(fpath: &str) -> Result<String> {

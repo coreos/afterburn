@@ -32,7 +32,6 @@ dependencies = [
  "slog-scope",
  "slog-term",
  "tempfile",
- "update-ssh-keys",
  "users",
  "vmw_backdoor",
 ]
@@ -433,16 +432,6 @@ checksum = "ece68d15c92e84fa4f19d3780f1294e5ca82a78a6d515f1efaabcc144688be00"
 dependencies = [
  "matches",
  "percent-encoding",
-]
-
-[[package]]
-name = "fs2"
-version = "0.4.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9564fc758e15025b46aa6643b1b77d047d1a56a1aea6e01002ac0c7026876213"
-dependencies = [
- "libc",
- "winapi",
 ]
 
 [[package]]
@@ -1695,19 +1684,6 @@ name = "unicode-xid"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f7fe0bb3479651439c9112f72b6c505038574c9fbb575ed1bf3b797fa39dd564"
-
-[[package]]
-name = "update-ssh-keys"
-version = "0.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f820aa350cc8607d78bc402def1ab39db4f5e9a8b6da746d12809731f99bd34e"
-dependencies = [
- "clap",
- "error-chain",
- "fs2",
- "openssh-keys",
- "users",
-]
 
 [[package]]
 name = "url"

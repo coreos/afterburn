@@ -34,8 +34,6 @@ pub mod ibmcloud;
 pub mod ibmcloud_classic;
 pub mod openstack;
 pub mod packet;
-#[cfg(feature = "cl-legacy")]
-pub mod vagrant_virtualbox;
 pub mod vmware;
 pub mod vultr;
 
@@ -50,10 +48,6 @@ use std::io::prelude::*;
 use std::path::Path;
 use users::{self, User};
 
-#[cfg(not(feature = "cl-legacy"))]
-const ENV_PREFIX: &str = "AFTERBURN_";
-#[cfg(feature = "cl-legacy")]
-const ENV_PREFIX: &str = "COREOS_";
 /// Message ID marker for authorized-keys entries in journal.
 const AFTERBURN_SSH_AUTHORIZED_KEYS_MESSAGEID: &str = "0f7d7a502f2d433caa1323440a6b4190";
 
@@ -82,45 +76,7 @@ fn write_ssh_key_journal_entry(log: logging::Priority, name: &str, path: &str) {
         warn!("failed to send information to journald: {}", e);
     }
 }
-#[cfg(feature = "cl-legacy")]
-fn write_ssh_keys(user: User, ssh_keys: Vec<PublicKey>) -> Result<()> {
-    use update_ssh_keys::{AuthorizedKeyEntry, AuthorizedKeys};
 
-    // If we don't have any SSH keys, don't bother trying to write them as
-    // update-ssh-keys will yell at us.
-    if !ssh_keys.is_empty() {
-        // open the user's authorized keys directory
-        let user_name = user.name().to_string_lossy().into_owned();
-        let mut authorized_keys_dir = AuthorizedKeys::open(user, true, None).chain_err(|| {
-            format!(
-                "failed to open authorized keys directory for user '{}'",
-                user_name
-            )
-        })?;
-
-        // add the ssh keys to the directory
-        let entries = ssh_keys
-            .into_iter()
-            .map(|key| AuthorizedKeyEntry::Valid { key })
-            .collect::<Vec<_>>();
-        // legacy name for legacy mode
-        authorized_keys_dir.add_keys("coreos-metadata", entries, true, true)?;
-
-        // write the changes and sync the directory
-        authorized_keys_dir
-            .write()
-            .chain_err(|| "failed to update authorized keys directory")?;
-        authorized_keys_dir
-            .sync()
-            .chain_err(|| "failed to update authorized keys")?;
-        let path = authorized_keys_dir.ssh_dir.display().to_string();
-        write_ssh_key_journal_entry(logging::Priority::Info, &user_name, &path);
-    }
-
-    Ok(())
-}
-
-#[cfg(not(feature = "cl-legacy"))]
 fn write_ssh_keys(user: User, ssh_keys: Vec<PublicKey>) -> Result<()> {
     use std::io::ErrorKind::NotFound;
     use users::os::unix::UserExt;
@@ -235,7 +191,7 @@ pub trait MetadataProvider {
     fn write_attributes(&self, attributes_file_path: String) -> Result<()> {
         let mut attributes_file = create_file(&attributes_file_path)?;
         for (k, v) in self.attributes()? {
-            writeln!(&mut attributes_file, "{}{}={}", ENV_PREFIX, k, v).chain_err(|| {
+            writeln!(&mut attributes_file, "AFTERBURN_{}={}", k, v).chain_err(|| {
                 format!("failed to write attributes to file {:?}", attributes_file)
             })?;
         }

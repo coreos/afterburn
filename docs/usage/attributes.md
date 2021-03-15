@@ -119,7 +119,3 @@ These can be safely used by external providers on platforms not supported by Aft
   - AFTERBURN_CUSTOM_PRIVATE_IPV4
   - AFTERBURN_CUSTOM_PUBLIC_IPV6
   - AFTERBURN_CUSTOM_PRIVATE_IPV6
-
-Please note that the legacy `coreos-metadata` binary used to provide [somewhat different][cl-legacy] attributes.
-
-[cl-legacy]: ./legacy-attributes.md

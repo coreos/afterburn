@@ -27,8 +27,6 @@ use crate::providers::ibmcloud_classic::IBMClassicProvider;
 use crate::providers::openstack;
 use crate::providers::openstack::network::OpenstackProviderNetwork;
 use crate::providers::packet::PacketProvider;
-#[cfg(feature = "cl-legacy")]
-use crate::providers::vagrant_virtualbox::VagrantVirtualboxProvider;
 use crate::providers::vmware::VmwareProvider;
 use crate::providers::vultr::VultrProvider;
 
@@ -46,18 +44,12 @@ macro_rules! box_result {
 pub fn fetch_metadata(provider: &str) -> errors::Result<Box<dyn providers::MetadataProvider>> {
     match provider {
         "aliyun" => box_result!(AliyunProvider::try_new()?),
-        #[cfg(not(feature = "cl-legacy"))]
         "aws" => box_result!(AwsProvider::try_new()?),
         "azure" => box_result!(Azure::try_new()?),
         "cloudstack-metadata" => box_result!(CloudstackNetwork::try_new()?),
         "cloudstack-configdrive" => box_result!(ConfigDrive::try_new()?),
         "digitalocean" => box_result!(DigitalOceanProvider::try_new()?),
         "exoscale" => box_result!(ExoscaleProvider::try_new()?),
-        #[cfg(feature = "cl-legacy")]
-        "ec2" => box_result!(AwsProvider::try_new()?),
-        #[cfg(feature = "cl-legacy")]
-        "gce" => box_result!(GcpProvider::try_new()?),
-        #[cfg(not(feature = "cl-legacy"))]
         "gcp" => box_result!(GcpProvider::try_new()?),
         // IBM Cloud - VPC Generation 2.
         "ibmcloud" => box_result!(IBMGen2Provider::try_new()?),
@@ -66,8 +58,6 @@ pub fn fetch_metadata(provider: &str) -> errors::Result<Box<dyn providers::Metad
         "openstack" => openstack::try_config_drive_else_network(),
         "openstack-metadata" => box_result!(OpenstackProviderNetwork::try_new()?),
         "packet" => box_result!(PacketProvider::try_new()?),
-        #[cfg(feature = "cl-legacy")]
-        "vagrant-virtualbox" => box_result!(VagrantVirtualboxProvider::new()),
         "vmware" => box_result!(VmwareProvider::try_new()?),
         "vultr" => box_result!(VultrProvider::try_new()?),
         _ => Err(errors::ErrorKind::UnknownProvider(provider.to_owned()).into()),
