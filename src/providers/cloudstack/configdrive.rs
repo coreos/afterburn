@@ -5,11 +5,11 @@ use std::fs::File;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 
+use anyhow::{Context, Result};
 use openssh_keys::PublicKey;
 use slog_scope::error;
 use tempfile::TempDir;
 
-use crate::errors::*;
 use crate::providers::MetadataProvider;
 
 const CONFIG_DRIVE_LABEL_1: &str = "config-2";
@@ -42,7 +42,7 @@ impl ConfigDrive {
         let target = tempfile::Builder::new()
             .prefix("afterburn-")
             .tempdir()
-            .chain_err(|| "failed to create temporary directory")?;
+            .context("failed to create temporary directory")?;
         crate::util::mount_ro(
             &Path::new("/dev/disk/by-label/").join(CONFIG_DRIVE_LABEL_1),
             target.path(),
@@ -77,22 +77,22 @@ impl ConfigDrive {
             return Ok(None);
         }
 
-        let mut file =
-            File::open(&filename).chain_err(|| format!("failed to open file '{:?}'", filename))?;
+        let mut file = File::open(&filename)
+            .with_context(|| format!("failed to open file '{:?}'", filename))?;
 
         let mut contents = String::new();
         file.read_to_string(&mut contents)
-            .chain_err(|| format!("failed to read from file '{:?}'", filename))?;
+            .with_context(|| format!("failed to read from file '{:?}'", filename))?;
 
         Ok(Some(contents))
     }
 
     fn fetch_publickeys(&self) -> Result<Vec<PublicKey>> {
         let filename = self.metadata_dir().join("public_keys.txt");
-        let file =
-            File::open(&filename).chain_err(|| format!("failed to open file '{:?}'", filename))?;
+        let file = File::open(&filename)
+            .with_context(|| format!("failed to open file '{:?}'", filename))?;
 
-        PublicKey::read_keys(file).chain_err(|| "failed to read public keys from config drive file")
+        PublicKey::read_keys(file).context("failed to read public keys from config drive file")
     }
 }
 

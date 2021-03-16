@@ -16,8 +16,7 @@
 //! interface unit files. All that is left is to write the resulting string to
 //! the necessary unit.
 
-use crate::errors::*;
-use error_chain::bail;
+use anyhow::{anyhow, bail, Context, Result};
 use ipnetwork::IpNetwork;
 use pnet_base::MacAddr;
 use std::net::IpAddr;
@@ -48,13 +47,13 @@ pub fn bonding_mode_to_string(mode: u32) -> Result<String> {
             return Ok(s.to_owned());
         }
     }
-    Err(format!("no such bonding mode: {}", mode).into())
+    Err(anyhow!("no such bonding mode: {}", mode))
 }
 
 /// Try to parse an IP+netmask pair into a CIDR network.
 pub fn try_parse_cidr(address: IpAddr, netmask: IpAddr) -> Result<IpNetwork> {
     let prefix = ipnetwork::ip_mask_to_prefix(netmask)?;
-    IpNetwork::new(address, prefix).chain_err(|| "failed to parse network")
+    IpNetwork::new(address, prefix).context("failed to parse network")
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

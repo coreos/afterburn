@@ -1,7 +1,7 @@
 //! `multi` CLI sub-command.
 
-use crate::errors::*;
 use crate::metadata;
+use anyhow::{Context, Result};
 
 #[derive(Debug)]
 pub struct CliMulti {
@@ -43,34 +43,34 @@ impl CliMulti {
     /// Run the `multi` sub-command.
     pub(crate) fn run(self) -> Result<()> {
         // fetch the metadata from the configured provider
-        let metadata = metadata::fetch_metadata(&self.provider)
-            .chain_err(|| "fetching metadata from provider")?;
+        let metadata =
+            metadata::fetch_metadata(&self.provider).context("fetching metadata from provider")?;
 
         // write attributes if configured to do so
         self.attributes_file
             .map_or(Ok(()), |x| metadata.write_attributes(x))
-            .chain_err(|| "writing metadata attributes")?;
+            .context("writing metadata attributes")?;
 
         // write ssh keys if configured to do so
         self.ssh_keys_user
             .map_or(Ok(()), |x| metadata.write_ssh_keys(x))
-            .chain_err(|| "writing ssh keys")?;
+            .context("writing ssh keys")?;
 
         // write hostname if configured to do so
         self.hostname_file
             .map_or(Ok(()), |x| metadata.write_hostname(x))
-            .chain_err(|| "writing hostname")?;
+            .context("writing hostname")?;
 
         // write network units if configured to do so
         self.network_units_dir
             .map_or(Ok(()), |x| metadata.write_network_units(x))
-            .chain_err(|| "writing network units")?;
+            .context("writing network units")?;
 
         // perform boot check-in.
         if self.check_in {
             metadata
                 .boot_checkin()
-                .chain_err(|| "checking-in instance boot to cloud provider")?;
+                .context("checking-in instance boot to cloud provider")?;
         }
 
         Ok(())

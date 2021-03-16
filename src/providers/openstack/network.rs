@@ -2,9 +2,9 @@
 
 use std::collections::HashMap;
 
+use anyhow::{anyhow, bail, Result};
 use openssh_keys::PublicKey;
 
-use crate::errors::*;
 use crate::providers::MetadataProvider;
 use crate::retry;
 
@@ -45,7 +45,7 @@ impl OpenstackProviderNetwork {
             for l in keys_list.lines() {
                 let tokens: Vec<&str> = l.split('=').collect();
                 if tokens.len() != 2 {
-                    return Err("error parsing keyID".into());
+                    bail!("error parsing keyID");
                 }
                 let key: String = self
                     .client
@@ -57,7 +57,7 @@ impl OpenstackProviderNetwork {
                         )),
                     )
                     .send()?
-                    .ok_or("missing ssh key")?;
+                    .ok_or_else(|| anyhow!("missing ssh key"))?;
                 keys.push(key);
             }
         }

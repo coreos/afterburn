@@ -3,13 +3,13 @@
 //! This provider is selected via the platform ID `aliyun`.
 //! The metadata endpoint is documented at https://www.alibabacloud.com/help/doc-detail/49122.htm.
 
+use anyhow::{anyhow, Result};
 #[cfg(test)]
 use mockito;
 use openssh_keys::PublicKey;
 use slog_scope::error;
 use std::collections::{BTreeSet, HashMap};
 
-use crate::errors::*;
 use crate::providers::MetadataProvider;
 use crate::retry;
 
@@ -85,7 +85,7 @@ impl AliyunProvider {
                 .client
                 .get(retry::Raw, AliyunProvider::endpoint_for(&ep))
                 .send()?
-                .ok_or("missing ssh key")?;
+                .ok_or_else(|| anyhow!("missing ssh key"))?;
             out.insert(key);
         }
 

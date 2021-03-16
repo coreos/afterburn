@@ -10,6 +10,7 @@
 //!
 //! nocloud: https://cloudinit.readthedocs.io/en/latest/topics/datasources/nocloud.html
 
+use anyhow::{bail, Context, Result};
 use openssh_keys::PublicKey;
 use std::collections::HashMap;
 use std::fs::File;
@@ -19,7 +20,6 @@ use std::str;
 
 use tempfile::TempDir;
 
-use crate::errors::*;
 use crate::providers::MetadataProvider;
 
 use mailparse::*;
@@ -44,7 +44,7 @@ impl IBMGen2Provider {
         let target = tempfile::Builder::new()
             .prefix("afterburn-")
             .tempdir()
-            .chain_err(|| "failed to create temporary directory")?;
+            .context("failed to create temporary directory")?;
         crate::util::mount_ro(
             &Path::new("/dev/disk/by-label/").join(CONFIG_DRIVE_LABEL),
             target.path(),
@@ -67,8 +67,8 @@ impl IBMGen2Provider {
     /// Read metadata file and parse attributes.
     fn read_metadata(&self) -> Result<HashMap<String, String>> {
         let filename = self.metadata_dir().join("meta-data");
-        let file =
-            File::open(&filename).chain_err(|| format!("failed to open file '{:?}'", filename))?;
+        let file = File::open(&filename)
+            .with_context(|| format!("failed to open file '{:?}'", filename))?;
         let bufrd = BufReader::new(file);
         Self::parse_metadata(bufrd)
     }
@@ -81,7 +81,7 @@ impl IBMGen2Provider {
         let mut output = HashMap::new();
 
         for line in input.lines() {
-            let line = line.chain_err(|| "reading metadata")?;
+            let line = line.context("reading metadata")?;
             let parts: Vec<&str> = line.splitn(2, ':').collect();
             if parts.len() != 2 {
                 continue;
@@ -100,7 +100,7 @@ impl IBMGen2Provider {
     fn read_vendordata(&self) -> Result<Vec<u8>> {
         let filename = self.metadata_dir().join("vendor-data");
         let mut file = File::open(&filename)
-            .chain_err(|| format!("Failed to open vendordata '{:?}'", filename))?;
+            .with_context(|| format!("Failed to open vendordata '{:?}'", filename))?;
         let mut contents = String::new();
         let _ = file.read_to_string(&mut contents);
         Ok(contents.into_bytes())
@@ -130,7 +130,7 @@ impl IBMGen2Provider {
     fn fetch_ssh_keys(vendordata_vec: Vec<u8>) -> Result<Vec<String>> {
         // Parse MIME format from vendor-data file
         let vendor_data_mail =
-            parse_mail(&vendordata_vec).chain_err(|| "failed to parse MIME vendor-data")?;
+            parse_mail(&vendordata_vec).context("failed to parse MIME vendor-data")?;
         let mut cloud_config = String::new();
         for section in vendor_data_mail.subparts {
             for header in &section.headers {
@@ -142,7 +142,7 @@ impl IBMGen2Provider {
                     {
                         cloud_config = section
                             .get_body()
-                            .chain_err(|| "failed to get cloud-config content")?;
+                            .context("failed to get cloud-config content")?;
                         break;
                     }
                 }
@@ -150,10 +150,10 @@ impl IBMGen2Provider {
         }
         // Parse YAML to find SSH keys
         if cloud_config.is_empty() {
-            return Err("no cloud-config section found in vendor-data".into());
+            bail!("no cloud-config section found in vendor-data");
         }
         let deserialized_cloud_config: VendorDataCloudConfig = serde_yaml::from_str(&cloud_config)
-            .chain_err(|| "failed to deserialize cloud-config content")?;
+            .context("failed to deserialize cloud-config content")?;
         Ok(deserialized_cloud_config.ssh_authorized_keys)
     }
 }

@@ -2,7 +2,8 @@
 
 use std::collections::HashMap;
 
-use crate::errors::*;
+use anyhow::Result;
+
 use crate::providers::MetadataProvider;
 
 /// VMware provider.

@@ -1,6 +1,6 @@
 //! Logic to interact with WireServer `goalstate` endpoint.
 
-use crate::errors::*;
+use anyhow::{anyhow, Result};
 use serde_derive::Deserialize;
 
 #[derive(Debug, Deserialize, Clone)]
@@ -34,7 +34,7 @@ impl GoalState {
             .role_instance_list
             .role_instances
             .get(0)
-            .ok_or_else(|| "empty RoleInstanceList".to_string())?
+            .ok_or_else(|| anyhow!("empty RoleInstanceList"))?
             .instance_id)
     }
 

@@ -11,7 +11,7 @@
 //!
 //! configdrive: https://cloudinit.readthedocs.io/en/latest/topics/datasources/configdrive.html
 
-use error_chain::bail;
+use anyhow::{bail, Context, Result};
 use openssh_keys::PublicKey;
 use pnet_base::MacAddr;
 use serde::Deserialize;
@@ -23,7 +23,6 @@ use std::net::IpAddr;
 use std::path::{Path, PathBuf};
 use tempfile::TempDir;
 
-use crate::errors::*;
 use crate::network;
 use crate::providers::MetadataProvider;
 
@@ -120,7 +119,7 @@ impl IBMClassicProvider {
         let target = tempfile::Builder::new()
             .prefix("afterburn-")
             .tempdir()
-            .chain_err(|| "failed to create temporary directory")?;
+            .context("failed to create temporary directory")?;
         crate::util::mount_ro(
             &Path::new("/dev/disk/by-label/").join(CONFIG_DRIVE_FS_LABEL),
             target.path(),
@@ -144,8 +143,8 @@ impl IBMClassicProvider {
     /// Read and parse metadata file.
     fn read_metadata(&self) -> Result<MetaDataJSON> {
         let filename = self.metadata_dir().join("meta_data.json");
-        let file =
-            File::open(&filename).chain_err(|| format!("failed to open file '{:?}'", filename))?;
+        let file = File::open(&filename)
+            .with_context(|| format!("failed to open file '{:?}'", filename))?;
         let bufrd = BufReader::new(file);
         Self::parse_metadata(bufrd)
     }
@@ -154,7 +153,7 @@ impl IBMClassicProvider {
     ///
     /// Metadata file contains a JSON object, corresponding to `MetaDataJSON`.
     fn parse_metadata<T: Read>(input: BufReader<T>) -> Result<MetaDataJSON> {
-        serde_json::from_reader(input).chain_err(|| "failed parse JSON metadata")
+        serde_json::from_reader(input).context("failed to parse JSON metadata")
     }
 
     /// Extract supported metadata values and convert to Afterburn attributes.
@@ -181,8 +180,8 @@ impl IBMClassicProvider {
     /// Read and parse network configuration.
     fn read_network_data(&self) -> Result<NetworkDataJSON> {
         let filename = self.metadata_dir().join("network_data.json");
-        let file =
-            File::open(&filename).chain_err(|| format!("failed to open file '{:?}'", filename))?;
+        let file = File::open(&filename)
+            .with_context(|| format!("failed to open file '{:?}'", filename))?;
         let bufrd = BufReader::new(file);
         Self::parse_network_data(bufrd)
     }
@@ -191,7 +190,7 @@ impl IBMClassicProvider {
     ///
     /// Network configuration file contains a JSON object, corresponding to `NetworkDataJSON`.
     fn parse_network_data<T: Read>(input: BufReader<T>) -> Result<NetworkDataJSON> {
-        serde_json::from_reader(input).chain_err(|| "failed parse JSON network data")
+        serde_json::from_reader(input).context("failed to parse JSON network data")
     }
 
     /// Transform network JSON data into a set of interface configurations.

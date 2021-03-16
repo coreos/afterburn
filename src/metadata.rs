@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::errors;
+use anyhow::{bail, Result};
+
 use crate::providers;
 use crate::providers::aliyun::AliyunProvider;
 use crate::providers::aws::AwsProvider;
@@ -41,7 +42,7 @@ macro_rules! box_result {
 /// This is the generic, top-level function to fetch provider metadata.
 /// The configured provider is passed in and this function dispatches the call
 /// to the provider-specific fetch logic.
-pub fn fetch_metadata(provider: &str) -> errors::Result<Box<dyn providers::MetadataProvider>> {
+pub fn fetch_metadata(provider: &str) -> Result<Box<dyn providers::MetadataProvider>> {
     match provider {
         "aliyun" => box_result!(AliyunProvider::try_new()?),
         "aws" => box_result!(AwsProvider::try_new()?),
@@ -60,6 +61,6 @@ pub fn fetch_metadata(provider: &str) -> errors::Result<Box<dyn providers::Metad
         "packet" => box_result!(PacketProvider::try_new()?),
         "vmware" => box_result!(VmwareProvider::try_new()?),
         "vultr" => box_result!(VultrProvider::try_new()?),
-        _ => Err(errors::ErrorKind::UnknownProvider(provider.to_owned()).into()),
+        _ => bail!("unknown provider '{}'", provider),
     }
 }

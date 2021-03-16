@@ -14,8 +14,8 @@
 
 //! utility functions
 
-use crate::errors::*;
 use crate::retry;
+use anyhow::{anyhow, Context, Result};
 use slog_scope::{debug, trace};
 use std::fs::File;
 use std::io::{BufRead, BufReader, Read};
@@ -70,7 +70,7 @@ pub fn dns_lease_key_lookup(key: &str) -> Result<String> {
                 if lease_path.exists() {
                     debug!("found lease file - {:?}", lease_path);
                     let lease = File::open(&lease_path)
-                        .chain_err(|| format!("failed to open lease file ({:?})", lease_path))?;
+                        .with_context(|| format!("failed to open lease file ({:?})", lease_path))?;
 
                     if let Some(v) = key_lookup('=', key, lease)? {
                         return Ok(v);
@@ -82,7 +82,7 @@ pub fn dns_lease_key_lookup(key: &str) -> Result<String> {
                     );
                 }
             }
-            Err("failed to retrieve fabric address".into())
+            Err(anyhow!("failed to retrieve fabric address"))
         })
 }
 
