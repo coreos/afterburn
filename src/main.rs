@@ -35,7 +35,7 @@ fn main() -> Result<()> {
     debug!("logging initialized");
 
     // Parse command-line arguments.
-    let cli_cmd = cli::parse_args(env::args()).context("failed to parse command-line arguments")?;
+    let cli_cmd = cli::parse_args(env::args())?;
     debug!("command-line arguments parsed");
 
     // Run core logic.
