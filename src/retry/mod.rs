@@ -14,9 +14,10 @@
 
 //! Drive a functions through a finite number of retries until it succeeds.
 
-use crate::errors::*;
 use std::thread;
 use std::time::Duration;
+
+use anyhow::{Context, Result};
 
 mod client;
 pub mod raw_deserializer;
@@ -88,8 +89,9 @@ impl Retry {
 
             // Otherwise, perform "the retry with backoff" logic.
             if attempts >= self.max_retries {
-                let msg = format!("maximum number of retries ({}) reached", self.max_retries);
-                break res.map_err(|e| Error::with_chain(e, msg.as_str()));
+                break res.with_context(|| {
+                    format!("maximum number of retries ({}) reached", self.max_retries)
+                });
             }
             attempts = attempts.saturating_add(1);
 
@@ -107,7 +109,7 @@ impl Retry {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use error_chain::bail;
+    use anyhow::bail;
 
     type AttemptResult = Result<u8>;
 

@@ -7,11 +7,11 @@ use std::fs::File;
 use std::io::{BufReader, Read};
 use std::path::{Path, PathBuf};
 
+use anyhow::{Context, Result};
 use openssh_keys::PublicKey;
 use slog_scope::{error, warn};
 use tempfile::TempDir;
 
-use crate::errors::*;
 use crate::network;
 use crate::providers::MetadataProvider;
 
@@ -63,7 +63,7 @@ impl OpenstackConfigDrive {
         let target = tempfile::Builder::new()
             .prefix("afterburn-")
             .tempdir()
-            .chain_err(|| "failed to create temporary directory")?;
+            .context("failed to create temporary directory")?;
         crate::util::mount_ro(
             &Path::new("/dev/disk/by-label/").join(CONFIG_DRIVE_LABEL),
             target.path(),
@@ -87,45 +87,45 @@ impl OpenstackConfigDrive {
     ///
     /// Metadata file contains a JSON object, corresponding to `MetadataEc2JSON`.
     fn parse_metadata_ec2<T: Read>(input: BufReader<T>) -> Result<MetadataEc2JSON> {
-        serde_json::from_reader(input).chain_err(|| "failed parse JSON metadata")
+        serde_json::from_reader(input).context("failed to parse JSON metadata")
     }
 
     /// Parse metadata attributes
     ///
     /// Metadata file contains a JSON object, corresponding to `MetadataOpenstackJSON`.
     fn parse_metadata_openstack<T: Read>(input: BufReader<T>) -> Result<MetadataOpenstackJSON> {
-        serde_json::from_reader(input).chain_err(|| "failed parse JSON metadata")
+        serde_json::from_reader(input).context("failed to parse JSON metadata")
     }
 
     /// The metadata is stored as key:value pair in ec2/latest/meta-data.json file
     fn read_metadata_ec2(&self) -> Result<MetadataEc2JSON> {
         let filename = self.metadata_dir("ec2").join("meta-data.json");
-        let file =
-            File::open(&filename).chain_err(|| format!("failed to open file '{:?}'", filename))?;
+        let file = File::open(&filename)
+            .with_context(|| format!("failed to open file '{:?}'", filename))?;
         let bufrd = BufReader::new(file);
         Self::parse_metadata_ec2(bufrd)
-            .chain_err(|| format!("failed to parse file '{:?}'", filename))
+            .with_context(|| format!("failed to parse file '{:?}'", filename))
     }
 
     /// The metadata is stored as key:value pair in openstack/latest/meta_data.json file
     fn read_metadata_openstack(&self) -> Result<MetadataOpenstackJSON> {
         let filename = self.metadata_dir("openstack").join("meta_data.json");
-        let file =
-            File::open(&filename).chain_err(|| format!("failed to open file '{:?}'", filename))?;
+        let file = File::open(&filename)
+            .with_context(|| format!("failed to open file '{:?}'", filename))?;
         let bufrd = BufReader::new(file);
         Self::parse_metadata_openstack(bufrd)
-            .chain_err(|| format!("failed to parse file '{:?}'", filename))
+            .with_context(|| format!("failed to parse file '{:?}'", filename))
     }
 
     /// The public key is stored as key:value pair in openstack/latest/meta_data.json file
     fn fetch_publickeys(&self) -> Result<Vec<PublicKey>> {
         let filename = self.metadata_dir("openstack").join("meta_data.json");
-        let file =
-            File::open(&filename).chain_err(|| format!("failed to open file '{:?}'", filename))?;
+        let file = File::open(&filename)
+            .with_context(|| format!("failed to open file '{:?}'", filename))?;
 
         let bufrd = BufReader::new(file);
         let metadata: MetadataOpenstackJSON = Self::parse_metadata_openstack(bufrd)
-            .chain_err(|| format!("failed to parse file '{:?}'", filename))?;
+            .with_context(|| format!("failed to parse file '{:?}'", filename))?;
 
         let public_keys_map = metadata.public_keys.unwrap_or_default();
         let public_keys_vec: Vec<&std::string::String> = public_keys_map.values().collect();

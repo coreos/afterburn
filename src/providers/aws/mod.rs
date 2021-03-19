@@ -17,6 +17,7 @@
 
 use std::collections::HashMap;
 
+use anyhow::{anyhow, bail, Context, Result};
 #[cfg(test)]
 use mockito;
 use openssh_keys::PublicKey;
@@ -24,7 +25,6 @@ use reqwest::header;
 use serde_derive::Deserialize;
 use slog_scope::warn;
 
-use crate::errors::*;
 use crate::providers::MetadataProvider;
 use crate::retry;
 
@@ -58,9 +58,9 @@ impl AwsProvider {
             Ok(t) => {
                 client = client.header(
                     header::HeaderName::from_bytes(b"X-aws-ec2-metadata-token")
-                        .chain_err(|| "setting header name for aws imdsv2 metadata")?,
+                        .context("setting header name for aws imdsv2 metadata")?,
                     header::HeaderValue::from_bytes(t.as_bytes())
-                        .chain_err(|| "setting header value for aws imdsv2 metadata")?,
+                        .context("setting header value for aws imdsv2 metadata")?,
                 );
             }
             Err(err) => {
@@ -92,9 +92,9 @@ impl AwsProvider {
         let token: String = client
             .header(
                 header::HeaderName::from_bytes(b"X-aws-ec2-metadata-token-ttl-seconds")
-                    .chain_err(|| "setting header name for aws imdsv2 token")?,
+                    .context("setting header name for aws imdsv2 token")?,
                 header::HeaderValue::from_bytes(b"21600")
-                    .chain_err(|| "setting header value for aws imdsv2 token")?,
+                    .context("setting header value for aws imdsv2 token")?,
             )
             .put(
                 retry::Raw,
@@ -103,7 +103,7 @@ impl AwsProvider {
                 None,
             )
             .dispatch_put()?
-            .chain_err(|| "unwrapping aws imdsv2 token")?;
+            .context("unwrapping aws imdsv2 token")?;
         Ok(token)
     }
 
@@ -121,7 +121,7 @@ impl AwsProvider {
             for l in keys_list.lines() {
                 let tokens: Vec<&str> = l.split('=').collect();
                 if tokens.len() != 2 {
-                    return Err("error parsing keyID".into());
+                    bail!("error parsing keyID");
                 }
                 let key: String = self
                     .client
@@ -133,7 +133,7 @@ impl AwsProvider {
                         ),
                     )
                     .send()?
-                    .ok_or("missing ssh key")?;
+                    .ok_or_else(|| anyhow!("missing ssh key"))?;
                 keys.push(key)
             }
         }

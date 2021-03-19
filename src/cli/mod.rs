@@ -1,8 +1,7 @@
 //! Command-line arguments parsing.
 
-use crate::errors::*;
+use anyhow::{bail, Result};
 use clap::{crate_version, App, Arg, ArgMatches, SubCommand};
-use error_chain::bail;
 use slog_scope::trace;
 
 mod exp;

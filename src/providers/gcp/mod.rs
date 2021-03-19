@@ -14,13 +14,13 @@
 
 //! google compute engine metadata fetcher
 
+use anyhow::{anyhow, Result};
 #[cfg(test)]
 use mockito;
 use openssh_keys::PublicKey;
 use reqwest::header::{HeaderName, HeaderValue};
 use std::collections::HashMap;
 
-use crate::errors::*;
 use crate::providers::MetadataProvider;
 use crate::retry;
 
@@ -112,7 +112,7 @@ impl GcpProvider {
                 let mut l = l.to_owned();
                 let index = l
                     .find(':')
-                    .ok_or("character ':' not found in line in key data")?;
+                    .ok_or_else(|| anyhow!("character ':' not found in line in key data"))?;
                 keys.push(l.split_off(index + 1));
             }
             Ok(keys)

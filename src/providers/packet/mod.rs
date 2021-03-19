@@ -22,12 +22,12 @@ use std::fs::File;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 use std::str::FromStr;
 
+use anyhow::{anyhow, bail, Context, Result};
 use openssh_keys::PublicKey;
 use pnet_base::MacAddr;
 use serde_derive::Deserialize;
 use slog_scope::warn;
 
-use crate::errors::*;
 use crate::network::{self, Interface, NetworkRoute};
 use crate::providers::MetadataProvider;
 use crate::retry;
@@ -106,7 +106,7 @@ impl PacketProvider {
         let data: PacketData = client
             .get(retry::Json, Self::endpoint_for("metadata"))
             .send()?
-            .ok_or("metadata endpoint unreachable")?;
+            .ok_or_else(|| anyhow!("metadata endpoint unreachable"))?;
 
         Ok(Self { data })
     }
@@ -188,16 +188,16 @@ impl PacketProvider {
 
     fn get_dns_servers() -> Result<Vec<IpAddr>> {
         let f = File::open("/run/systemd/netif/state")
-            .chain_err(|| "failed to open /run/systemd/netif/state")?;
+            .context("failed to open /run/systemd/netif/state")?;
         let ip_strings = util::key_lookup('=', "DNS", f)
-            .chain_err(|| "failed to parse /run/systemd/netif/state")?
-            .ok_or("DNS not found in netif state file")?;
+            .context("failed to parse /run/systemd/netif/state")?
+            .ok_or_else(|| anyhow!("DNS not found in netif state file"))?;
         let mut addrs = Vec::new();
         for ip_string in ip_strings.split(' ') {
-            addrs.push(IpAddr::from_str(ip_string).chain_err(|| "failed to parse IP address")?);
+            addrs.push(IpAddr::from_str(ip_string).context("failed to parse IP address")?);
         }
         if addrs.is_empty() {
-            return Err("no DNS servers in /run/systemd/netif/state".into());
+            bail!("no DNS servers in /run/systemd/netif/state");
         }
         Ok(addrs)
     }
@@ -209,8 +209,7 @@ impl PacketProvider {
         let dns_servers = PacketProvider::get_dns_servers()?;
         for i in netinfo.interfaces.clone() {
             let mac = MacAddr::from_str(&i.mac)
-                .map_err(|err| Error::from(format!("{:?}", err)))
-                .chain_err(|| format!("failed to parse mac address: '{}'", i.mac))?;
+                .with_context(|| format!("failed to parse mac address: '{}'", i.mac))?;
             interfaces.push(Interface {
                 mac_address: Some(mac),
                 bond: i.bond.clone(),
@@ -253,10 +252,9 @@ impl PacketProvider {
         if let Some((_mac, ref mut first_bond)) = bonds.get_mut(0) {
             for a in netinfo.addresses.clone() {
                 let prefix =
-                    ipnetwork::ip_mask_to_prefix(a.netmask).chain_err(|| "invalid network mask")?;
+                    ipnetwork::ip_mask_to_prefix(a.netmask).context("invalid network mask")?;
                 first_bond.ip_addresses.push(
-                    IpNetwork::new(a.address, prefix)
-                        .chain_err(|| "invalid IP address or prefix")?,
+                    IpNetwork::new(a.address, prefix).context("invalid IP address or prefix")?,
                 );
                 let dest = match (a.public, a.address) {
                     (false, IpAddr::V4(_)) => {
@@ -299,7 +297,7 @@ impl PacketProvider {
             let name = bond
                 .name
                 .clone()
-                .ok_or("invalid bond interface: bond does not have a name")?;
+                .ok_or_else(|| anyhow!("invalid bond interface: bond does not have a name"))?;
             let bond_netdev = network::VirtualNetDev {
                 name,
                 kind: network::NetDevKind::Bond,

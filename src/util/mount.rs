@@ -1,8 +1,7 @@
 //! Helpers for mounting and unmounting.
 
-use crate::errors::*;
 use crate::retry;
-use error_chain::ChainedError;
+use anyhow::{Context, Result};
 use nix::mount;
 use slog_scope::{debug, warn};
 use std::path::Path;
@@ -19,11 +18,11 @@ pub(crate) fn unmount(target: &Path, retries: u8) -> Result<()> {
             target.display(),
             attempt + 1
         );
-        let res =
-            mount::umount(target).chain_err(|| format!("failed to unmount '{}'", target.display()));
+        let res = mount::umount(target)
+            .with_context(|| format!("failed to unmount '{}'", target.display()));
 
         if let Err(ref e) = res {
-            debug!("{}", e.display_chain());
+            debug!("{:?}", e);
         };
         res
     })
@@ -43,7 +42,7 @@ pub(crate) fn mount_ro(source: &Path, target: &Path, fstype: &str, retries: u8) 
             mount::MsFlags::MS_RDONLY,
             None::<&str>,
         )
-        .chain_err(|| {
+        .with_context(|| {
             format!(
                 "failed to mount (read-only) source '{}' to target '{}', with type '{}'",
                 source.display(),
@@ -55,7 +54,7 @@ pub(crate) fn mount_ro(source: &Path, target: &Path, fstype: &str, retries: u8) 
         // If mounting failed, yield back and give a chance to any
         // pending udev events to be processed.
         if let Err(ref e) = res {
-            debug!("{}", e.display_chain());
+            debug!("{:?}", e);
             settle_udev(None)
         };
         res

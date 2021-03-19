@@ -1,13 +1,13 @@
-use crate::errors::*;
 use crate::providers::aws;
 use crate::providers::MetadataProvider;
+use anyhow::Context;
 use mockito;
 
 #[test]
 fn test_aws_basic() {
     let ep = "/meta-data/public-keys";
     let client = crate::retry::Client::try_new()
-        .chain_err(|| "failed to create http client")
+        .context("failed to create http client")
         .unwrap()
         .max_retries(0)
         .return_on_404(true);
@@ -74,7 +74,7 @@ fn test_aws_attributes() {
     };
 
     let client = crate::retry::Client::try_new()
-        .chain_err(|| "failed to create http client")
+        .context("failed to create http client")
         .unwrap()
         .max_retries(0)
         .return_on_404(true);
@@ -122,7 +122,7 @@ fn test_aws_imds_versions() {
     };
 
     let client = crate::retry::Client::try_new()
-        .chain_err(|| "failed to create http client")
+        .context("failed to create http client")
         .unwrap()
         .max_retries(0)
         .return_on_404(true);

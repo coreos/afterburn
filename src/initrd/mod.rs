@@ -4,9 +4,9 @@
 //! services are configured, so it may not be able to use all usual metadata
 //! fetcher.
 
-use crate::errors::*;
 use crate::providers::vmware::VmwareProvider;
 use crate::providers::MetadataProvider;
+use anyhow::{Context, Result};
 use std::fs::File;
 use std::io::Write;
 
@@ -23,12 +23,12 @@ pub(crate) fn fetch_network_kargs(provider: &str) -> Result<Option<String>> {
 
 /// Write network kargs into a cmdline.d fragment.
 pub(crate) fn write_network_kargs(kargs: &str) -> Result<()> {
-    let mut fragment_file =
-        File::create(KARGS_PATH).chain_err(|| format!("failed to create file {:?}", KARGS_PATH))?;
+    let mut fragment_file = File::create(KARGS_PATH)
+        .with_context(|| format!("failed to create file {:?}", KARGS_PATH))?;
 
     fragment_file
         .write_all(kargs.as_bytes())
-        .chain_err(|| "failed to write network arguments fragment")?;
+        .context("failed to write network arguments fragment")?;
 
     Ok(())
 }

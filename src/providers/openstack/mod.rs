@@ -14,8 +14,8 @@
 
 //! openstack metadata fetcher
 
-use crate::errors;
 use crate::providers;
+use anyhow::Result;
 use configdrive::OpenstackConfigDrive;
 use network::OpenstackProviderNetwork;
 use slog_scope::warn;
@@ -29,7 +29,7 @@ mod mock_tests;
 /// Read metadata from the config-drive first then fallback to fetch from metadata server.
 ///
 /// Reference: https://github.com/coreos/fedora-coreos-tracker/issues/422
-pub fn try_config_drive_else_network() -> errors::Result<Box<dyn providers::MetadataProvider>> {
+pub fn try_config_drive_else_network() -> Result<Box<dyn providers::MetadataProvider>> {
     if let Ok(config_drive) = OpenstackConfigDrive::try_new() {
         Ok(Box::new(config_drive))
     } else {

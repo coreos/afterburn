@@ -18,12 +18,12 @@ use std::collections::HashMap;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 use std::str::FromStr;
 
+use anyhow::{anyhow, Context, Result};
 use ipnetwork::{IpNetwork, Ipv4Network, Ipv6Network};
 use openssh_keys::PublicKey;
 use pnet_base::MacAddr;
 use serde_derive::Deserialize;
 
-use crate::errors::*;
 use crate::network;
 use crate::providers::MetadataProvider;
 use crate::retry;
@@ -75,7 +75,7 @@ impl DigitalOceanProvider {
                 "http://169.254.169.254/metadata/v1.json".to_owned(),
             )
             .send()?
-            .ok_or("not found")?;
+            .ok_or_else(|| anyhow!("not found"))?;
 
         Ok(data)
     }
@@ -143,9 +143,7 @@ impl DigitalOceanProvider {
     fn parse_interfaces(&self, interfaces: Vec<Interface>) -> Result<Vec<network::Interface>> {
         let mut iface_config_map: HashMap<MacAddr, network::Interface> = HashMap::new();
         for iface in interfaces {
-            let mac = MacAddr::from_str(&iface.mac)
-                .map_err(|e| Error::from(format!("{:?}", e)))
-                .chain_err(|| "failed to parse mac address")?;
+            let mac = MacAddr::from_str(&iface.mac).context("failed to parse mac address")?;
             let (mut addrs, mut routes) = DigitalOceanProvider::parse_interface(&iface)?;
 
             if let Some(existing_iface) = iface_config_map.get_mut(&mac) {
@@ -185,17 +183,15 @@ impl DigitalOceanProvider {
                 .ipv4
                 .unwrap()
                 .netmask
-                .ok_or("missing netmask for ipv4 address")?;
-            let prefix =
-                ipnetwork::ip_mask_to_prefix(netmask).chain_err(|| "invalid network mask")?;
+                .ok_or_else(|| anyhow!("missing netmask for ipv4 address"))?;
+            let prefix = ipnetwork::ip_mask_to_prefix(netmask).context("invalid network mask")?;
             let a = match interface.clone().ipv4.unwrap().ip_address {
                 IpAddr::V4(a) => Some(a),
                 IpAddr::V6(_) => None,
             }
-            .ok_or("ipv6 address in ipv4 field")?;
-            let net = IpNetwork::V4(
-                Ipv4Network::new(a, prefix).chain_err(|| "invalid ip address or prefix")?,
-            );
+            .ok_or_else(|| anyhow!("ipv6 address in ipv4 field"))?;
+            let net =
+                IpNetwork::V4(Ipv4Network::new(a, prefix).context("invalid ip address or prefix")?);
             addrs.push(net);
             routes.push(network::NetworkRoute {
                 destination: net,
@@ -206,7 +202,7 @@ impl DigitalOceanProvider {
                 routes.push(network::NetworkRoute {
                     destination: IpNetwork::V4(
                         Ipv4Network::new(Ipv4Addr::new(0, 0, 0, 0), 0)
-                            .chain_err(|| "invalid ip address or prefix")?,
+                            .context("invalid ip address or prefix")?,
                     ),
                     gateway: interface.clone().ipv4.unwrap().gateway,
                 });
@@ -218,15 +214,14 @@ impl DigitalOceanProvider {
                 .ipv6
                 .unwrap()
                 .cidr
-                .ok_or("missing cidr for ipv6 address")?;
+                .ok_or_else(|| anyhow!("missing cidr for ipv6 address"))?;
             let a = match interface.clone().ipv6.unwrap().ip_address {
                 IpAddr::V4(_) => None,
                 IpAddr::V6(a) => Some(a),
             }
-            .ok_or("ipv4 address in ipv6 field")?;
-            let net = IpNetwork::V6(
-                Ipv6Network::new(a, cidr).chain_err(|| "invalid ip address or prefix")?,
-            );
+            .ok_or_else(|| anyhow!("ipv4 address in ipv6 field"))?;
+            let net =
+                IpNetwork::V6(Ipv6Network::new(a, cidr).context("invalid ip address or prefix")?);
             addrs.push(net);
             routes.push(network::NetworkRoute {
                 destination: net,
@@ -236,7 +231,7 @@ impl DigitalOceanProvider {
                 routes.push(network::NetworkRoute {
                     destination: IpNetwork::V6(
                         Ipv6Network::new(Ipv6Addr::new(0, 0, 0, 0, 0, 0, 0, 0), 0)
-                            .chain_err(|| "invalid ip address or prefix")?,
+                            .context("invalid ip address or prefix")?,
                     ),
                     gateway: interface.clone().ipv6.unwrap().gateway,
                 });
@@ -248,17 +243,15 @@ impl DigitalOceanProvider {
                 .anchor_ipv4
                 .unwrap()
                 .netmask
-                .ok_or("missing netmask for anchor ipv4 address")?;
-            let prefix =
-                ipnetwork::ip_mask_to_prefix(netmask).chain_err(|| "invalid network mask")?;
+                .ok_or_else(|| anyhow!("missing netmask for anchor ipv4 address"))?;
+            let prefix = ipnetwork::ip_mask_to_prefix(netmask).context("invalid network mask")?;
             let a = match interface.clone().anchor_ipv4.unwrap().ip_address {
                 IpAddr::V4(a) => Some(a),
                 IpAddr::V6(_) => None,
             }
-            .ok_or("ipv6 address in ipv4 field")?;
-            let net = IpNetwork::V4(
-                Ipv4Network::new(a, prefix).chain_err(|| "invalid ip address or prefix")?,
-            );
+            .ok_or_else(|| anyhow!("ipv6 address in ipv4 field"))?;
+            let net =
+                IpNetwork::V4(Ipv4Network::new(a, prefix).context("invalid ip address or prefix")?);
             addrs.push(net);
             routes.push(network::NetworkRoute {
                 destination: net,

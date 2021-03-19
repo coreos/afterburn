@@ -13,7 +13,6 @@
 // limitations under the License.
 
 mod cli;
-mod errors;
 mod initrd;
 mod metadata;
 mod network;
@@ -21,14 +20,12 @@ mod providers;
 mod retry;
 mod util;
 
-use crate::errors::*;
+use anyhow::{Context, Result};
 use slog::{slog_o, Drain};
 use slog_scope::debug;
 use std::env;
 
-error_chain::quick_main!(run);
-
-fn run() -> Result<()> {
+fn main() -> Result<()> {
     // Setup logging.
     let decorator = slog_term::TermDecorator::new().build();
     let drain = slog_term::FullFormat::new(decorator).build().fuse();
@@ -38,12 +35,11 @@ fn run() -> Result<()> {
     debug!("logging initialized");
 
     // Parse command-line arguments.
-    let cli_cmd =
-        cli::parse_args(env::args()).chain_err(|| "failed to parse command-line arguments")?;
+    let cli_cmd = cli::parse_args(env::args())?;
     debug!("command-line arguments parsed");
 
     // Run core logic.
-    cli_cmd.run().chain_err(|| "failed to run")?;
+    cli_cmd.run().context("failed to run")?;
     debug!("all tasks completed");
 
     Ok(())

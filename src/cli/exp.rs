@@ -1,9 +1,8 @@
 //! `exp` CLI sub-command.
 
-use crate::errors::*;
 use crate::{initrd, util};
+use anyhow::{anyhow, bail, Result};
 use clap::ArgMatches;
-use error_chain::bail;
 
 /// Experimental subcommands.
 #[derive(Debug)]
@@ -48,7 +47,7 @@ impl CliRdNetworkKargs {
         let platform = super::parse_provider(matches)?;
         let default_kargs = matches
             .value_of("default-value")
-            .ok_or("missing network kargs default value")?
+            .ok_or_else(|| anyhow!("missing network kargs default value"))?
             .to_string();
 
         let cfg = Self {

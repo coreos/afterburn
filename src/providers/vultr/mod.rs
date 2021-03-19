@@ -16,13 +16,13 @@
 //! This provider is selected via the platform ID `vultr`.
 //! The metadata endpoint is documented at https://www.vultr.com/metadata/.
 
+use anyhow::Result;
 #[cfg(test)]
 use mockito;
 use openssh_keys::PublicKey;
 use slog_scope::error;
 use std::collections::HashMap;
 
-use crate::errors::*;
 use crate::providers::MetadataProvider;
 use crate::retry;
 

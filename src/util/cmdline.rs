@@ -19,8 +19,7 @@
 //!  handle separator quoting/escaping, list of values, and merging of repeated
 //!  flags.
 
-use crate::errors::*;
-use error_chain::bail;
+use anyhow::{bail, Context, Result};
 use slog_scope::trace;
 
 /// Platform key.
@@ -29,7 +28,7 @@ const CMDLINE_PLATFORM_FLAG: &str = "ignition.platform.id";
 /// Get platform/OEM value from cmdline file.
 pub fn get_platform(fpath: &str) -> Result<String> {
     let content = std::fs::read_to_string(fpath)
-        .chain_err(|| format!("Failed to read cmdline file ({})", fpath))?;
+        .with_context(|| format!("Failed to read cmdline file ({})", fpath))?;
 
     match find_flag_value(CMDLINE_PLATFORM_FLAG, &content) {
         Some(platform) => {
@@ -50,7 +49,7 @@ pub fn has_network_kargs(fpath: &str) -> Result<bool> {
     const IP_PREFIX: &str = "ip=";
 
     let content = std::fs::read_to_string(fpath)
-        .chain_err(|| format!("Failed to read cmdline file ({})", fpath))?;
+        .with_context(|| format!("Failed to read cmdline file ({})", fpath))?;
     let has_ip = contains_flag_prefix(&content, IP_PREFIX);
     Ok(has_ip)
 }

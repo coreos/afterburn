@@ -18,9 +18,9 @@
 
 use std::collections::HashMap;
 
+use anyhow::Result;
 use openssh_keys::PublicKey;
 
-use crate::errors::*;
 use crate::providers::MetadataProvider;
 use crate::retry;
 

@@ -3,9 +3,9 @@
 use std::collections::HashMap;
 use std::net::IpAddr;
 
+use anyhow::{Context, Result};
 use openssh_keys::PublicKey;
 
-use crate::errors::*;
 use crate::providers::MetadataProvider;
 use crate::retry;
 use crate::util;
@@ -41,7 +41,7 @@ impl CloudstackNetwork {
         let server = util::dns_lease_key_lookup(SERVER_ADDRESS)?;
         let ip = server
             .parse::<IpAddr>()
-            .chain_err(|| format!("failed to parse server ip address: {}", server))?;
+            .with_context(|| format!("failed to parse server ip address: {}", server))?;
         Ok(format!("http://{}", ip))
     }
 }

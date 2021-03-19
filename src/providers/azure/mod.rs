@@ -20,14 +20,13 @@ mod goalstate;
 use std::collections::HashMap;
 use std::net::IpAddr;
 
-use error_chain::bail;
+use anyhow::{anyhow, bail, Context, Result};
 use openssh_keys::PublicKey;
 use reqwest::header::{HeaderName, HeaderValue};
 use serde_derive::Deserialize;
 use slog_scope::warn;
 
 use self::crypto::x509;
-use crate::errors::*;
 use crate::providers::MetadataProvider;
 use crate::retry;
 use nix::unistd::Uid;
@@ -151,7 +150,7 @@ impl Azure {
 
                 e
             })
-            .chain_err(|| "failed version compatibility check")?;
+            .context("failed version compatibility check")?;
 
         Ok(azure)
     }
@@ -164,8 +163,8 @@ impl Azure {
                 format!("{}/machine/?comp=goalstate", self.fabric_base_url()),
             )
             .send()
-            .chain_err(|| "failed to get goal state")?
-            .ok_or_else(|| "failed to get goal state: not found response".into())
+            .context("failed to get goal state")?
+            .ok_or_else(|| anyhow!("failed to get goal state: not found response"))
     }
 
     #[cfg(not(test))]
@@ -186,7 +185,7 @@ impl Azure {
         // performs conversion from big-endian
         slog_scope::trace!("found fabric address in hex - {:?}", v);
         let dec = u32::from_str_radix(&v, 16)
-            .chain_err(|| format!("failed to convert '{}' from hex", v))?;
+            .with_context(|| format!("failed to convert '{}' from hex", v))?;
         Ok(IpAddr::V4(dec.into()))
     }
 
@@ -214,17 +213,17 @@ impl Azure {
                 format!("{}/?comp=versions", self.fabric_base_url()),
             )
             .send()
-            .chain_err(|| "failed to get versions")?
-            .ok_or("failed to get versions: not found")?;
+            .context("failed to get versions")?
+            .ok_or_else(|| anyhow!("failed to get versions: not found"))?;
 
         if versions.supported.versions.iter().any(|v| v == version) {
             Ok(())
         } else {
-            Err(format!(
+            Err(anyhow!(
                 "fabric version '{}' not supported by the WireServer at '{}'",
-                version, self.endpoint
-            )
-            .into())
+                version,
+                self.endpoint
+            ))
         }
     }
 
@@ -253,8 +252,8 @@ impl Azure {
                 HeaderValue::from_str(mangled_pem.as_ref())?,
             )
             .send()
-            .chain_err(|| "failed to get certificates")?
-            .ok_or("failed to get certificates: not found")?;
+            .context("failed to get certificates")?
+            .ok_or_else(|| anyhow!("failed to get certificates: not found"))?;
 
         // the cms decryption expects it to have MIME information on the top
         // since cms is really for email attachments....
@@ -270,23 +269,23 @@ impl Azure {
         // that we use to make the request. this is equivalent to
         // `openssl req -x509 -nodes -subj /CN=LinuxTransport -days 365 -newkey rsa:2048 -keyout private.pem -out cert.pem`
         let (x509, pkey) = x509::generate_cert(&x509::Config::new(2048, 365))
-            .chain_err(|| "failed to generate keys")?;
+            .context("failed to generate keys")?;
 
         // mangle the pem file for the request
-        let mangled_pem = crypto::mangle_pem(&x509).chain_err(|| "failed to mangle pem")?;
+        let mangled_pem = crypto::mangle_pem(&x509).context("failed to mangle pem")?;
 
         // fetch the encrypted cms blob from the certs endpoint
         let smime = self
             .fetch_cert(certs_endpoint, mangled_pem)
-            .chain_err(|| "failed to fetch certificate")?;
+            .context("failed to fetch certificate")?;
 
         // decrypt the cms blob
         let p12 = crypto::decrypt_cms(smime.as_bytes(), &pkey, &x509)
-            .chain_err(|| "failed to decrypt cms blob")?;
+            .context("failed to decrypt cms blob")?;
 
         // convert that to the OpenSSH public key format
         let ssh_pubkey = crypto::p12_to_ssh_pubkey(&p12)
-            .chain_err(|| "failed to convert pkcs12 blob to ssh pubkey")?;
+            .context("failed to convert pkcs12 blob to ssh pubkey")?;
 
         Ok(ssh_pubkey)
     }
@@ -312,14 +311,14 @@ impl Azure {
             .client
             .get(retry::Xml, endpoint.to_string())
             .send()
-            .chain_err(|| "failed to get shared configuration")?
-            .ok_or("failed to get shared configuration: not found")?;
+            .context("failed to get shared configuration")?
+            .ok_or_else(|| anyhow!("failed to get shared configuration: not found"))?;
 
         let mut attributes = Attributes::default();
 
         for instance in shared_config.instances.instances {
             if instance.id == shared_config.incarnation.instance {
-                attributes.dynamic_ipv4 = Some(instance.address.parse().chain_err(|| {
+                attributes.dynamic_ipv4 = Some(instance.address.parse().with_context(|| {
                     format!("failed to parse instance ip address: {}", instance.address)
                 })?);
                 for endpoint in instance.input_endpoints.endpoints {
@@ -346,7 +345,7 @@ impl Azure {
             )
             .get(retry::Raw, url)
             .send()
-            .chain_err(|| "failed to get hostname")?;
+            .context("failed to get hostname")?;
         Ok(name)
     }
 
@@ -362,7 +361,7 @@ impl Azure {
             )
             .get(retry::Raw, url)
             .send()?
-            .chain_err(|| "failed to get vmsize")?;
+            .context("failed to get vmsize")?;
         Ok(vmsize)
     }
 

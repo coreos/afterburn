@@ -3,8 +3,7 @@
 //! This uses the guest->host backdoor protocol for introspection.
 
 use super::VmwareProvider;
-use crate::errors::*;
-use error_chain::bail;
+use anyhow::{bail, Context, Result};
 
 /// Guestinfo key for network kargs.
 static INITRD_NET_KARGS: &str = "guestinfo.afterburn.initrd.network-kargs";
@@ -40,7 +39,7 @@ impl VmwareProvider {
     fn fetch_guestinfo(erpc: &mut vmw_backdoor::EnhancedChan, key: &str) -> Result<Option<String>> {
         let guestinfo = erpc
             .get_guestinfo(key.as_bytes())
-            .chain_err(|| "failed to retrieve network kargs")?
+            .context("failed to retrieve network kargs")?
             .map(|bytes| String::from_utf8_lossy(&bytes).into_owned());
         Ok(guestinfo)
     }

@@ -16,9 +16,8 @@ use std::io::Read;
 
 use std::result;
 
+use anyhow::{Context, Result};
 use serde::de::{self, DeserializeOwned, Visitor};
-
-use crate::errors::*;
 
 pub struct RawDeserializer {
     s: String,
@@ -30,7 +29,7 @@ impl RawDeserializer {
         R: Read,
     {
         let mut s = String::new();
-        r.read_to_string(&mut s).chain_err(|| "error reading")?;
+        r.read_to_string(&mut s).context("error reading")?;
         Ok(RawDeserializer { s })
     }
 }
@@ -41,7 +40,7 @@ where
     R: Read,
 {
     let mut deserializer = RawDeserializer::from_reader(r)?;
-    Ok(T::deserialize(&mut deserializer).chain_err(|| "error deserializing")?)
+    Ok(T::deserialize(&mut deserializer).context("error deserializing")?)
 }
 
 impl<'de, 'a> de::Deserializer<'de> for &'a mut RawDeserializer {
