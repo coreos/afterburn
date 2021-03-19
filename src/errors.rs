@@ -17,9 +17,6 @@
 use error_chain::error_chain;
 
 error_chain! {
-    links {
-        PublicKey(::openssh_keys::errors::Error, ::openssh_keys::errors::ErrorKind);
-    }
     foreign_links {
         Base64Decode(::base64::DecodeError);
         Clap(clap::Error);
@@ -30,6 +27,7 @@ error_chain! {
         Log(::slog::Error);
         MacAddr(pnet_base::ParseMacAddrErr);
         OpensslStack(::openssl::error::ErrorStack);
+        PublicKey(::openssh_keys::errors::OpenSSHKeyError);
         Reqwest(::reqwest::Error);
         VmwBackdoor(vmw_backdoor::VmwError);
         XmlDeserialize(::serde_xml_rs::Error);
