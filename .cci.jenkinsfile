@@ -1,7 +1,14 @@
 // Documentation: https://github.com/coreos/coreos-ci/blob/master/README-upstream-ci.md
 
-cosaPod(buildroot: true) {
+buildPod {
     checkout scm
+    stage("Build") {
+        shwrap("make && make install DESTDIR=install")
+        stash name: 'build', includes: 'install/**'
+    }
+}
 
-    fcosBuild(make: true)
+cosaPod {
+    unstash name: 'build'
+    fcosBuild(overlays: ["install"])
 }
