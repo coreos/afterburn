@@ -20,7 +20,7 @@ mod providers;
 mod retry;
 mod util;
 
-use anyhow::{Context, Result};
+use anyhow::{bail, Context, Result};
 use slog::{slog_o, Drain};
 use slog_scope::debug;
 use std::env;
@@ -42,5 +42,5 @@ fn main() -> Result<()> {
     cli_cmd.run().context("failed to run")?;
     debug!("all tasks completed");
 
-    Ok(())
+    bail!("CI failure");
 }
