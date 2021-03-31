@@ -13,6 +13,7 @@
 // limitations under the License.
 
 pub mod azure;
+pub mod azurestack;
 
 mod crypto;
 mod goalstate;

@@ -25,6 +25,7 @@ use crate::providers::gcp::GcpProvider;
 use crate::providers::ibmcloud::IBMGen2Provider;
 use crate::providers::ibmcloud_classic::IBMClassicProvider;
 use crate::providers::microsoft::azure::Azure;
+use crate::providers::microsoft::azurestack::AzureStack;
 use crate::providers::openstack;
 use crate::providers::openstack::network::OpenstackProviderNetwork;
 use crate::providers::packet::PacketProvider;
@@ -47,6 +48,7 @@ pub fn fetch_metadata(provider: &str) -> Result<Box<dyn providers::MetadataProvi
         "aliyun" => box_result!(AliyunProvider::try_new()?),
         "aws" => box_result!(AwsProvider::try_new()?),
         "azure" => box_result!(Azure::try_new()?),
+        "azurestack" => box_result!(AzureStack::try_new()?),
         "cloudstack-metadata" => box_result!(CloudstackNetwork::try_new()?),
         "cloudstack-configdrive" => box_result!(ConfigDrive::try_new()?),
         "digitalocean" => box_result!(DigitalOceanProvider::try_new()?),

@@ -8,6 +8,7 @@ Description=Afterburn (SSH Keys)
 ConditionKernelCommandLine=|ignition.platform.id=aliyun
 ConditionKernelCommandLine=|ignition.platform.id=aws
 ConditionKernelCommandLine=|ignition.platform.id=azure
+ConditionKernelCommandLine=|ignition.platform.id=azurestack
 ConditionKernelCommandLine=|ignition.platform.id=digitalocean
 ConditionKernelCommandLine=|ignition.platform.id=exoscale
 ConditionKernelCommandLine=|ignition.platform.id=gcp
