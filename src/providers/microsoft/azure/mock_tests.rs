@@ -1,4 +1,4 @@
-use crate::providers::{azure, MetadataProvider};
+use crate::providers::{microsoft::azure, MetadataProvider};
 use mockito::{self, Matcher};
 
 /// Response body for goalstate (with certificates endpoint).

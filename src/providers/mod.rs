@@ -25,13 +25,13 @@
 
 pub mod aliyun;
 pub mod aws;
-pub mod azure;
 pub mod cloudstack;
 pub mod digitalocean;
 pub mod exoscale;
 pub mod gcp;
 pub mod ibmcloud;
 pub mod ibmcloud_classic;
+pub mod microsoft;
 pub mod openstack;
 pub mod packet;
 pub mod vmware;
