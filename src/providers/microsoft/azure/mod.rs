@@ -14,8 +14,8 @@
 
 //! Azure provider, metadata and wireserver fetcher.
 
-mod crypto;
-mod goalstate;
+use super::crypto;
+use super::goalstate;
 
 use std::collections::HashMap;
 use std::net::IpAddr;

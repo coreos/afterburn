@@ -1,6 +1,7 @@
 [Unit]
 Description=Afterburn (Check In)
 ConditionKernelCommandLine=|ignition.platform.id=azure
+ConditionKernelCommandLine=|ignition.platform.id=azurestack
 After=network.target
 After=boot-complete.target
 

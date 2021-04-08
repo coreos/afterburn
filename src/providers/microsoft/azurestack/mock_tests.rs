@@ -1,4 +1,4 @@
-use crate::providers::{azure, MetadataProvider};
+use crate::providers::{microsoft::azurestack, MetadataProvider};
 use mockito::{self, Matcher};
 
 /// Response body for goalstate (with certificates endpoint).
@@ -124,7 +124,7 @@ fn test_boot_checkin() {
         .with_status(200)
         .create();
 
-    let provider = azure::Azure::try_new();
+    let provider = azurestack::AzureStack::try_new();
     let r = provider.unwrap().boot_checkin();
 
     m_version.assert();
@@ -136,27 +136,28 @@ fn test_boot_checkin() {
 
     // Check error logic, but fail fast without re-trying.
     let client = crate::retry::Client::try_new().unwrap().max_retries(0);
-    azure::Azure::with_client(Some(client)).unwrap_err();
+    azurestack::AzureStack::with_client(Some(client)).unwrap_err();
 }
 
 #[test]
-fn test_hostname() {
+fn test_identity() {
     let m_version = mock_fab_version();
 
-    let testname = "testname";
-    let endpoint = "/metadata/instance/compute/name?api-version=2017-08-01&format=text";
-    let m_hostname = mockito::mock("GET", endpoint)
+    let testname = "testName"; // TODO clean up response composition
+    let json_response = r#"{"subscriptionId":"testID","vmName":"testName"}"#;
+    let endpoint = "/Microsoft.Compute/identity?api-version=2019-03-11";
+    let m_identity = mockito::mock("GET", endpoint)
         .match_header("Metadata", "true")
-        .with_body(testname)
+        .with_body(json_response)
         .with_status(200)
         .create();
 
-    let provider = azure::Azure::try_new();
+    let provider = azurestack::AzureStack::try_new();
     let r = provider.unwrap().hostname().unwrap();
 
     m_version.assert();
 
-    m_hostname.assert();
+    m_identity.assert();
     let hostname = r.unwrap();
     assert_eq!(hostname, testname);
 
@@ -164,36 +165,36 @@ fn test_hostname() {
 
     // Check error logic, but fail fast without re-trying.
     let client = crate::retry::Client::try_new().unwrap().max_retries(0);
-    azure::Azure::with_client(Some(client)).unwrap_err();
+    azurestack::AzureStack::with_client(Some(client)).unwrap_err();
 }
 
 #[test]
-fn test_vmsize() {
+fn test_hostname() {
     let m_version = mock_fab_version();
 
-    let testvmsize = "testvmsize";
-    let endpoint = "/metadata/instance/compute/vmSize?api-version=2017-08-01&format=text";
-    let m_vmsize = mockito::mock("GET", endpoint)
+    let testname = "testName"; // TODO clean up response composition
+    let json_response = r#"{"subscriptionId":"testID","vmName":"testName"}"#;
+    let endpoint = "/Microsoft.Compute/identity?api-version=2019-03-11";
+    let m_identity = mockito::mock("GET", endpoint)
         .match_header("Metadata", "true")
-        .with_body(testvmsize)
+        .with_body(json_response)
         .with_status(200)
         .create();
 
-    let provider = azure::Azure::try_new();
-    let attributes = provider.unwrap().attributes().unwrap();
-    let r = attributes.get("AZURE_VMSIZE");
+    let provider = azurestack::AzureStack::try_new();
+    let r = provider.unwrap().hostname().unwrap();
 
     m_version.assert();
 
-    m_vmsize.assert();
-    let vmsize = r.unwrap();
-    assert_eq!(vmsize, testvmsize);
+    m_identity.assert();
+    let hostname = r.unwrap();
+    assert_eq!(hostname, testname);
 
     mockito::reset();
 
     // Check error logic, but fail fast without re-trying.
     let client = crate::retry::Client::try_new().unwrap().max_retries(0);
-    azure::Azure::with_client(Some(client)).unwrap_err();
+    azurestack::AzureStack::with_client(Some(client)).unwrap_err();
 }
 
 #[test]
@@ -201,7 +202,7 @@ fn test_goalstate_certs() {
     let m_version = mock_fab_version();
     let m_goalstate = mock_goalstate(true);
 
-    let provider = azure::Azure::try_new().unwrap();
+    let provider = azurestack::AzureStack::try_new().unwrap();
     let goalstate = provider.fetch_goalstate().unwrap();
 
     m_version.assert();
@@ -219,7 +220,7 @@ fn test_goalstate_no_certs() {
     let m_version = mock_fab_version();
     let m_goalstate = mock_goalstate(false);
 
-    let provider = azure::Azure::try_new().unwrap();
+    let provider = azurestack::AzureStack::try_new().unwrap();
     let goalstate = provider.fetch_goalstate().unwrap();
 
     m_version.assert();
