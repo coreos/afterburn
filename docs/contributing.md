@@ -26,7 +26,7 @@ contribution. See the [DCO][DCO] file for details.
 
 This is a rough outline of what a contributor's workflow looks like:
 
-- Create a topic branch from where you want to base your work (usually master).
+- Create a topic branch from where you want to base your work (usually main).
 - Make commits of logical units.
 - Make sure your commit messages are in the proper format (see below).
 - Push your changes to a topic branch in your fork of the repository.
@@ -77,8 +77,8 @@ git tools.
 
 Release can be performed by [creating a new release ticket][new-release-ticket] and following the steps in the checklist there.
 
-[LICENSE]: https://github.com/coreos/afterburn/blob/master/LICENSE
-[DCO]: https://github.com/coreos/afterburn/blob/master/DCO
+[LICENSE]: https://github.com/coreos/afterburn/blob/main/LICENSE
+[DCO]: https://github.com/coreos/afterburn/blob/main/DCO
 [docs]: https://coreos.github.io/afterburn
 [devdocs]: development.md
 [new-release-ticket]: https://github.com/coreos/afterburn/issues/new?labels=kind/release&template=release-checklist.md
