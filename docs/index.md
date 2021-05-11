@@ -14,11 +14,11 @@ It is typically used in conjunction with [Ignition](https://github.com/coreos/ig
 
 It comprises several modules which may run at different times during the lifecycle of an instance.
 
-Depending on the specific platform, the following services may run in the [initramfs](https://github.com/coreos/afterburn/tree/master/dracut/30afterburn) on first boot:
+Depending on the specific platform, the following services may run in the [initramfs](https://github.com/coreos/afterburn/tree/main/dracut/30afterburn) on first boot:
  * setting local hostname
  * injecting [network command-line arguments](usage/initrd-network-cmdline.md)
 
-The following features are conditionally available on some platforms as [systemd service units](https://github.com/coreos/afterburn/tree/master/systemd):
+The following features are conditionally available on some platforms as [systemd service units](https://github.com/coreos/afterburn/tree/main/systemd):
  * installing public SSH keys for local system users
  * retrieving [attributes](usage/attributes.md) from instance metadata
  * checking in to the provider in order to report a successful boot or instance provisioning
