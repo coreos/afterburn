@@ -53,7 +53,7 @@ struct Interfaces {
 }
 
 #[derive(Clone, Deserialize)]
-struct DNS {
+struct Dns {
     nameservers: Vec<IpAddr>,
 }
 
@@ -63,7 +63,7 @@ pub struct DigitalOceanProvider {
     interfaces: Interfaces,
     public_keys: Vec<String>,
     region: String,
-    dns: DNS,
+    dns: Dns,
 }
 
 impl DigitalOceanProvider {
@@ -81,10 +81,10 @@ impl DigitalOceanProvider {
     }
 
     fn parse_attrs(&self) -> Vec<(String, String)> {
-        let mut attrs = Vec::new();
-
-        attrs.push(("DIGITALOCEAN_HOSTNAME".to_owned(), self.hostname.clone()));
-        attrs.push(("DIGITALOCEAN_REGION".to_owned(), self.region.clone()));
+        let mut attrs = vec![
+            ("DIGITALOCEAN_HOSTNAME".to_owned(), self.hostname.clone()),
+            ("DIGITALOCEAN_REGION".to_owned(), self.region.clone()),
+        ];
 
         if let Some(ref ifaces) = self.interfaces.public {
             for (i, ref a) in ifaces.iter().enumerate() {

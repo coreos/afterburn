@@ -40,7 +40,7 @@ where
     R: Read,
 {
     let mut deserializer = RawDeserializer::from_reader(r)?;
-    Ok(T::deserialize(&mut deserializer).context("error deserializing")?)
+    T::deserialize(&mut deserializer).context("error deserializing")
 }
 
 impl<'de, 'a> de::Deserializer<'de> for &'a mut RawDeserializer {
