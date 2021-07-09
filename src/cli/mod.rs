@@ -1,7 +1,7 @@
 //! Command-line arguments parsing.
 
 use anyhow::{bail, Result};
-use clap::{self, crate_version, App, Arg, ArgMatches, SubCommand};
+use clap::{self, crate_version, App, AppSettings, Arg, ArgMatches, SubCommand};
 use slog_scope::trace;
 
 mod exp;
@@ -70,6 +70,7 @@ fn cli_setup<'a, 'b>() -> App<'a, 'b> {
     //  here, i.e. a sub-command is always expected first.
     App::new("Afterburn")
         .version(crate_version!())
+        .setting(AppSettings::GlobalVersion)
         .subcommand(
             SubCommand::with_name("multi")
                 .about("Perform multiple tasks in a single call")
