@@ -1,7 +1,7 @@
 //! Command-line arguments parsing.
 
 use anyhow::{bail, Result};
-use clap::{crate_version, App, Arg, ArgMatches, SubCommand};
+use clap::{self, crate_version, App, AppSettings, Arg, ArgMatches, SubCommand};
 use slog_scope::trace;
 
 mod exp;
@@ -41,7 +41,11 @@ impl CliConfig {
 /// Parse command-line arguments into CLI configuration.
 pub(crate) fn parse_args(argv: impl IntoIterator<Item = String>) -> Result<CliConfig> {
     let args = translate_legacy_args(argv);
-    let matches = cli_setup().get_matches_from_safe(args)?;
+    let matches = match cli_setup().get_matches_from_safe(args) {
+        Err(ref e) if e.kind == clap::ErrorKind::HelpDisplayed => e.exit(),
+        Err(ref e) if e.kind == clap::ErrorKind::VersionDisplayed => e.exit(),
+        v => v,
+    }?;
 
     let cfg = CliConfig::parse_subcommands(matches)?;
     trace!("cli configuration - {:?}", cfg);
@@ -66,6 +70,7 @@ fn cli_setup<'a, 'b>() -> App<'a, 'b> {
     //  here, i.e. a sub-command is always expected first.
     App::new("Afterburn")
         .version(crate_version!())
+        .setting(AppSettings::GlobalVersion)
         .subcommand(
             SubCommand::with_name("multi")
                 .about("Perform multiple tasks in a single call")
