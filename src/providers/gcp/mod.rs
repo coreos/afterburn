@@ -54,10 +54,7 @@ impl GcpProvider {
 
     #[cfg(not(test))]
     fn endpoint_for(name: &str) -> String {
-        format!(
-            "http://metadata.google.internal/computeMetadata/v1/{}",
-            name
-        )
+        format!("http://169.254.169.254/computeMetadata/v1/{}", name)
     }
 
     fn fetch_all_ssh_keys(&self) -> Result<Vec<String>> {

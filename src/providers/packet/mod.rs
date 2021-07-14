@@ -119,7 +119,7 @@ impl PacketProvider {
 
     #[cfg(not(test))]
     fn endpoint_for(name: &str) -> String {
-        let url = "http://metadata.packet.net";
+        let url = "https://metadata.packet.net";
         format!("{}/{}", url, name)
     }
 
