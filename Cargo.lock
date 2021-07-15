@@ -18,7 +18,7 @@ dependencies = [
  "maplit",
  "mime",
  "mockito",
- "nix 0.22.0",
+ "nix",
  "openssh-keys",
  "openssl",
  "pnet_base",
@@ -629,14 +629,14 @@ checksum = "320cfe77175da3a483efed4bc0adc1968ca050b098ce4f2f1c13a56626128790"
 
 [[package]]
 name = "libsystemd"
-version = "0.3.0"
+version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1ce716113032d777d2c66ca51d94b511b015454d037cef42f71d9c6c41e0333c"
+checksum = "e3860855cc74484f60fa02d1397892c4fe80d929d5a28caef690570665616743"
 dependencies = [
  "hmac",
  "libc",
  "log",
- "nix 0.21.0",
+ "nix",
  "serde",
  "sha2",
  "thiserror",
@@ -775,19 +775,6 @@ dependencies = [
  "security-framework",
  "security-framework-sys",
  "tempfile",
-]
-
-[[package]]
-name = "nix"
-version = "0.21.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5c3728fec49d363a50a8828a190b379a446cc5cf085c06259bbbeb34447e4ec7"
-dependencies = [
- "bitflags",
- "cc",
- "cfg-if",
- "libc",
- "memoffset",
 ]
 
 [[package]]
