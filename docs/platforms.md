@@ -51,6 +51,9 @@ The following platforms are supported, with a different set of features availabl
   - Attributes
   - First-boot check-in
   - SSH Keys
+* powervs
+  - Attributes
+  - SSH keys
 * vmware
   - Custom network command-line arguments
 * vultr
