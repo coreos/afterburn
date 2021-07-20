@@ -34,6 +34,7 @@ pub mod ibmcloud_classic;
 pub mod microsoft;
 pub mod openstack;
 pub mod packet;
+pub mod powervs;
 pub mod vmware;
 pub mod vultr;
 

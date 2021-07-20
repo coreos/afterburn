@@ -1,0 +1,32 @@
+{
+    "admin_pass": "oSfw8JEKHvBo",
+    "random_seed": "YUQzy5FVwllOEHrRfvB9rims2ZtotnhJz/f7EVXIknrhh2htbSMxYt1DKxnTzLzWm+tfRjcvWyjie4aU4lIVFrwFgsFmDoAcBIjBID20QVObzKaN0rfrGtdwojyiu+7uGWuQlojoBR/m5pzO1HFcdexEdOSIE+EpU7WIHnS6K948rpH8kERslIz7W6kJixjTpsNanidsvV4DRiSoYdI3wtxyVxBt7ZSzSyuzUIPkbRQ5D/XE/DLs+B8ChRGe9apGCcPvpDRPvot3UUvmwBvtZtaNfH99poKp+j7GOjINT5tc+Wypvgls2EoI/klekzrIOqLmRx/q6UpvvmpoP2PhKT687WMoWNg4uS4d0VbxS2UkydSZoUVCSQmO9O95RdD/jYqXY6q5o7qdr3TZZFf4s1gdoXltb70oQzi7wo4q5Z4QsOsdZdNz5BZ5vtQ06+7neS8ppP5cD6OkQXm+d9bBBWElG5yTeN/zyURpgGdsQlocZzkVlhdVRW9wyeGeN6TGiIn3EkzOJdb6ypZ50iNAnnTN5+zQpt0Y3f1up2/Ppy+nBNzjGdGAHDl4cc+2ri1IiNAIiG2Ta/kcNghNx3+XqUuYsK97e9grW+qXDa3gkeHqclOu9753GJKXeBR5gcH6O9PpPWRQ6T6slltsOPUnW3K3E54Il87fbxd73WSPN/8=",
+    "uuid": "1c0c0bb6-8dcd-4966-ad80-946b871814f1",
+    "availability_zone": "s922",
+    "keys": [
+      {
+        "data": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDmMuiypdqqftqhrQeBTjOhcgyARvylZMLiH+6nCvi5Lv5M7evAnvvG3Hz4rbjbbqoVgSCIdAEb4PuttiCdwE6UyAl0TYAydOVPx7l87BlaucTEqDFbXkQB+yyUmzodllCpWAMUmxwvJB/ntFrC6rP0K0kKxx4SESvozutwM2X5oH3LNHcYI1xgKIMF9VMJLkkM0rLo8Fmj6mWF5KtbU7vS7JJPvLTCRhW5TYrqvhHKuIS6KBtj3GJqvRt+it8AsIb6/RUaji68Mt7W41UrmFSPt8bxJMdE/xKGMcFQjamURPSCHx7z8/pr2/pv2QbQF76FO7lRdPH3f542uAkOOpO1 user1@user1-MacBook-Pro-2.local",
+        "type": "ssh",
+        "name": "65b64c1f1c29460e8c2e4bbfbd893c2c_7c6cd5d4-a7aa-4d07-bb89-94f274bfeed0_user1-pub-key"
+      }
+    ],
+    "hostname": "test-tf-pvm.power-iaas.cloud.ibm.com",
+    "launch_index": 0,
+    "devices": [],
+    "meta": {
+      "ibmiDBQ": "false",
+      "ibmiCSS": "false",
+      "storage_pool": "Tier1-Flash-2",
+      "ibmiRDS": "false",
+      "ibmiPHA": "false"
+    },
+    "public_keys": {
+      "65b64c1f1c29460e8c2e4bbfbd893c2c_7c6cd5d4-a7aa-4d07-bb89-94f274bfeed0_user1-pub-key": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDmMuiypdqqftqhrQeBTjOhcgyARvylZMLiH+6nCvi5Lv5M7evAnvvG3Hz4rbjbbqoVgSCIdAEb4PuttiCdwE6UyAl0TYAydOVPx7l87BlaucTEqDFbXkQB+yyUmzodllCpWAMUmxwvJB/ntFrC6rP0K0kKxx4SESvozutwM2X5oH3LNHcYI1xgKIMF9VMJLkkM0rLo8Fmj6mWF5KtbU7vS7JJPvLTCRhW5TYrqvhHKuIS6KBtj3GJqvRt+it8AsIb6/RUaji68Mt7W41UrmFSPt8bxJMdE/xKGMcFQjamURPSCHx7z8/pr2/pv2QbQF76FO7lRdPH3f542uAkOOpO1 user1@user1-MacBook-Pro-2.local"
+    },
+    "project_id": "15ea5428420d4d47be42e19332645a18",
+    "network_config": {
+      "content_path": "/content/0000",
+      "name": "network_config"
+    },
+    "name": "test-tf-pVM"
+  }

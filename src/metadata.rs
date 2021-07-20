@@ -29,6 +29,7 @@ use crate::providers::microsoft::azurestack::AzureStack;
 use crate::providers::openstack;
 use crate::providers::openstack::network::OpenstackProviderNetwork;
 use crate::providers::packet::PacketProvider;
+use crate::providers::powervs::PowerVSProvider;
 use crate::providers::vmware::VmwareProvider;
 use crate::providers::vultr::VultrProvider;
 
@@ -61,6 +62,7 @@ pub fn fetch_metadata(provider: &str) -> Result<Box<dyn providers::MetadataProvi
         "openstack" => openstack::try_config_drive_else_network(),
         "openstack-metadata" => box_result!(OpenstackProviderNetwork::try_new()?),
         "packet" => box_result!(PacketProvider::try_new()?),
+        "powervs" => box_result!(PowerVSProvider::try_new()?),
         "vmware" => box_result!(VmwareProvider::try_new()?),
         "vultr" => box_result!(VultrProvider::try_new()?),
         _ => bail!("unknown provider '{}'", provider),
