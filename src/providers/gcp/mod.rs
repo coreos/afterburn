@@ -165,7 +165,7 @@ impl MetadataProvider for GcpProvider {
         let mut out = Vec::new();
 
         for key in &self.fetch_all_ssh_keys()? {
-            let key = PublicKey::parse(&key)?;
+            let key = PublicKey::parse(key)?;
             out.push(key);
         }
 

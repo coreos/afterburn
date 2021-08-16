@@ -87,7 +87,7 @@ impl DigitalOceanProvider {
         ];
 
         if let Some(ref ifaces) = self.interfaces.public {
-            for (i, ref a) in ifaces.iter().enumerate() {
+            for (i, a) in ifaces.iter().enumerate() {
                 if let Some(ref v4) = a.ipv4 {
                     attrs.push((
                         format!("DIGITALOCEAN_IPV4_PUBLIC_{}", i),
@@ -110,7 +110,7 @@ impl DigitalOceanProvider {
         }
 
         if let Some(ref ifaces) = self.interfaces.private {
-            for (i, ref a) in ifaces.iter().enumerate() {
+            for (i, a) in ifaces.iter().enumerate() {
                 if let Some(ref v4) = a.ipv4 {
                     attrs.push((
                         format!("DIGITALOCEAN_IPV4_PRIVATE_{}", i),
@@ -275,7 +275,7 @@ impl MetadataProvider for DigitalOceanProvider {
         let mut out = Vec::new();
 
         for key in &self.public_keys {
-            let key = PublicKey::parse(&key)?;
+            let key = PublicKey::parse(key)?;
             out.push(key);
         }
 
