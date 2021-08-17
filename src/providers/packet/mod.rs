@@ -331,7 +331,7 @@ impl MetadataProvider for PacketProvider {
         let mut out = Vec::new();
 
         for key in &self.data.ssh_keys {
-            let key = PublicKey::parse(&key)?;
+            let key = PublicKey::parse(key)?;
             out.push(key);
         }
 
