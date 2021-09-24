@@ -23,6 +23,8 @@ path = "src/main.rs"
 
 [profile.release]
 lto = true
+# We assume we're being delivered via e.g. RPM which supports split debuginfo
+debug = true
 
 [dependencies]
 anyhow = "1.0"
