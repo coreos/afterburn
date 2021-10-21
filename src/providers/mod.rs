@@ -125,6 +125,11 @@ fn write_ssh_keys(user: User, ssh_keys: Vec<PublicKey>) -> Result<()> {
                 e.error
             })
             .with_context(|| format!("failed to persist file {:?}", file_path.display()))?;
+
+        // emit journal entry
+        let username = user.name().to_string_lossy();
+        let path = file_path.to_string_lossy();
+        write_ssh_key_journal_entry(logging::Priority::Info, &username, &path);
     } else {
         // delete the file
         match fs::remove_file(&file_path) {
@@ -133,10 +138,6 @@ fn write_ssh_keys(user: User, ssh_keys: Vec<PublicKey>) -> Result<()> {
         }
         .with_context(|| format!("failed to remove file {:?}", file_path.display()))?;
     }
-
-    let username = user.name().to_string_lossy();
-    let path = file_path.to_string_lossy();
-    write_ssh_key_journal_entry(logging::Priority::Info, &username, &path);
 
     // sync parent dir to persist updates
     match File::open(&dir_path) {
