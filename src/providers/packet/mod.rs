@@ -39,6 +39,7 @@ use ipnetwork::{self, IpNetwork, Ipv4Network, Ipv6Network};
 mod mock_tests;
 
 #[derive(Clone, Debug, Deserialize)]
+#[allow(dead_code)]
 struct PacketData {
     id: String,
     hostname: String,
@@ -54,6 +55,7 @@ struct PacketData {
 }
 
 #[derive(Clone, Debug, Deserialize)]
+#[allow(dead_code)]
 struct PacketNetworkInfo {
     interfaces: Vec<PacketInterfaceInfo>,
     addresses: Vec<PacketAddressInfo>,
@@ -61,11 +63,13 @@ struct PacketNetworkInfo {
 }
 
 #[derive(Clone, Debug, Deserialize)]
+#[allow(dead_code)]
 struct PacketBondingMode {
     mode: u32,
 }
 
 #[derive(Clone, Debug, Deserialize)]
+#[allow(dead_code)]
 struct PacketInterfaceInfo {
     name: String,
     mac: String,
@@ -73,6 +77,7 @@ struct PacketInterfaceInfo {
 }
 
 #[derive(Clone, Debug, Deserialize)]
+#[allow(dead_code)]
 struct PacketAddressInfo {
     id: String,
     address_family: i32,
