@@ -95,6 +95,7 @@ pub struct AzureStack {
 
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
+#[allow(dead_code)]
 struct InstanceMetadata {
     pub vm_name: String,
     pub subscription_id: String,
