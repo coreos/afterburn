@@ -126,6 +126,7 @@ fn cli_setup<'a, 'b>() -> App<'a, 'b> {
         .subcommand(
             SubCommand::with_name("exp")
                 .about("experimental subcommands")
+                .setting(AppSettings::SubcommandRequired)
                 .subcommand(
                     SubCommand::with_name("rd-network-kargs")
                         .about("Supplement initrd with network configuration kargs")

@@ -1,7 +1,7 @@
 //! `exp` CLI sub-command.
 
 use crate::{initrd, util};
-use anyhow::{anyhow, bail, Result};
+use anyhow::{anyhow, Result};
 use clap::ArgMatches;
 
 /// Experimental subcommands.
@@ -13,10 +13,6 @@ pub enum CliExp {
 impl CliExp {
     /// Parse sub-command into configuration.
     pub(crate) fn parse(app_matches: &ArgMatches) -> Result<super::CliConfig> {
-        if app_matches.subcommand_name().is_none() {
-            bail!("missing subcommand for 'exp'");
-        }
-
         let cfg = match app_matches.subcommand() {
             ("rd-network-kargs", Some(matches)) => CliRdNetworkKargs::parse(matches)?,
             (x, _) => unreachable!("unrecognized subcommand for 'exp': '{}'", x),
