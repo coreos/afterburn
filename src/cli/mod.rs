@@ -20,9 +20,9 @@ pub(crate) enum CliConfig {
 impl CliConfig {
     /// Parse CLI sub-commands into configuration.
     pub fn parse_subcommands(app_matches: ArgMatches) -> Result<Self> {
-        let cfg = match app_matches.subcommand() {
-            ("multi", Some(matches)) => multi::CliMulti::parse(matches)?,
-            ("exp", Some(matches)) => exp::CliExp::parse(matches)?,
+        let cfg = match app_matches.subcommand().expect("no subcommand") {
+            ("multi", matches) => multi::CliMulti::parse(matches)?,
+            ("exp", matches) => exp::CliExp::parse(matches)?,
             (x, _) => unreachable!("unrecognized subcommand '{}'", x),
         };
 
@@ -42,8 +42,8 @@ impl CliConfig {
 pub(crate) fn parse_args(argv: impl IntoIterator<Item = String>) -> Result<CliConfig> {
     let args = translate_legacy_args(argv);
     let matches = match cli_setup().get_matches_from_safe(args) {
-        Err(ref e) if e.kind == clap::ErrorKind::HelpDisplayed => e.exit(),
-        Err(ref e) if e.kind == clap::ErrorKind::VersionDisplayed => e.exit(),
+        Err(ref e) if e.kind == clap::ErrorKind::DisplayHelp => e.exit(),
+        Err(ref e) if e.kind == clap::ErrorKind::DisplayVersion => e.exit(),
         v => v,
     }?;
 
@@ -65,7 +65,7 @@ fn parse_provider(matches: &clap::ArgMatches) -> Result<String> {
 }
 
 /// CLI setup, covering all sub-commands and arguments.
-fn cli_setup<'a, 'b>() -> App<'a, 'b> {
+fn cli_setup<'a>() -> App<'a> {
     // NOTE(lucab): due to legacy translation there can't be global arguments
     //  here, i.e. a sub-command is always expected first.
     App::new("Afterburn")

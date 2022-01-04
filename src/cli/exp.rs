@@ -13,8 +13,8 @@ pub enum CliExp {
 impl CliExp {
     /// Parse sub-command into configuration.
     pub(crate) fn parse(app_matches: &ArgMatches) -> Result<super::CliConfig> {
-        let cfg = match app_matches.subcommand() {
-            ("rd-network-kargs", Some(matches)) => CliRdNetworkKargs::parse(matches)?,
+        let cfg = match app_matches.subcommand().expect("no subcommand") {
+            ("rd-network-kargs", matches) => CliRdNetworkKargs::parse(matches)?,
             (x, _) => unreachable!("unrecognized subcommand for 'exp': '{}'", x),
         };
 
