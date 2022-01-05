@@ -196,6 +196,11 @@ mod tests {
     use super::*;
 
     #[test]
+    fn clap_tests() {
+        cli_setup().debug_assert();
+    }
+
+    #[test]
     fn test_translate_legacy_args() {
         let legacy: Vec<_> = ["afterburn", "-ssh-keys"]
             .iter()
