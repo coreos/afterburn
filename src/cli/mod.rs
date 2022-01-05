@@ -1,7 +1,7 @@
 //! Command-line arguments parsing.
 
 use anyhow::{bail, Result};
-use clap::{self, crate_version, App, AppSettings, Arg, ArgMatches, SubCommand};
+use clap::{self, crate_version, App, AppSettings, Arg, ArgMatches};
 use slog_scope::trace;
 
 mod exp;
@@ -41,7 +41,7 @@ impl CliConfig {
 /// Parse command-line arguments into CLI configuration.
 pub(crate) fn parse_args(argv: impl IntoIterator<Item = String>) -> Result<CliConfig> {
     let args = translate_legacy_args(argv);
-    let matches = match cli_setup().get_matches_from_safe(args) {
+    let matches = match cli_setup().try_get_matches_from(args) {
         Err(ref e) if e.kind == clap::ErrorKind::DisplayHelp => e.exit(),
         Err(ref e) if e.kind == clap::ErrorKind::DisplayVersion => e.exit(),
         v => v,
@@ -70,86 +70,85 @@ fn cli_setup<'a>() -> App<'a> {
     //  here, i.e. a sub-command is always expected first.
     App::new("Afterburn")
         .version(crate_version!())
-        .setting(AppSettings::GlobalVersion)
+        .setting(AppSettings::PropagateVersion)
         .subcommand(
-            SubCommand::with_name("multi")
+            App::new("multi")
                 .about("Perform multiple tasks in a single call")
                 .arg(
-                    Arg::with_name("legacy-cli")
+                    Arg::new("legacy-cli")
                         .long("legacy-cli")
                         .help("Whether this command was translated from legacy CLI args")
-                        .hidden(true),
+                        .hide(true),
                 )
                 .arg(
-                    Arg::with_name("provider")
+                    Arg::new("provider")
                         .long("provider")
                         .help("The name of the cloud provider")
                         .global(true)
                         .takes_value(true),
                 )
                 .arg(
-                    Arg::with_name("cmdline")
+                    Arg::new("cmdline")
                         .long("cmdline")
                         .global(true)
                         .help("Read the cloud provider from the kernel cmdline"),
                 )
                 .arg(
-                    Arg::with_name("attributes")
+                    Arg::new("attributes")
                         .long("attributes")
                         .help("The file into which the metadata attributes are written")
                         .takes_value(true),
                 )
                 .arg(
-                    Arg::with_name("check-in")
+                    Arg::new("check-in")
                         .long("check-in")
                         .help("Check-in this instance boot with the cloud provider"),
                 )
                 .arg(
-                    Arg::with_name("hostname")
+                    Arg::new("hostname")
                         .long("hostname")
                         .help("The file into which the hostname should be written")
                         .takes_value(true),
                 )
                 .arg(
-                    Arg::with_name("network-units")
+                    Arg::new("network-units")
                         .long("network-units")
                         .help("The directory into which network units are written")
                         .takes_value(true),
                 )
                 .arg(
-                    Arg::with_name("ssh-keys")
+                    Arg::new("ssh-keys")
                         .long("ssh-keys")
                         .help("Update SSH keys for the given user")
                         .takes_value(true),
                 ),
         )
         .subcommand(
-            SubCommand::with_name("exp")
+            App::new("exp")
                 .about("experimental subcommands")
                 .setting(AppSettings::SubcommandRequired)
                 .subcommand(
-                    SubCommand::with_name("rd-network-kargs")
+                    App::new("rd-network-kargs")
                         .about("Supplement initrd with network configuration kargs")
                         .arg(
-                            Arg::with_name("cmdline")
+                            Arg::new("cmdline")
                                 .long("cmdline")
                                 .global(true)
                                 .help("Read the cloud provider from the kernel cmdline"),
                         )
                         .arg(
-                            Arg::with_name("provider")
+                            Arg::new("provider")
                                 .long("provider")
                                 .help("The name of the cloud provider")
                                 .global(true)
                                 .takes_value(true),
                         )
                         .arg(
-                            Arg::with_name("default-value")
+                            Arg::new("default-value")
                                 .long("default-value")
                                 .help("Default value for network kargs fallback")
                                 .required(true)
-                                .takes_value(true)
-                                .empty_values(true),
+                                .takes_value(true),
                         ),
                 ),
         )
