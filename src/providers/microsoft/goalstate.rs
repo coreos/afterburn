@@ -45,6 +45,7 @@ impl GoalState {
 }
 
 #[derive(Debug, Deserialize, Clone, Default)]
+#[allow(dead_code)]
 pub(crate) struct Container {
     #[serde(rename = "ContainerId")]
     pub container_id: String,
@@ -53,12 +54,14 @@ pub(crate) struct Container {
 }
 
 #[derive(Debug, Deserialize, Clone, Default)]
+#[allow(dead_code)]
 pub(crate) struct RoleInstanceList {
     #[serde(rename = "RoleInstance", default)]
     pub role_instances: Vec<RoleInstance>,
 }
 
 #[derive(Debug, Deserialize, Clone)]
+#[allow(dead_code)]
 pub(crate) struct RoleInstance {
     #[serde(rename = "Configuration")]
     pub configuration: Configuration,
@@ -67,6 +70,7 @@ pub(crate) struct RoleInstance {
 }
 
 #[derive(Debug, Deserialize, Clone)]
+#[allow(dead_code)]
 pub(crate) struct Configuration {
     #[serde(rename = "Certificates")]
     pub certificates: Option<String>,
@@ -75,12 +79,14 @@ pub(crate) struct Configuration {
 }
 
 #[derive(Debug, Deserialize, Clone)]
+#[allow(dead_code)]
 pub(crate) struct CertificatesFile {
     #[serde(rename = "Data", default)]
     pub data: String,
 }
 
 #[derive(Debug, Deserialize, Clone)]
+#[allow(dead_code)]
 pub(crate) struct SharedConfig {
     #[serde(rename = "Incarnation")]
     pub incarnation: Incarnation,
@@ -89,17 +95,20 @@ pub(crate) struct SharedConfig {
 }
 
 #[derive(Debug, Deserialize, Clone)]
+#[allow(dead_code)]
 pub(crate) struct Incarnation {
     pub instance: String,
 }
 
 #[derive(Debug, Deserialize, Clone)]
+#[allow(dead_code)]
 pub(crate) struct Instances {
     #[serde(rename = "Instance", default)]
     pub instances: Vec<Instance>,
 }
 
 #[derive(Debug, Deserialize, Clone)]
+#[allow(dead_code)]
 pub(crate) struct Instance {
     pub id: String,
     pub address: String,
@@ -108,12 +117,14 @@ pub(crate) struct Instance {
 }
 
 #[derive(Debug, Deserialize, Clone)]
+#[allow(dead_code)]
 pub(crate) struct InputEndpoints {
     #[serde(rename = "Endpoint", default)]
     pub endpoints: Vec<Endpoint>,
 }
 
 #[derive(Debug, Deserialize, Clone)]
+#[allow(dead_code)]
 pub(crate) struct Endpoint {
     #[serde(rename = "loadBalancedPublicAddress", default)]
     pub load_balanced_public_address: String,
