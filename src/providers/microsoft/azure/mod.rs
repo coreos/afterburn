@@ -172,7 +172,7 @@ impl Azure {
         // try to fetch from dhcp, else use fallback; this is similar to what WALinuxAgent does
         Azure::get_fabric_address_from_dhcp().unwrap_or_else(|e| {
             warn!("Failed to get fabric address from DHCP: {}", e);
-            slog_scope::info!("Using fallback address");
+            slog_scope::info!("using fallback address");
             IpAddr::from(FALLBACK_WIRESERVER_ADDR)
         })
     }

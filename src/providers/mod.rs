@@ -211,18 +211,17 @@ pub trait MetadataProvider {
     }
 
     fn write_hostname(&self, hostname_file_path: String) -> Result<()> {
-        match self.hostname()? {
-            Some(ref hostname) => {
-                let mut hostname_file = create_file(&hostname_file_path)?;
-                writeln!(&mut hostname_file, "{}", hostname).with_context(|| {
-                    format!(
-                        "failed to write hostname {:?} to file {:?}",
-                        hostname, hostname_file
-                    )
-                })
-            }
-            None => Ok(()),
+        if let Some(hostname) = self.hostname()? {
+            let mut hostname_file = create_file(&hostname_file_path)?;
+            writeln!(&mut hostname_file, "{}", hostname).with_context(|| {
+                format!(
+                    "failed to write hostname {:?} to file {:?}",
+                    hostname, hostname_file
+                )
+            })?;
+            slog_scope::info!("wrote hostname {} to {}", hostname, hostname_file_path);
         }
+        Ok(())
     }
 
     fn write_network_units(&self, network_units_dir: String) -> Result<()> {
