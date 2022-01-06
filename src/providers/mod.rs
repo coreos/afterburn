@@ -219,7 +219,7 @@ pub trait MetadataProvider {
                     hostname, hostname_file
                 )
             })?;
-            slog_scope::info!("Wrote hostname {} to {}", hostname, hostname_file_path);
+            slog_scope::info!("wrote hostname {} to {}", hostname, hostname_file_path);
         }
         Ok(())
     }
