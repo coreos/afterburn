@@ -52,7 +52,7 @@ serde_yaml = "0.8"
 slog-async = ">= 2.5, < 2.8"
 slog-scope = "4.3"
 slog-term = ">= 2.6, < 3"
-tempfile = "3.2"
+tempfile = ">= 3.2, < 3.4"
 users = "0.11"
 vmw_backdoor = "0.2"
 
