@@ -41,9 +41,11 @@ pub mod vultr;
 use crate::network;
 use anyhow::{anyhow, Context, Result};
 use libsystemd::logging;
+use nix::unistd;
 use openssh_keys::PublicKey;
 use slog_scope::warn;
 use std::collections::HashMap;
+use std::convert::TryInto;
 use std::fs::{self, File};
 use std::io::prelude::*;
 use std::path::Path;
@@ -152,6 +154,16 @@ fn write_ssh_keys(user: User, ssh_keys: Vec<PublicKey>) -> Result<()> {
     Ok(())
 }
 
+fn max_hostname_len() -> Result<Option<usize>> {
+    unistd::sysconf(unistd::SysconfVar::HOST_NAME_MAX)
+        .context("querying maximum hostname length")?
+        .map(|l| {
+            l.try_into()
+                .context("overflow querying maximum hostname length")
+        })
+        .transpose()
+}
+
 pub trait MetadataProvider {
     fn attributes(&self) -> Result<HashMap<String, String>> {
         Ok(HashMap::new())
@@ -211,7 +223,25 @@ pub trait MetadataProvider {
     }
 
     fn write_hostname(&self, hostname_file_path: String) -> Result<()> {
-        if let Some(hostname) = self.hostname()? {
+        if let Some(mut hostname) = self.hostname()? {
+            if let Some(maxlen) = max_hostname_len()? {
+                if hostname.len() > maxlen {
+                    // Value exceeds the system's maximum hostname length.
+                    // Truncate hostname to the first dot, or to the maximum
+                    // length if necessary.
+                    // https://github.com/coreos/afterburn/issues/509
+                    slog_scope::info!(
+                        "received hostname {:?} longer than {} characters; truncating",
+                        hostname,
+                        maxlen
+                    );
+                    hostname.truncate(maxlen);
+                    if let Some(idx) = hostname.find('.') {
+                        hostname.truncate(idx);
+                    }
+                }
+            }
+
             let mut hostname_file = create_file(&hostname_file_path)?;
             writeln!(&mut hostname_file, "{}", hostname).with_context(|| {
                 format!(
@@ -252,5 +282,69 @@ pub trait MetadataProvider {
                 .with_context(|| format!("failed to write netdev unit file {:?}", unit_file))?;
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tempfile::NamedTempFile;
+
+    struct HostnameMock(String);
+
+    impl MetadataProvider for HostnameMock {
+        fn hostname(&self) -> Result<Option<String>> {
+            Ok(Some(self.0.clone()))
+        }
+    }
+
+    // write specified hostname to a file, then read it back
+    fn try_write_hostname(hostname: &str) -> String {
+        let mut temp = NamedTempFile::new().unwrap();
+        let provider = HostnameMock(hostname.into());
+        provider
+            .write_hostname(temp.path().to_str().unwrap().into())
+            .unwrap();
+        let mut ret = String::new();
+        temp.read_to_string(&mut ret).unwrap();
+        ret.trim_end().into()
+    }
+
+    #[test]
+    fn test_hostname_truncation() {
+        // assume some maximum exists
+        let maxlen = max_hostname_len().unwrap().unwrap();
+        let long_string = "helloworld"
+            .chars()
+            .cycle()
+            .take(maxlen * 2)
+            .collect::<String>();
+        // simple hostname
+        assert_eq!(try_write_hostname("hostname7"), "hostname7");
+        // simple FQDN
+        assert_eq!(
+            try_write_hostname("hostname7.example.com"),
+            "hostname7.example.com"
+        );
+        // truncated simple hostname
+        assert_eq!(
+            try_write_hostname(&long_string[0..maxlen + 10]),
+            long_string[0..maxlen]
+        );
+        // truncated FQDN
+        assert_eq!(
+            try_write_hostname(&format!("{}.example.com", &long_string[0..maxlen + 5])),
+            long_string[0..maxlen]
+        );
+        // truncate to first dot
+        assert_eq!(
+            try_write_hostname(&format!("{}.example.com", &long_string[0..maxlen - 5])),
+            long_string[0..maxlen - 5]
+        );
+        // truncate to first dot even if we could truncate to second dot
+        assert_eq!(
+            try_write_hostname(&format!("{}.example.com", &long_string[0..maxlen - 10])),
+            long_string[0..maxlen - 10]
+        );
     }
 }
