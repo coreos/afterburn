@@ -49,8 +49,9 @@ use std::io::prelude::*;
 use std::path::Path;
 use users::{self, User};
 
-/// Message ID marker for authorized-keys entries in journal.
-const AFTERBURN_SSH_AUTHORIZED_KEYS_MESSAGEID: &str = "0f7d7a502f2d433caa1323440a6b4190";
+/// Message ID markers for authorized-keys entries in journal.
+const AFTERBURN_SSH_AUTHORIZED_KEYS_ADDED_MESSAGEID: &str = "0f7d7a502f2d433caa1323440a6b4190";
+const AFTERBURN_SSH_AUTHORIZED_KEYS_REMOVED_MESSAGEID: &str = "f8b91c53f5544868a3a10d0dcf68e9ea";
 
 fn create_file(filename: &str) -> Result<File> {
     let file_path = Path::new(&filename);
@@ -67,12 +68,19 @@ fn create_file(filename: &str) -> Result<File> {
 /// Add a message to the journal logging SSH key additions; this
 /// will be used by at least Fedora CoreOS to display in the console
 /// if no ssh keys are present.
-fn write_ssh_key_journal_entry(log: logging::Priority, name: &str, path: &str) {
-    let message = format!("wrote ssh authorized keys file for user: {}", name);
+fn write_ssh_key_journal_entry(log: logging::Priority, name: &str, path: &str, added: bool) {
+    let message = format!(
+        "{} ssh authorized keys file for user: {}",
+        if added { "wrote" } else { "removed" },
+        name
+    );
     let map = maplit::hashmap! {
         "AFTERBURN_USER_NAME" => name.as_ref(),
         "AFTERBURN_PATH" => path.as_ref(),
-        "MESSAGE_ID" => AFTERBURN_SSH_AUTHORIZED_KEYS_MESSAGEID,
+        "MESSAGE_ID" => match added {
+            true => AFTERBURN_SSH_AUTHORIZED_KEYS_ADDED_MESSAGEID,
+            false => AFTERBURN_SSH_AUTHORIZED_KEYS_REMOVED_MESSAGEID,
+        },
     };
     if let Err(e) = logging::journal_send(log, &message, map.iter()) {
         warn!("failed to send information to journald: {}", e);
@@ -91,6 +99,10 @@ fn write_ssh_keys(user: User, ssh_keys: Vec<PublicKey>) -> Result<()> {
     let dir_path = user.home_dir().join(".ssh").join("authorized_keys.d");
     let file_name = "afterburn";
     let file_path = &dir_path.join(file_name);
+
+    // stringify for logging
+    let username = user.name().to_string_lossy();
+    let file_path_str = file_path.to_string_lossy();
 
     if !ssh_keys.is_empty() {
         // ensure directory exists
@@ -127,16 +139,20 @@ fn write_ssh_keys(user: User, ssh_keys: Vec<PublicKey>) -> Result<()> {
             .with_context(|| format!("failed to persist file {:?}", file_path.display()))?;
 
         // emit journal entry
-        let username = user.name().to_string_lossy();
-        let path = file_path.to_string_lossy();
-        write_ssh_key_journal_entry(logging::Priority::Info, &username, &path);
+        write_ssh_key_journal_entry(logging::Priority::Info, &username, &file_path_str, true);
     } else {
         // delete the file
-        match fs::remove_file(&file_path) {
-            Err(ref e) if e.kind() == NotFound => Ok(()),
-            other => other,
+        let deleted = match fs::remove_file(&file_path) {
+            Err(ref e) if e.kind() == NotFound => Ok(false),
+            Err(e) => Err(e),
+            Ok(()) => Ok(true),
         }
         .with_context(|| format!("failed to remove file {:?}", file_path.display()))?;
+
+        // emit journal entry
+        if deleted {
+            write_ssh_key_journal_entry(logging::Priority::Info, &username, &file_path_str, false);
+        }
     }
 
     // sync parent dir to persist updates
