@@ -30,3 +30,4 @@ ExecStart=/usr/bin/afterburn --cmdline --hostname=/sysroot/etc/hostname
 ExecStart=/bin/sh -c 'mkdir -p /run/tmpfiles.d'
 ExecStart=/bin/sh -c 'echo "z /etc/hostname - - -" > /run/tmpfiles.d/hostname-relabel.conf'
 Type=oneshot
+RemainAfterExit=yes

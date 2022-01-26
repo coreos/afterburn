@@ -21,6 +21,7 @@ ConditionKernelCommandLine=|ignition.platform.id=vultr
 Type=oneshot
 Environment=AFTERBURN_OPT_PROVIDER=--cmdline
 ExecStart=/usr/bin/afterburn ${AFTERBURN_OPT_PROVIDER} --ssh-keys=%i
+RemainAfterExit=yes
 
 [Install]
 DefaultInstance=@DEFAULT_INSTANCE@
