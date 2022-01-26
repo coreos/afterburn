@@ -8,6 +8,7 @@ Documentation=https://github.com/coreos/afterburn
 Type=oneshot
 Environment=AFTERBURN_OPT_PROVIDER=--cmdline
 ExecStart=/usr/bin/afterburn ${AFTERBURN_OPT_PROVIDER} --attributes=/run/metadata/afterburn
+RemainAfterExit=yes
 
 [Install]
 RequiredBy=metadata.target

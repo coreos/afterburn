@@ -18,3 +18,4 @@ Environment=AFTERBURN_OPT_PROVIDER=--cmdline
 # hard-failure, on purpose.
 ExecStart=/usr/bin/afterburn exp rd-network-kargs ${AFTERBURN_OPT_PROVIDER} --default-value $AFTERBURN_NETWORK_KARGS_DEFAULT
 Type=oneshot
+RemainAfterExit=yes
