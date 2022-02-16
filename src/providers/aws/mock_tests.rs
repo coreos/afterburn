@@ -15,16 +15,22 @@ fn test_aws_basic() {
 
     provider.fetch_ssh_keys().unwrap_err();
 
-    let _m = mockito::mock("GET", ep).with_status(503).create();
-    provider.fetch_ssh_keys().unwrap_err();
+    {
+        let _m503 = mockito::mock("GET", ep).with_status(503).create();
+        provider.fetch_ssh_keys().unwrap_err();
+    }
 
-    let _m = mockito::mock("GET", ep).with_status(200).create();
-    let v = provider.fetch_ssh_keys().unwrap();
-    assert_eq!(v.len(), 0);
+    {
+        let _m200 = mockito::mock("GET", ep).with_status(200).create();
+        let v = provider.fetch_ssh_keys().unwrap();
+        assert_eq!(v.len(), 0);
+    }
 
-    let _m = mockito::mock("GET", ep).with_status(404).create();
-    let v = provider.fetch_ssh_keys().unwrap();
-    assert_eq!(v.len(), 0);
+    {
+        let _m404 = mockito::mock("GET", ep).with_status(404).create();
+        let v = provider.fetch_ssh_keys().unwrap();
+        assert_eq!(v.len(), 0);
+    }
 
     mockito::reset();
     provider.fetch_ssh_keys().unwrap_err();
