@@ -10,26 +10,34 @@ fn basic_hostname() {
     let mut provider = aliyun::AliyunProvider::try_new().unwrap();
     provider.client = provider.client.max_retries(0);
 
-    let _m = mockito::mock("GET", ep).with_status(503).create();
-    provider.hostname().unwrap_err();
+    {
+        let _m503 = mockito::mock("GET", ep).with_status(503).create();
+        provider.hostname().unwrap_err();
+    }
 
-    let _m = mockito::mock("GET", ep)
-        .with_status(200)
-        .with_body(hostname)
-        .create();
-    let v = provider.hostname().unwrap();
-    assert_eq!(v, Some(hostname.to_string()));
+    {
+        let _m200 = mockito::mock("GET", ep)
+            .with_status(200)
+            .with_body(hostname)
+            .create();
+        let v = provider.hostname().unwrap();
+        assert_eq!(v, Some(hostname.to_string()));
+    }
 
-    let _m = mockito::mock("GET", ep).with_status(404).create();
-    let v = provider.hostname().unwrap();
-    assert_eq!(v, None);
+    {
+        let _m404 = mockito::mock("GET", ep).with_status(404).create();
+        let v = provider.hostname().unwrap();
+        assert_eq!(v, None);
+    }
 
-    let _m = mockito::mock("GET", ep)
-        .with_status(200)
-        .with_body("")
-        .create();
-    let v = provider.hostname().unwrap();
-    assert_eq!(v, None);
+    {
+        let _m200_empty = mockito::mock("GET", ep)
+            .with_status(200)
+            .with_body("")
+            .create();
+        let v = provider.hostname().unwrap();
+        assert_eq!(v, None);
+    }
 
     mockito::reset();
     provider.hostname().unwrap_err();
