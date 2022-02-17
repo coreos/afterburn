@@ -1,7 +1,7 @@
 //! Command-line arguments parsing.
 
 use anyhow::{bail, Result};
-use clap::{self, crate_version, App, AppSettings, Arg, ArgMatches};
+use clap::{self, crate_version, Arg, ArgMatches, Command};
 use slog_scope::trace;
 
 mod exp;
@@ -42,8 +42,8 @@ impl CliConfig {
 pub(crate) fn parse_args(argv: impl IntoIterator<Item = String>) -> Result<CliConfig> {
     let args = translate_legacy_args(argv);
     let matches = match cli_setup().try_get_matches_from(args) {
-        Err(ref e) if e.kind == clap::ErrorKind::DisplayHelp => e.exit(),
-        Err(ref e) if e.kind == clap::ErrorKind::DisplayVersion => e.exit(),
+        Err(e) if e.kind() == clap::ErrorKind::DisplayHelp => e.exit(),
+        Err(e) if e.kind() == clap::ErrorKind::DisplayVersion => e.exit(),
         v => v,
     }?;
 
@@ -65,14 +65,14 @@ fn parse_provider(matches: &clap::ArgMatches) -> Result<String> {
 }
 
 /// CLI setup, covering all sub-commands and arguments.
-fn cli_setup<'a>() -> App<'a> {
+fn cli_setup<'a>() -> Command<'a> {
     // NOTE(lucab): due to legacy translation there can't be global arguments
     //  here, i.e. a sub-command is always expected first.
-    App::new("Afterburn")
+    Command::new("Afterburn")
         .version(crate_version!())
-        .setting(AppSettings::PropagateVersion)
+        .propagate_version(true)
         .subcommand(
-            App::new("multi")
+            Command::new("multi")
                 .about("Perform multiple tasks in a single call")
                 .arg(
                     Arg::new("legacy-cli")
@@ -124,11 +124,11 @@ fn cli_setup<'a>() -> App<'a> {
                 ),
         )
         .subcommand(
-            App::new("exp")
+            Command::new("exp")
                 .about("experimental subcommands")
-                .setting(AppSettings::SubcommandRequired)
+                .subcommand_required(true)
                 .subcommand(
-                    App::new("rd-network-kargs")
+                    Command::new("rd-network-kargs")
                         .about("Supplement initrd with network configuration kargs")
                         .arg(
                             Arg::new("cmdline")
