@@ -133,6 +133,7 @@ fn test_aws_imds_version1() {
     let v = provider.attributes().unwrap();
     assert_eq!(v, attributes);
 
+    drop(mocks);
     mockito::reset();
     provider.attributes().unwrap_err();
 }
@@ -169,6 +170,7 @@ fn test_aws_imds_version2() {
     let v = provider.attributes().unwrap();
     assert_eq!(v, attributes);
 
+    drop(mocks);
     mockito::reset();
     provider.attributes().unwrap_err();
 }
