@@ -104,7 +104,7 @@ fn test_aws_attributes() {
 }
 
 #[test]
-fn test_aws_imds_versions() {
+fn test_aws_imds_version1() {
     let (endpoints, attributes) = aws_get_maps();
 
     let client = crate::retry::Client::try_new()
@@ -113,57 +113,62 @@ fn test_aws_imds_versions() {
         .max_retries(0)
         .return_on_404(true);
 
-    // first test imdsv1
-    {
-        let mut mocks = Vec::with_capacity(endpoints.len());
-        for (endpoint, body) in endpoints.clone() {
-            let m = mockito::mock("GET", endpoint)
-                .with_status(200)
-                .with_body(body)
-                .create();
-            mocks.push(m);
-        }
-
-        let _m = mockito::mock("PUT", "/api/token")
-            .match_header("X-aws-ec2-metadata-token-ttl-seconds", "21600")
-            .with_status(403)
-            .with_body("Forbidden")
-            .create();
-
-        let provider = aws::AwsProvider::with_client(client.clone()).unwrap();
-
-        let v = provider.attributes().unwrap();
-        assert_eq!(v, attributes);
-
-        mockito::reset();
-        provider.attributes().unwrap_err();
-    }
-
-    {
-        // then test imdsv2
-        let token = "test-api-token";
-        let mut mocks = Vec::with_capacity(endpoints.len());
-        for (endpoint, body) in endpoints.clone() {
-            let m = mockito::mock("GET", endpoint)
-                .match_header("X-aws-ec2-metadata-token", token)
-                .with_status(200)
-                .with_body(body)
-                .create();
-            mocks.push(m);
-        }
-
-        let _m = mockito::mock("PUT", "/api/token")
-            .match_header("X-aws-ec2-metadata-token-ttl-seconds", "21600")
+    let mut mocks = Vec::with_capacity(endpoints.len());
+    for (endpoint, body) in endpoints.clone() {
+        let m = mockito::mock("GET", endpoint)
             .with_status(200)
-            .with_body(token)
+            .with_body(body)
             .create();
-
-        let provider = aws::AwsProvider::with_client(client.clone()).unwrap();
-
-        let v = provider.attributes().unwrap();
-        assert_eq!(v, attributes);
-
-        mockito::reset();
-        provider.attributes().unwrap_err();
+        mocks.push(m);
     }
+
+    let _m = mockito::mock("PUT", "/api/token")
+        .match_header("X-aws-ec2-metadata-token-ttl-seconds", "21600")
+        .with_status(403)
+        .with_body("Forbidden")
+        .create();
+
+    let provider = aws::AwsProvider::with_client(client.clone()).unwrap();
+
+    let v = provider.attributes().unwrap();
+    assert_eq!(v, attributes);
+
+    mockito::reset();
+    provider.attributes().unwrap_err();
+}
+
+#[test]
+fn test_aws_imds_version2() {
+    let (endpoints, attributes) = aws_get_maps();
+
+    let client = crate::retry::Client::try_new()
+        .context("failed to create http client")
+        .unwrap()
+        .max_retries(0)
+        .return_on_404(true);
+
+    let token = "test-api-token";
+    let mut mocks = Vec::with_capacity(endpoints.len());
+    for (endpoint, body) in endpoints.clone() {
+        let m = mockito::mock("GET", endpoint)
+            .match_header("X-aws-ec2-metadata-token", token)
+            .with_status(200)
+            .with_body(body)
+            .create();
+        mocks.push(m);
+    }
+
+    let _m = mockito::mock("PUT", "/api/token")
+        .match_header("X-aws-ec2-metadata-token-ttl-seconds", "21600")
+        .with_status(200)
+        .with_body(token)
+        .create();
+
+    let provider = aws::AwsProvider::with_client(client.clone()).unwrap();
+
+    let v = provider.attributes().unwrap();
+    assert_eq!(v, attributes);
+
+    mockito::reset();
+    provider.attributes().unwrap_err();
 }
