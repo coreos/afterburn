@@ -1,3 +1,5 @@
+use std::collections::{BTreeMap, HashMap};
+
 use crate::providers::aws;
 use crate::providers::MetadataProvider;
 use anyhow::Context;
@@ -36,8 +38,10 @@ fn test_aws_basic() {
     provider.fetch_ssh_keys().unwrap_err();
 }
 
-#[test]
-fn test_aws_attributes() {
+fn aws_get_maps() -> (
+    BTreeMap<&'static str, &'static str>,
+    HashMap<String, String>,
+) {
     let instance_id = "test-instance-id";
     let instance_type = "test-instance-type";
     let ipv4_local = "test-ipv4-local";
@@ -48,16 +52,33 @@ fn test_aws_attributes() {
     let instance_id_doc = r#"{"region": "test-region"}"#;
     let region = "test-region";
 
-    let endpoints = maplit::btreemap! {
-        "/meta-data/instance-id" => instance_id,
-        "/meta-data/instance-type" => instance_type,
-        "/meta-data/local-ipv4" => ipv4_local,
-        "/meta-data/public-ipv4" => ipv4_public,
-        "/meta-data/placement/availability-zone" => availability_zone,
-        "/meta-data/hostname" => hostname,
-        "/meta-data/public-hostname" => public_hostname,
-        "/dynamic/instance-identity/document" => instance_id_doc,
-    };
+    (
+        maplit::btreemap! {
+            "/meta-data/instance-id" => instance_id,
+            "/meta-data/instance-type" => instance_type,
+            "/meta-data/local-ipv4" => ipv4_local,
+            "/meta-data/public-ipv4" => ipv4_public,
+            "/meta-data/placement/availability-zone" => availability_zone,
+            "/meta-data/hostname" => hostname,
+            "/meta-data/public-hostname" => public_hostname,
+            "/dynamic/instance-identity/document" => instance_id_doc,
+        },
+        maplit::hashmap! {
+            "AWS_INSTANCE_ID".to_string() => instance_id.to_string(),
+            "AWS_INSTANCE_TYPE".to_string() => instance_type.to_string(),
+            "AWS_IPV4_LOCAL".to_string() => ipv4_local.to_string(),
+            "AWS_IPV4_PUBLIC".to_string() => ipv4_public.to_string(),
+            "AWS_AVAILABILITY_ZONE".to_string() => availability_zone.to_string(),
+            "AWS_HOSTNAME".to_string() => hostname.to_string(),
+            "AWS_PUBLIC_HOSTNAME".to_string() => public_hostname.to_string(),
+            "AWS_REGION".to_string() => region.to_string(),
+        },
+    )
+}
+
+#[test]
+fn test_aws_attributes() {
+    let (endpoints, attributes) = aws_get_maps();
 
     let mut mocks = Vec::with_capacity(endpoints.len());
     for (endpoint, body) in endpoints {
@@ -67,17 +88,6 @@ fn test_aws_attributes() {
             .create();
         mocks.push(m);
     }
-
-    let attributes = maplit::hashmap! {
-        "AWS_INSTANCE_ID".to_string() => instance_id.to_string(),
-        "AWS_INSTANCE_TYPE".to_string() => instance_type.to_string(),
-        "AWS_IPV4_LOCAL".to_string() => ipv4_local.to_string(),
-        "AWS_IPV4_PUBLIC".to_string() => ipv4_public.to_string(),
-        "AWS_AVAILABILITY_ZONE".to_string() => availability_zone.to_string(),
-        "AWS_HOSTNAME".to_string() => hostname.to_string(),
-        "AWS_PUBLIC_HOSTNAME".to_string() => public_hostname.to_string(),
-        "AWS_REGION".to_string() => region.to_string(),
-    };
 
     let client = crate::retry::Client::try_new()
         .context("failed to create http client")
@@ -95,37 +105,7 @@ fn test_aws_attributes() {
 
 #[test]
 fn test_aws_imds_versions() {
-    let instance_id = "test-instance-id";
-    let instance_type = "test-instance-type";
-    let ipv4_local = "test-ipv4-local";
-    let ipv4_public = "test-ipv4-public";
-    let availability_zone = "test-availability-zone";
-    let hostname = "test-hostname";
-    let public_hostname = "test-public-hostname";
-    let instance_id_doc = r#"{"region": "test-region"}"#;
-    let region = "test-region";
-
-    let attributes = maplit::hashmap! {
-        "AWS_INSTANCE_ID".to_string() => instance_id.to_string(),
-        "AWS_INSTANCE_TYPE".to_string() => instance_type.to_string(),
-        "AWS_IPV4_LOCAL".to_string() => ipv4_local.to_string(),
-        "AWS_IPV4_PUBLIC".to_string() => ipv4_public.to_string(),
-        "AWS_AVAILABILITY_ZONE".to_string() => availability_zone.to_string(),
-        "AWS_HOSTNAME".to_string() => hostname.to_string(),
-        "AWS_PUBLIC_HOSTNAME".to_string() => public_hostname.to_string(),
-        "AWS_REGION".to_string() => region.to_string(),
-    };
-
-    let endpoints = maplit::btreemap! {
-        "/meta-data/instance-id" => instance_id,
-        "/meta-data/instance-type" => instance_type,
-        "/meta-data/local-ipv4" => ipv4_local,
-        "/meta-data/public-ipv4" => ipv4_public,
-        "/meta-data/placement/availability-zone" => availability_zone,
-        "/meta-data/hostname" => hostname,
-        "/meta-data/public-hostname" => public_hostname,
-        "/dynamic/instance-identity/document" => instance_id_doc,
-    };
+    let (endpoints, attributes) = aws_get_maps();
 
     let client = crate::retry::Client::try_new()
         .context("failed to create http client")
