@@ -61,4 +61,4 @@ version = "2.7"
 features = ["max_level_trace", "release_max_level_info"]
 
 [dev-dependencies]
-mockito = ">= 0.29, < 0.31"
+mockito = ">= 0.29, < 0.32"
