@@ -53,6 +53,7 @@ Push access to the upstream repository is required in order to publish the new t
 
 - assemble vendor archive:
   - [ ] `cargo vendor target/vendor`
+  - [ ] `rm -rf vendor/winapi*gnu*/lib/*.a`
   - [ ] `tar -czf target/afterburn-${RELEASE_VER}-vendor.tar.gz -C target vendor`
 
 - publish this release on GitHub:
