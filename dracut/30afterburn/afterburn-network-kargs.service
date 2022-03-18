@@ -1,5 +1,6 @@
 [Unit]
 Description=Afterburn Initrd Setup Network Kernel Arguments
+Documentation=https://coreos.github.io/afterburn/usage/initrd-network-cmdline/
 
 # This service may produce additional kargs fragments,
 # which are then consumed by dracut-cmdline(8).

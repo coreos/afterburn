@@ -1,5 +1,6 @@
 [Unit]
 Description=Afterburn Hostname
+Documentation=https://coreos.github.io/afterburn/
 # These platforms do not provide the hostname via DHCP
 # options, thus it needs to be fetched from the metadata
 # and statically applied on first-boot.

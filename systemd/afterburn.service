@@ -2,7 +2,7 @@
 # needed by dependent services.
 [Unit]
 Description=Afterburn (Metadata)
-Documentation=https://github.com/coreos/afterburn
+Documentation=https://coreos.github.io/afterburn/usage/attributes/
 
 [Service]
 Type=oneshot
