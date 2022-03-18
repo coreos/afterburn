@@ -31,6 +31,7 @@ pub mod exoscale;
 pub mod gcp;
 pub mod ibmcloud;
 pub mod ibmcloud_classic;
+pub mod kubevirt;
 pub mod microsoft;
 pub mod openstack;
 pub mod packet;
