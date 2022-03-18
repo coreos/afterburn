@@ -1,5 +1,6 @@
 [Unit]
 Description=Afterburn (Check In)
+Documentation=https://coreos.github.io/afterburn/
 ConditionKernelCommandLine=|ignition.platform.id=azure
 ConditionKernelCommandLine=|ignition.platform.id=azurestack
 After=network.target
