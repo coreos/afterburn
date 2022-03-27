@@ -163,6 +163,7 @@ impl MetadataProvider for AwsProvider {
         add_value(&mut out, "AWS_INSTANCE_TYPE", "meta-data/instance-type")?;
         add_value(&mut out, "AWS_IPV4_LOCAL", "meta-data/local-ipv4")?;
         add_value(&mut out, "AWS_IPV4_PUBLIC", "meta-data/public-ipv4")?;
+        add_value(&mut out, "AWS_IPV6", "meta-data/ipv6")?;
         add_value(
             &mut out,
             "AWS_AVAILABILITY_ZONE",
