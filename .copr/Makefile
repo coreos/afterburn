@@ -1,7 +1,7 @@
 .PHONY: srpm
 srpm:
 	dnf install -y git rust-packaging rpm-build rpmdevtools
-	curl -LO https://src.fedoraproject.org/rpms/rust-afterburn/raw/rawhide/f/rust-afterburn.spec
+	curl -LOf https://src.fedoraproject.org/rpms/rust-afterburn/raw/rawhide/f/rust-afterburn.spec
 	version=$$(git describe --always --tags | sed -e 's,-,\.,g' -e 's,^v,,'); \
 	git archive --format=tar --prefix=afterburn-$$version/ HEAD | gzip > afterburn-$$version.crate; \
 	sed -ie "s,^Version:.*,Version: $$version," rust-afterburn.spec
