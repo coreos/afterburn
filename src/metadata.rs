@@ -24,6 +24,7 @@ use crate::providers::exoscale::ExoscaleProvider;
 use crate::providers::gcp::GcpProvider;
 use crate::providers::ibmcloud::IBMGen2Provider;
 use crate::providers::ibmcloud_classic::IBMClassicProvider;
+use crate::providers::kubevirt::KubeVirtProvider;
 use crate::providers::microsoft::azure::Azure;
 use crate::providers::microsoft::azurestack::AzureStack;
 use crate::providers::openstack;
@@ -59,6 +60,7 @@ pub fn fetch_metadata(provider: &str) -> Result<Box<dyn providers::MetadataProvi
         "ibmcloud" => box_result!(IBMGen2Provider::try_new()?),
         // IBM Cloud - Classic infrastructure.
         "ibmcloud-classic" => box_result!(IBMClassicProvider::try_new()?),
+        "kubevirt" => box_result!(KubeVirtProvider::try_new()?),
         "openstack" => openstack::try_config_drive_else_network(),
         "openstack-metadata" => box_result!(OpenstackProviderNetwork::try_new()?),
         "packet" => box_result!(PacketProvider::try_new()?),

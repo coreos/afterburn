@@ -41,6 +41,9 @@ The following platforms are supported, with a different set of features availabl
   - SSH Keys
 * ibmcloud-classic
   - Attributes
+* kubevirt
+  - Attributes
+  - SSH Keys
 * openstack
   - Attributes
   - SSH Keys
