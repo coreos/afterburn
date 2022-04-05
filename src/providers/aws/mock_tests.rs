@@ -46,6 +46,7 @@ fn aws_get_maps() -> (
     let instance_type = "test-instance-type";
     let ipv4_local = "test-ipv4-local";
     let ipv4_public = "test-ipv4-public";
+    let ipv6 = "test-ipv6";
     let availability_zone = "test-availability-zone";
     let hostname = "test-hostname";
     let public_hostname = "test-public-hostname";
@@ -58,6 +59,7 @@ fn aws_get_maps() -> (
             "/meta-data/instance-type" => instance_type,
             "/meta-data/local-ipv4" => ipv4_local,
             "/meta-data/public-ipv4" => ipv4_public,
+            "/meta-data/ipv6" => ipv6,
             "/meta-data/placement/availability-zone" => availability_zone,
             "/meta-data/hostname" => hostname,
             "/meta-data/public-hostname" => public_hostname,
@@ -68,6 +70,7 @@ fn aws_get_maps() -> (
             "AWS_INSTANCE_TYPE".to_string() => instance_type.to_string(),
             "AWS_IPV4_LOCAL".to_string() => ipv4_local.to_string(),
             "AWS_IPV4_PUBLIC".to_string() => ipv4_public.to_string(),
+            "AWS_IPV6".to_string() => ipv6.to_string(),
             "AWS_AVAILABILITY_ZONE".to_string() => availability_zone.to_string(),
             "AWS_HOSTNAME".to_string() => hostname.to_string(),
             "AWS_PUBLIC_HOSTNAME".to_string() => public_hostname.to_string(),

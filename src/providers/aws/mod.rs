@@ -79,7 +79,8 @@ impl AwsProvider {
 
     #[cfg(not(test))]
     fn endpoint_for(key: &str, use_latest: bool) -> String {
-        const URL: &str = "http://169.254.169.254/2019-10-01";
+        // https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instancedata-data-categories.html
+        const URL: &str = "http://169.254.169.254/2021-01-03";
         const URL_LATEST: &str = "http://169.254.169.254/latest";
         if use_latest {
             format!("{}/{}", URL_LATEST, key)
@@ -162,6 +163,7 @@ impl MetadataProvider for AwsProvider {
         add_value(&mut out, "AWS_INSTANCE_TYPE", "meta-data/instance-type")?;
         add_value(&mut out, "AWS_IPV4_LOCAL", "meta-data/local-ipv4")?;
         add_value(&mut out, "AWS_IPV4_PUBLIC", "meta-data/public-ipv4")?;
+        add_value(&mut out, "AWS_IPV6", "meta-data/ipv6")?;
         add_value(
             &mut out,
             "AWS_AVAILABILITY_ZONE",
