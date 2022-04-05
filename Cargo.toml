@@ -3,6 +3,7 @@ name = "afterburn"
 repository = "https://github.com/coreos/afterburn"
 license = "Apache-2.0"
 edition = "2021"
+rust-version = "1.56.0"
 exclude = ["/.cci.jenkinsfile", "/.github", "/.gitignore"]
 authors = [ "Stephen Demos <stephen.demos@coreos.com>",
             "Luca Bruno <lucab@debian.org>" ]
