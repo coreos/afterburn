@@ -46,7 +46,6 @@ use nix::unistd;
 use openssh_keys::PublicKey;
 use slog_scope::warn;
 use std::collections::HashMap;
-use std::convert::TryInto;
 use std::fs::{self, File};
 use std::io::prelude::*;
 use std::path::Path;
