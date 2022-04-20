@@ -243,12 +243,14 @@ impl IBMClassicProvider {
             let iface = network::Interface {
                 name: Some(name),
                 mac_address: Some(mac_addr),
+                path: None,
                 priority: 10,
                 nameservers: nameservers.clone(),
                 ip_addresses: vec![ip_net],
                 routes,
                 bond: None,
                 unmanaged: false,
+                required_for_online: None,
             };
             output.push(iface);
         }

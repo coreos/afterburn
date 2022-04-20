@@ -219,6 +219,7 @@ impl PacketProvider {
                 mac_address: Some(mac),
                 bond: i.bond.clone(),
                 name: None,
+                path: None,
                 priority: 10,
                 nameservers: Vec::new(),
                 ip_addresses: Vec::new(),
@@ -226,6 +227,15 @@ impl PacketProvider {
                 // the interface should be unmanaged if it doesn't have a bond
                 // section
                 unmanaged: i.bond.is_none(),
+                required_for_online: if i.bond.is_none() {
+                    // use the default requirement
+                    None
+                } else {
+                    // We care about the state of the bond interface and accept if any of the bonded
+                    // interfaces are down. Actually the desired minimal state is "no-carrier" but
+                    // systemd-networkd-wait-online does not work well with it currently, thus "no".
+                    Some("no".to_owned())
+                },
             });
 
             // if there is a bond key, make sure we have a bond device for it
@@ -235,10 +245,12 @@ impl PacketProvider {
                     priority: 5,
                     nameservers: dns_servers.clone(),
                     mac_address: None,
+                    path: None,
                     bond: None,
                     ip_addresses: Vec::new(),
                     routes: Vec::new(),
                     unmanaged: false,
+                    required_for_online: Some("degraded-carrier".to_owned()),
                 };
                 if !bonds
                     .iter()
@@ -318,6 +330,24 @@ impl PacketProvider {
             // finally, make sure the bond interfaces are in the interface list
             interfaces.push(bond)
         }
+
+        // Create a fallback rule for all physical NICs that haven't been configured
+        // because otherwise systemd-networkd-wait-online will wait for them and even if told
+        // to only wait for bond0 this won't work with systemd 246 because the bond0 interface
+        // never leaves the "configuring" phase when the other NICs are also still configuring.
+        let fallback = Interface {
+            path: Some("pci-*".to_owned()),
+            unmanaged: true,
+            priority: 80,
+            name: None,
+            mac_address: None,
+            bond: None,
+            nameservers: Vec::new(),
+            ip_addresses: Vec::new(),
+            routes: Vec::new(),
+            required_for_online: None,
+        };
+        interfaces.push(fallback);
 
         Ok((interfaces, network_devices))
     }

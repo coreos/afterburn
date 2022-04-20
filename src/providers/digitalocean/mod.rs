@@ -159,8 +159,10 @@ impl DigitalOceanProvider {
                     routes,
                     bond: None,
                     name: None,
+                    path: None,
                     priority: 10,
                     unmanaged: false,
+                    required_for_online: None,
                 },
             );
         }
