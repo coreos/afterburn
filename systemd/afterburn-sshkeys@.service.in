@@ -15,6 +15,7 @@ ConditionKernelCommandLine=|ignition.platform.id=gcp
 ConditionKernelCommandLine=|ignition.platform.id=ibmcloud
 ConditionKernelCommandLine=|ignition.platform.id=openstack
 ConditionKernelCommandLine=|ignition.platform.id=packet
+ConditionKernelCommandLine=|ignition.platform.id=powervs
 ConditionKernelCommandLine=|ignition.platform.id=vultr
 
 [Service]
