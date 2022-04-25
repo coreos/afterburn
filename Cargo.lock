@@ -4,7 +4,7 @@ version = 3
 
 [[package]]
 name = "afterburn"
-version = "5.2.0"
+version = "5.3.0"
 dependencies = [
  "anyhow",
  "base64",
@@ -12,13 +12,13 @@ dependencies = [
  "cfg-if",
  "clap",
  "hostname",
- "ipnetwork 0.19.0",
+ "ipnetwork",
  "libsystemd",
  "mailparse",
  "maplit",
  "mime",
  "mockito",
- "nix 0.24.1",
+ "nix",
  "openssh-keys",
  "openssl",
  "pnet_base",
@@ -594,15 +594,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ipnetwork"
-version = "0.19.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1f84f1612606f3753f205a4e9a2efd6fe5b4c573a6269b2cc6c3003d44a0d127"
-dependencies = [
- "serde",
-]
-
-[[package]]
 name = "itoa"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -638,7 +629,7 @@ dependencies = [
  "hmac",
  "libc",
  "log",
- "nix 0.23.1",
+ "nix",
  "nom",
  "once_cell",
  "serde",
@@ -801,18 +792,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "nix"
-version = "0.24.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8f17df307904acd05aa8e32e97bb20f2a0df1728bbc2d771ae8f9a90463441e9"
-dependencies = [
- "bitflags",
- "cfg-if",
- "libc",
- "memoffset",
-]
-
-[[package]]
 name = "nom"
 version = "7.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -954,7 +933,7 @@ version = "0.29.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6f85aef5e52e22ff06b1b11f2eb6d52959a9e0ecad3cb3f5cc2d78cadc077f0e"
 dependencies = [
- "ipnetwork 0.18.0",
+ "ipnetwork",
  "libc",
  "pnet_base",
  "pnet_sys",
