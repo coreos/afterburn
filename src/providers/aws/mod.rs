@@ -169,6 +169,11 @@ impl MetadataProvider for AwsProvider {
             "AWS_AVAILABILITY_ZONE",
             "meta-data/placement/availability-zone",
         )?;
+        add_value(
+            &mut out,
+            "AWS_AVAILABILITY_ZONE_ID",
+            "meta-data/placement/availability-zone-id",
+        )?;
         add_value(&mut out, "AWS_HOSTNAME", "meta-data/hostname")?;
         add_value(&mut out, "AWS_PUBLIC_HOSTNAME", "meta-data/public-hostname")?;
 
