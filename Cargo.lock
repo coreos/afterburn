@@ -12,7 +12,7 @@ dependencies = [
  "cfg-if",
  "clap",
  "hostname",
- "ipnetwork 0.19.0",
+ "ipnetwork",
  "libsystemd",
  "mailparse",
  "maplit",
@@ -21,7 +21,7 @@ dependencies = [
  "nix 0.24.1",
  "openssh-keys",
  "openssl",
- "pnet_base 0.31.0",
+ "pnet_base",
  "pnet_datalink",
  "reqwest",
  "serde",
@@ -586,15 +586,6 @@ checksum = "68f2d64f2edebec4ce84ad108148e67e1064789bee435edc5b60ad398714a3a9"
 
 [[package]]
 name = "ipnetwork"
-version = "0.18.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4088d739b183546b239688ddbc79891831df421773df95e236daf7867866d355"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "ipnetwork"
 version = "0.19.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1f84f1612606f3753f205a4e9a2efd6fe5b4c573a6269b2cc6c3003d44a0d127"
@@ -625,9 +616,9 @@ checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
 
 [[package]]
 name = "libc"
-version = "0.2.124"
+version = "0.2.126"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "21a41fed9d98f27ab1c6d161da622a4fa35e8a54a8adc24bbf3ddd0ef70b0e50"
+checksum = "349d5a591cd28b49e1d1037471617a32ddcda5731b99419008085f72d5a53836"
 
 [[package]]
 name = "libsystemd"
@@ -962,15 +953,6 @@ checksum = "58893f751c9b0412871a09abd62ecd2a00298c6c83befa223ef98c52aef40cbe"
 
 [[package]]
 name = "pnet_base"
-version = "0.30.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2e88341c6c842f89bdc7287f7b1e26b6fa64fa11c7ea3756971e6f18cd2510c4"
-dependencies = [
- "no-std-net",
-]
-
-[[package]]
-name = "pnet_base"
 version = "0.31.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f9d3a993d49e5fd5d4d854d6999d4addca1f72d86c65adf224a36757161c02b6"
@@ -980,22 +962,22 @@ dependencies = [
 
 [[package]]
 name = "pnet_datalink"
-version = "0.30.0"
+version = "0.31.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bc6e55d71c51db73372db35bc54f43abd8460adff1c3a9b717804ca6416d5df2"
+checksum = "e466faf03a98ad27f6e15cd27a2b7cc89e73e640a43527742977bc503c37f8aa"
 dependencies = [
- "ipnetwork 0.18.0",
+ "ipnetwork",
  "libc",
- "pnet_base 0.30.0",
+ "pnet_base",
  "pnet_sys",
  "winapi",
 ]
 
 [[package]]
 name = "pnet_sys"
-version = "0.30.0"
+version = "0.31.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8e2a05efbc55c22f664c0ea475fbc4ffc4d09346aff9068438279d7e3d431f6f"
+checksum = "328e231f0add6d247d82421bf3790b4b33b39c8930637f428eef24c4c6a90805"
 dependencies = [
  "libc",
  "winapi",
