@@ -21,7 +21,7 @@ dependencies = [
  "nix 0.24.1",
  "openssh-keys",
  "openssl",
- "pnet_base",
+ "pnet_base 0.31.0",
  "pnet_datalink",
  "reqwest",
  "serde",
@@ -970,6 +970,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "pnet_base"
+version = "0.31.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f9d3a993d49e5fd5d4d854d6999d4addca1f72d86c65adf224a36757161c02b6"
+dependencies = [
+ "no-std-net",
+]
+
+[[package]]
 name = "pnet_datalink"
 version = "0.30.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -977,7 +986,7 @@ checksum = "bc6e55d71c51db73372db35bc54f43abd8460adff1c3a9b717804ca6416d5df2"
 dependencies = [
  "ipnetwork 0.18.0",
  "libc",
- "pnet_base",
+ "pnet_base 0.30.0",
  "pnet_sys",
  "winapi",
 ]
