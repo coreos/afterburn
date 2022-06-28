@@ -118,7 +118,7 @@ Push access to the upstream repository is required in order to publish the new t
   - [ ] update your local repo and run `rhpkg build`
 
 CentOS Stream 9 packaging:
-  - [ ] to be written
+  - [ ] Create a `rebase-c9s-afterburn` issue in the internal team-operations repo and follow the steps there
 
 [cargo-release]: https://github.com/sunng87/cargo-release
 [rustup]: https://rustup.rs/
