@@ -44,7 +44,7 @@ impl VultrProvider {
     #[cfg(test)]
     fn endpoint_for(name: &str) -> String {
         let url = mockito::server_url();
-        format!("{}/{}", url, name)
+        format!("{url}/{name}")
     }
 
     #[cfg(not(test))]

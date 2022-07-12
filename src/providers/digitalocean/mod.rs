@@ -90,13 +90,13 @@ impl DigitalOceanProvider {
             for (i, a) in ifaces.iter().enumerate() {
                 if let Some(ref v4) = a.ipv4 {
                     attrs.push((
-                        format!("DIGITALOCEAN_IPV4_PUBLIC_{}", i),
+                        format!("DIGITALOCEAN_IPV4_PUBLIC_{i}"),
                         format!("{}", v4.ip_address),
                     ));
                 }
                 if let Some(ref v6) = a.ipv6 {
                     attrs.push((
-                        format!("DIGITALOCEAN_IPV6_PUBLIC_{}", i),
+                        format!("DIGITALOCEAN_IPV6_PUBLIC_{i}"),
                         format!("{}", v6.ip_address),
                     ));
                 }

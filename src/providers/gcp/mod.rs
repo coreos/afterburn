@@ -49,12 +49,12 @@ impl GcpProvider {
     #[cfg(test)]
     fn endpoint_for(name: &str) -> String {
         let url = mockito::server_url();
-        format!("{}/{}", url, name)
+        format!("{url}/{name}")
     }
 
     #[cfg(not(test))]
     fn endpoint_for(name: &str) -> String {
-        format!("http://169.254.169.254/computeMetadata/v1/{}", name)
+        format!("http://169.254.169.254/computeMetadata/v1/{name}")
     }
 
     fn fetch_all_ssh_keys(&self) -> Result<Vec<String>> {

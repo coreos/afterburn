@@ -74,7 +74,7 @@ impl AwsProvider {
     #[cfg(test)]
     fn endpoint_for(key: &str, _use_latest: bool) -> String {
         let url = mockito::server_url();
-        format!("{}/{}", url, key)
+        format!("{url}/{key}")
     }
 
     #[cfg(not(test))]
@@ -83,9 +83,9 @@ impl AwsProvider {
         const URL: &str = "http://169.254.169.254/2021-01-03";
         const URL_LATEST: &str = "http://169.254.169.254/latest";
         if use_latest {
-            format!("{}/{}", URL_LATEST, key)
+            format!("{URL_LATEST}/{key}")
         } else {
-            format!("{}/{}", URL, key)
+            format!("{URL}/{key}")
         }
     }
 
