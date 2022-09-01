@@ -19,6 +19,7 @@
 use anyhow::{anyhow, bail, Context, Result};
 use ipnetwork::IpNetwork;
 use pnet_base::MacAddr;
+use std::fmt::Write;
 use std::net::IpAddr;
 use std::string::String;
 use std::string::ToString;
@@ -144,48 +145,50 @@ impl Interface {
         let mut config = String::new();
 
         // [Match] section
-        config.push_str("[Match]\n");
+        writeln!(config, "[Match]").unwrap();
         if let Some(name) = self.name.clone() {
-            config.push_str(&format!("Name={}\n", name));
+            writeln!(config, "Name={}", name).unwrap();
         }
         if let Some(mac) = self.mac_address {
-            config.push_str(&format!("MACAddress={}\n", mac));
+            writeln!(config, "MACAddress={}", mac).unwrap();
         }
         if let Some(path) = &self.path {
-            config.push_str(&format!("Path={}\n", path));
+            writeln!(config, "Path={}", path).unwrap();
         }
 
         // [Network] section
-        config.push_str("\n[Network]\n");
+        writeln!(config, "\n[Network]").unwrap();
         for ns in &self.nameservers {
-            config.push_str(&format!("DNS={}\n", ns))
+            writeln!(config, "DNS={}", ns).unwrap()
         }
         if let Some(bond) = self.bond.clone() {
-            config.push_str(&format!("Bond={}\n", bond));
+            writeln!(config, "Bond={}", bond).unwrap();
         }
 
         // [Link] section
         if self.unmanaged || self.required_for_online.is_some() {
-            config.push_str("\n[Link]\n");
+            writeln!(config, "\n[Link]").unwrap();
         }
         if self.unmanaged {
-            config.push_str("Unmanaged=yes\n");
+            writeln!(config, "Unmanaged=yes").unwrap();
         }
         if let Some(operational_state) = &self.required_for_online {
-            config.push_str(&format!("RequiredForOnline={}\n", operational_state));
+            writeln!(config, "RequiredForOnline={}", operational_state).unwrap();
         }
 
         // [Address] sections
         for addr in &self.ip_addresses {
-            config.push_str(&format!("\n[Address]\nAddress={}\n", addr));
+            writeln!(config, "\n[Address]\nAddress={}", addr).unwrap();
         }
 
         // [Route] sections
         for route in &self.routes {
-            config.push_str(&format!(
-                "\n[Route]\nDestination={}\nGateway={}\n",
+            writeln!(
+                config,
+                "\n[Route]\nDestination={}\nGateway={}",
                 route.destination, route.gateway
-            ));
+            )
+            .unwrap();
         }
 
         config
@@ -203,16 +206,16 @@ impl VirtualNetDev {
         let mut config = String::new();
 
         // [NetDev] section
-        config.push_str("[NetDev]\n");
-        config.push_str(&format!("Name={}\n", self.name));
-        config.push_str(&format!("Kind={}\n", self.kind.sd_netdev_kind()));
-        config.push_str(&format!("MACAddress={}\n", self.mac_address));
+        writeln!(config, "[NetDev]").unwrap();
+        writeln!(config, "Name={}", self.name).unwrap();
+        writeln!(config, "Kind={}", self.kind.sd_netdev_kind()).unwrap();
+        writeln!(config, "MACAddress={}", self.mac_address).unwrap();
 
         // Custom sections.
         for section in &self.sd_netdev_sections {
-            config.push_str(&format!("\n[{}]\n", section.name));
+            writeln!(config, "\n[{}]", section.name).unwrap();
             for attr in &section.attributes {
-                config.push_str(&format!("{}={}\n", attr.0, attr.1));
+                writeln!(config, "{}={}", attr.0, attr.1).unwrap();
             }
         }
 
