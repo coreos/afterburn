@@ -4,7 +4,7 @@ Documentation=https://coreos.github.io/afterburn/
 ConditionKernelCommandLine=|ignition.platform.id=packet
 ConditionFirstBoot=yes
 After=network.target
-After=boot-complete.target
+After=multi-user.target boot-complete.target
 
 [Service]
 Environment=AFTERBURN_OPT_PROVIDER=--cmdline
