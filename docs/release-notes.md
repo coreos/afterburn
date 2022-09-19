@@ -13,6 +13,7 @@ Minor changes:
 
 - Add `AWS_AVAILABILITY_ZONE_ID` attribute to AWS
 - Add release notes to documentation
+- Fix default dependency ordering on all `checkin` services
 
 Packaging changes:
 
