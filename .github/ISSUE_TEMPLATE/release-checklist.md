@@ -114,7 +114,7 @@ Push access to the upstream repository is required in order to publish the new t
     - remove any patches obsoleted by the new release
     - update changelog
   - [ ] run `spectool -g -S rust-afterburn.spec`
-  - [ ] run `kinit your_account@REDHAT.COM`
+  - [ ] run `kinit your_account@IPA.REDHAT.COM`
   - [ ] run `rhpkg new-sources $(spectool -S rust-afterburn.spec | sed 's:.*/::')`
   - [ ] PR the changes
   - [ ] get the PR reviewed and merge it
