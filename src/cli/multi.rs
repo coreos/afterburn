@@ -19,12 +19,12 @@ impl CliMulti {
         let provider = super::parse_provider(matches)?;
 
         let multi = Self {
-            attributes_file: matches.value_of("attributes").map(String::from),
-            check_in: matches.is_present("check-in"),
-            hostname_file: matches.value_of("hostname").map(String::from),
-            network_units_dir: matches.value_of("network-units").map(String::from),
+            attributes_file: matches.get_one::<String>("attributes").cloned(),
+            check_in: matches.get_flag("check-in"),
+            hostname_file: matches.get_one::<String>("hostname").cloned(),
+            network_units_dir: matches.get_one::<String>("network-units").cloned(),
             provider,
-            ssh_keys_user: matches.value_of("ssh-keys").map(String::from),
+            ssh_keys_user: matches.get_one::<String>("ssh-keys").cloned(),
         };
 
         if multi.attributes_file.is_none()

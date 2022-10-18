@@ -1,7 +1,7 @@
 //! Command-line arguments parsing.
 
 use anyhow::{bail, Result};
-use clap::{self, crate_version, Arg, ArgMatches, Command};
+use clap::{self, crate_version, Arg, ArgAction, ArgMatches, Command};
 use slog_scope::trace;
 
 mod exp;
@@ -42,8 +42,8 @@ impl CliConfig {
 pub(crate) fn parse_args(argv: impl IntoIterator<Item = String>) -> Result<CliConfig> {
     let args = translate_legacy_args(argv);
     let matches = match cli_setup().try_get_matches_from(args) {
-        Err(e) if e.kind() == clap::ErrorKind::DisplayHelp => e.exit(),
-        Err(e) if e.kind() == clap::ErrorKind::DisplayVersion => e.exit(),
+        Err(e) if e.kind() == clap::error::ErrorKind::DisplayHelp => e.exit(),
+        Err(e) if e.kind() == clap::error::ErrorKind::DisplayVersion => e.exit(),
         v => v,
     }?;
 
@@ -54,7 +54,10 @@ pub(crate) fn parse_args(argv: impl IntoIterator<Item = String>) -> Result<CliCo
 
 /// Parse provider ID from flag or kargs.
 fn parse_provider(matches: &clap::ArgMatches) -> Result<String> {
-    let provider = match (matches.value_of("provider"), matches.is_present("cmdline")) {
+    let provider = match (
+        matches.get_one::<String>("provider"),
+        matches.get_flag("cmdline"),
+    ) {
         (Some(provider), false) => String::from(provider),
         (None, true) => crate::util::get_platform(CMDLINE_PATH)?,
         (None, false) => bail!("must set either --provider or --cmdline"),
@@ -65,7 +68,7 @@ fn parse_provider(matches: &clap::ArgMatches) -> Result<String> {
 }
 
 /// CLI setup, covering all sub-commands and arguments.
-fn cli_setup<'a>() -> Command<'a> {
+fn cli_setup() -> Command {
     // NOTE(lucab): due to legacy translation there can't be global arguments
     //  here, i.e. a sub-command is always expected first.
     Command::new("Afterburn")
@@ -78,49 +81,47 @@ fn cli_setup<'a>() -> Command<'a> {
                     Arg::new("legacy-cli")
                         .long("legacy-cli")
                         .help("Whether this command was translated from legacy CLI args")
+                        .action(ArgAction::SetTrue)
                         .hide(true),
                 )
                 .arg(
                     Arg::new("provider")
                         .long("provider")
                         .help("The name of the cloud provider")
-                        .global(true)
-                        .takes_value(true),
+                        .global(true),
                 )
                 .arg(
                     Arg::new("cmdline")
                         .long("cmdline")
                         .global(true)
-                        .help("Read the cloud provider from the kernel cmdline"),
+                        .help("Read the cloud provider from the kernel cmdline")
+                        .action(ArgAction::SetTrue),
                 )
                 .arg(
                     Arg::new("attributes")
                         .long("attributes")
-                        .help("The file into which the metadata attributes are written")
-                        .takes_value(true),
+                        .help("The file into which the metadata attributes are written"),
                 )
                 .arg(
                     Arg::new("check-in")
                         .long("check-in")
-                        .help("Check-in this instance boot with the cloud provider"),
+                        .help("Check-in this instance boot with the cloud provider")
+                        .action(ArgAction::SetTrue),
                 )
                 .arg(
                     Arg::new("hostname")
                         .long("hostname")
-                        .help("The file into which the hostname should be written")
-                        .takes_value(true),
+                        .help("The file into which the hostname should be written"),
                 )
                 .arg(
                     Arg::new("network-units")
                         .long("network-units")
-                        .help("The directory into which network units are written")
-                        .takes_value(true),
+                        .help("The directory into which network units are written"),
                 )
                 .arg(
                     Arg::new("ssh-keys")
                         .long("ssh-keys")
-                        .help("Update SSH keys for the given user")
-                        .takes_value(true),
+                        .help("Update SSH keys for the given user"),
                 ),
         )
         .subcommand(
@@ -134,21 +135,20 @@ fn cli_setup<'a>() -> Command<'a> {
                             Arg::new("cmdline")
                                 .long("cmdline")
                                 .global(true)
-                                .help("Read the cloud provider from the kernel cmdline"),
+                                .help("Read the cloud provider from the kernel cmdline")
+                                .action(ArgAction::SetTrue),
                         )
                         .arg(
                             Arg::new("provider")
                                 .long("provider")
                                 .help("The name of the cloud provider")
-                                .global(true)
-                                .takes_value(true),
+                                .global(true),
                         )
                         .arg(
                             Arg::new("default-value")
                                 .long("default-value")
                                 .help("Default value for network kargs fallback")
-                                .required(true)
-                                .takes_value(true),
+                                .required(true),
                         ),
                 ),
         )
