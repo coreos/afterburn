@@ -14,6 +14,7 @@ Minor changes:
 - Add `AWS_AVAILABILITY_ZONE_ID` attribute to AWS
 - Add release notes to documentation
 - Fix default dependency ordering on all `checkin` services
+- Fix failure setting SSH keys on IBM Cloud if none are provided
 
 Packaging changes:
 
