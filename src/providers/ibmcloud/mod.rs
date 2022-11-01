@@ -10,7 +10,7 @@
 //!
 //! nocloud: https://cloudinit.readthedocs.io/en/latest/topics/datasources/nocloud.html
 
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result};
 use openssh_keys::PublicKey;
 use std::collections::HashMap;
 use std::fs::File;
@@ -150,7 +150,7 @@ impl IBMGen2Provider {
         }
         // Parse YAML to find SSH keys
         if cloud_config.is_empty() {
-            bail!("no cloud-config section found in vendor-data");
+            return Ok(Vec::new());
         }
         let deserialized_cloud_config: VendorDataCloudConfig = serde_yaml::from_str(&cloud_config)
             .context("failed to deserialize cloud-config content")?;
