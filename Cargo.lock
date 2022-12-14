@@ -641,7 +641,7 @@ dependencies = [
  "nom",
  "once_cell",
  "serde",
- "sha2 0.10.2",
+ "sha2",
  "thiserror",
  "uuid",
 ]
@@ -833,14 +833,14 @@ checksum = "624a8340c38c1b80fd549087862da4ba43e08858af025b236e509b6649fc13d5"
 
 [[package]]
 name = "openssh-keys"
-version = "0.5.0"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e7249a699cdeea261ac73f1bf9350777cb867324f44373aafb5a287365bf1771"
+checksum = "37b58a8e78d8aa4cb398da5616fd29ab28b615c46b452aac6cbab45a9e5ac0ac"
 dependencies = [
  "base64",
  "byteorder",
  "md-5",
- "sha2 0.9.9",
+ "sha2",
  "thiserror",
 ]
 
@@ -1219,19 +1219,6 @@ dependencies = [
  "ryu",
  "serde",
  "unsafe-libyaml",
-]
-
-[[package]]
-name = "sha2"
-version = "0.9.9"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4d58a1e1bf39749807d89cf2d98ac2dfa0ff1cb3faa38fbb64dd88ac8013d800"
-dependencies = [
- "block-buffer 0.9.0",
- "cfg-if",
- "cpufeatures",
- "digest 0.9.0",
- "opaque-debug",
 ]
 
 [[package]]
