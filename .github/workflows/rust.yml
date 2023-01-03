@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Install toolchain
         uses: dtolnay/rust-toolchain@v1
         with:
@@ -33,7 +33,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Install toolchain
         uses: dtolnay/rust-toolchain@v1
         with:
@@ -47,7 +47,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Detect crate MSRV
         run: |
           msrv=$(cargo metadata --format-version 1 --no-deps | \
@@ -67,7 +67,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Install toolchain
         uses: dtolnay/rust-toolchain@v1
         with:
@@ -88,7 +88,7 @@ jobs:
           - "nightly"
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Install toolchain
         uses: dtolnay/rust-toolchain@v1
         with:
