@@ -36,7 +36,7 @@ clap = { version = ">= 3.1, < 4", "default_features" = false, "features" = ["std
 hostname = "0.3"
 ipnetwork = ">= 0.17, < 0.21"
 libsystemd = ">= 0.2.1, < 0.7.0"
-mailparse = ">= 0.13, < 0.14"
+mailparse = ">= 0.13, < 0.15"
 maplit = "1.0"
 mime = "0.3"
 nix = ">= 0.19, < 0.27"
