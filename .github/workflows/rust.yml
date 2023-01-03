@@ -21,10 +21,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
       - name: Install toolchain
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@v1
         with:
-          toolchain: "stable"
-          default: true
+          toolchain: stable
       - name: cargo build
         run: cargo build
       - name: cargo test
@@ -36,10 +35,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
       - name: Install toolchain
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@v1
         with:
-          toolchain: "stable"
-          default: true
+          toolchain: stable
       - name: cargo build (release)
         run: cargo build --release
       - name: cargo test (release)
@@ -57,10 +55,9 @@ jobs:
           echo "Crate MSRV: $msrv"
           echo "MSRV=$msrv" >> $GITHUB_ENV
       - name: Install toolchain
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@v1
         with:
           toolchain: ${{ env.MSRV }}
-          default: true
       - name: cargo build (release)
         run: cargo build --release
       - name: cargo test (release)
@@ -72,10 +69,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
       - name: Install toolchain
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@v1
         with:
           toolchain: ${{ env['ACTIONS_LINTS_TOOLCHAIN']  }}
-          default: true
           components: rustfmt, clippy
       - name: cargo fmt (check)
         run: cargo fmt -- --check -l
@@ -94,10 +90,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
       - name: Install toolchain
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@v1
         with:
           toolchain: ${{ matrix.channel }}
-          default: true
       - name: cargo build
         run: cargo build
       - name: cargo test
