@@ -1,7 +1,7 @@
 //! Logic to interact with WireServer `goalstate` endpoint.
 
 use anyhow::{anyhow, Result};
-use serde_derive::Deserialize;
+use serde::Deserialize;
 
 #[derive(Debug, Deserialize, Clone)]
 pub(crate) struct GoalState {

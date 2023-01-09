@@ -23,7 +23,7 @@ use tempfile::TempDir;
 use crate::providers::MetadataProvider;
 
 use mailparse::*;
-use serde_derive::Deserialize;
+use serde::Deserialize;
 
 const CONFIG_DRIVE_LABEL: &str = "cidata";
 

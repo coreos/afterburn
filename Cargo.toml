@@ -29,16 +29,12 @@ debug = true
 
 [dependencies]
 anyhow = "1.0"
-base64 = ">= 0.13, < 0.22"
-byteorder = "1.4"
 cfg-if = "1.0"
 clap = { version = ">= 3.1, < 4", "default_features" = false, "features" = ["std", "cargo", "suggestions", "wrap_help"] }
-hostname = "0.3"
 ipnetwork = ">= 0.17, < 0.21"
 libsystemd = ">= 0.2.1, < 0.7.0"
 mailparse = ">= 0.13, < 0.15"
 maplit = "1.0"
-mime = "0.3"
 nix = ">= 0.19, < 0.27"
 openssh-keys = "0.5"
 openssl = "0.10"
@@ -47,19 +43,15 @@ pnet_datalink = ">= 0.26, < 0.32"
 reqwest = { version = ">= 0.10, < 0.12", features = [ "blocking" ] }
 serde =  { version = "1.0", features = [ "derive" ] }
 serde-xml-rs = ">= 0.4, < 0.7"
-serde_derive = "1.0"
 serde_json = "1.0"
 serde_yaml = ">= 0.8, < 0.10"
+slog = { version = "2.7", features = ["max_level_trace", "release_max_level_info"] }
 slog-async = ">= 2.5, < 3"
 slog-scope = "4.3"
 slog-term = ">= 2.6, < 3"
 tempfile = ">= 3.2, < 4"
 users = "0.11"
 vmw_backdoor = "0.2"
-
-[dependencies.slog]
-version = "2.7"
-features = ["max_level_trace", "release_max_level_info"]
 
 [dev-dependencies]
 mockito = ">= 0.29, < 0.32"

@@ -22,7 +22,7 @@ use anyhow::{anyhow, Context, Result};
 use ipnetwork::{IpNetwork, Ipv4Network, Ipv6Network};
 use openssh_keys::PublicKey;
 use pnet_base::MacAddr;
-use serde_derive::Deserialize;
+use serde::Deserialize;
 
 use crate::network;
 use crate::providers::MetadataProvider;
