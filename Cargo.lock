@@ -22,7 +22,6 @@ dependencies = [
  "reqwest",
  "serde",
  "serde-xml-rs",
- "serde_derive",
  "serde_json",
  "serde_yaml",
  "slog",

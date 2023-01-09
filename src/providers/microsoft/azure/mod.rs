@@ -23,7 +23,7 @@ use std::net::IpAddr;
 use anyhow::{anyhow, bail, Context, Result};
 use openssh_keys::PublicKey;
 use reqwest::header::{HeaderName, HeaderValue};
-use serde_derive::Deserialize;
+use serde::Deserialize;
 use slog_scope::warn;
 
 use self::crypto::x509;

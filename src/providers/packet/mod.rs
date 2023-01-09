@@ -25,7 +25,7 @@ use std::str::FromStr;
 use anyhow::{anyhow, bail, Context, Result};
 use openssh_keys::PublicKey;
 use pnet_base::MacAddr;
-use serde_derive::Deserialize;
+use serde::Deserialize;
 use slog_scope::warn;
 
 use crate::network::{self, Interface, NetworkRoute};
