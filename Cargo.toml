@@ -46,16 +46,13 @@ serde-xml-rs = ">= 0.4, < 0.7"
 serde_derive = "1.0"
 serde_json = "1.0"
 serde_yaml = ">= 0.8, < 0.10"
+slog = { version = "2.7", features = ["max_level_trace", "release_max_level_info"] }
 slog-async = ">= 2.5, < 3"
 slog-scope = "4.3"
 slog-term = ">= 2.6, < 3"
 tempfile = ">= 3.2, < 4"
 users = "0.11"
 vmw_backdoor = "0.2"
-
-[dependencies.slog]
-version = "2.7"
-features = ["max_level_trace", "release_max_level_info"]
 
 [dev-dependencies]
 mockito = ">= 0.29, < 0.32"
