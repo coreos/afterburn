@@ -21,6 +21,7 @@ Packaging changes:
 - Remove static libraries from vendor archive
 - Require Rust ≥ 1.58.0
 - Disable LTO in release builds
+- Drop `base64`, `byteorder`, `hostname`, `mime` dependencies
 
 
 ## Afterburn 5.3.0 (2022-04-29)
