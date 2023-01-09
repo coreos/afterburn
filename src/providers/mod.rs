@@ -61,7 +61,7 @@ fn create_file(filename: &str) -> Result<File> {
     let folder = file_path
         .parent()
         .ok_or_else(|| anyhow!("could not get parent directory of {:?}", file_path))?;
-    fs::create_dir_all(&folder)
+    fs::create_dir_all(folder)
         .with_context(|| format!("failed to create directory {:?}", folder))?;
     // create (or truncate) the file we want to write to
     File::create(file_path).with_context(|| format!("failed to create file {:?}", file_path))
@@ -133,7 +133,7 @@ fn write_ssh_keys(user: User, ssh_keys: Vec<PublicKey>) -> Result<()> {
         // atomically rename to destination
         // don't leak temporary file on error
         temp_file
-            .persist(&file_path)
+            .persist(file_path)
             .map_err(|e| {
                 e.file.close().ok();
                 e.error
@@ -144,7 +144,7 @@ fn write_ssh_keys(user: User, ssh_keys: Vec<PublicKey>) -> Result<()> {
         write_ssh_key_journal_entry(logging::Priority::Info, &username, &file_path_str, true);
     } else {
         // delete the file
-        let deleted = match fs::remove_file(&file_path) {
+        let deleted = match fs::remove_file(file_path) {
             Err(ref e) if e.kind() == NotFound => Ok(false),
             Err(e) => Err(e),
             Ok(()) => Ok(true),
@@ -273,7 +273,7 @@ pub trait MetadataProvider {
 
     fn write_network_units(&self, network_units_dir: String) -> Result<()> {
         let dir_path = Path::new(&network_units_dir);
-        fs::create_dir_all(&dir_path)
+        fs::create_dir_all(dir_path)
             .with_context(|| format!("failed to create directory {:?}", dir_path))?;
 
         // Write `.network` fragments for network interfaces/links.
