@@ -69,7 +69,7 @@ pub fn dns_lease_key_lookup(key: &str) -> Result<String> {
                 let lease_path = Path::new(&lease_path);
                 if lease_path.exists() {
                     debug!("found lease file - {:?}", lease_path);
-                    let lease = File::open(&lease_path)
+                    let lease = File::open(lease_path)
                         .with_context(|| format!("failed to open lease file ({:?})", lease_path))?;
 
                     if let Some(v) = key_lookup('=', key, lease)? {
