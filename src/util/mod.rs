@@ -21,7 +21,7 @@ mod cmdline;
 pub use self::cmdline::{get_platform, has_network_kargs};
 
 mod dhcp;
-pub use self::dhcp::dns_lease_key_lookup;
+pub use self::dhcp::DhcpOption;
 
 mod mount;
 pub(crate) use mount::{mount_ro, unmount};

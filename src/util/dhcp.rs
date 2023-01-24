@@ -23,34 +23,49 @@ use std::time::Duration;
 use super::key_lookup;
 use crate::retry;
 
-pub fn dns_lease_key_lookup(key: &str) -> Result<String> {
-    let interfaces = pnet_datalink::interfaces();
-    trace!("interfaces - {:?}", interfaces);
+pub enum DhcpOption {
+    DhcpServerId,
+    // avoid dead code warnings with cfg(test)
+    #[allow(dead_code)]
+    AzureFabricAddress,
+}
 
-    retry::Retry::new()
-        .initial_backoff(Duration::from_millis(50))
-        .max_backoff(Duration::from_millis(500))
-        .max_retries(60)
-        .retry(|_| {
-            for interface in interfaces.clone() {
-                trace!("looking at interface {:?}", interface);
-                let lease_path = format!("/run/systemd/netif/leases/{}", interface.index);
-                let lease_path = Path::new(&lease_path);
-                if lease_path.exists() {
-                    debug!("found lease file - {:?}", lease_path);
-                    let lease = File::open(lease_path)
-                        .with_context(|| format!("failed to open lease file ({:?})", lease_path))?;
+impl DhcpOption {
+    pub fn get_value(&self) -> Result<String> {
+        let key = match *self {
+            Self::DhcpServerId => "SERVER_ADDRESS",
+            Self::AzureFabricAddress => "OPTION_245",
+        };
 
-                    if let Some(v) = key_lookup('=', key, lease)? {
-                        return Ok(v);
+        let interfaces = pnet_datalink::interfaces();
+        trace!("interfaces - {:?}", interfaces);
+
+        retry::Retry::new()
+            .initial_backoff(Duration::from_millis(50))
+            .max_backoff(Duration::from_millis(500))
+            .max_retries(60)
+            .retry(|_| {
+                for interface in interfaces.clone() {
+                    trace!("looking at interface {:?}", interface);
+                    let lease_path = format!("/run/systemd/netif/leases/{}", interface.index);
+                    let lease_path = Path::new(&lease_path);
+                    if lease_path.exists() {
+                        debug!("found lease file - {:?}", lease_path);
+                        let lease = File::open(lease_path).with_context(|| {
+                            format!("failed to open lease file ({:?})", lease_path)
+                        })?;
+
+                        if let Some(v) = key_lookup('=', key, lease)? {
+                            return Ok(v);
+                        }
+
+                        debug!(
+                            "failed to get value from existing lease file '{:?}'",
+                            lease_path
+                        );
                     }
-
-                    debug!(
-                        "failed to get value from existing lease file '{:?}'",
-                        lease_path
-                    );
                 }
-            }
-            Err(anyhow!("failed to retrieve fabric address"))
-        })
+                Err(anyhow!("failed to retrieve fabric address"))
+            })
+    }
 }

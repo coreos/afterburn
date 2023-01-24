@@ -179,7 +179,7 @@ impl Azure {
 
     #[cfg(not(test))]
     fn get_fabric_address_from_dhcp() -> Result<IpAddr> {
-        let v = crate::util::dns_lease_key_lookup("OPTION_245")?;
+        let v = crate::util::DhcpOption::AzureFabricAddress.get_value()?;
         // value is an 8 digit hex value. convert it to u32 and
         // then parse that into an ip. Ipv4Addr::from(u32)
         // performs conversion from big-endian

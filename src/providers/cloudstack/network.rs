@@ -8,9 +8,7 @@ use openssh_keys::PublicKey;
 
 use crate::providers::MetadataProvider;
 use crate::retry;
-use crate::util;
-
-const SERVER_ADDRESS: &str = "SERVER_ADDRESS";
+use crate::util::DhcpOption;
 
 #[derive(Clone, Debug)]
 pub struct CloudstackNetwork {
@@ -38,7 +36,7 @@ impl CloudstackNetwork {
             #[cfg(test)]
             return Ok(mockito::server_url());
         }
-        let server = util::dns_lease_key_lookup(SERVER_ADDRESS)?;
+        let server = DhcpOption::DhcpServerId.get_value()?;
         let ip = server
             .parse::<IpAddr>()
             .with_context(|| format!("failed to parse server ip address: {}", server))?;
