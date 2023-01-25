@@ -32,6 +32,20 @@ pub enum DhcpOption {
 
 impl DhcpOption {
     pub fn get_value(&self) -> Result<String> {
+        retry::Retry::new()
+            .initial_backoff(Duration::from_millis(50))
+            .max_backoff(Duration::from_millis(500))
+            .max_retries(60)
+            .retry(|_| {
+                match self.try_networkd() {
+                    Ok(res) => return Ok(res),
+                    Err(e) => trace!("failed querying networkd: {e:#}"),
+                }
+                Err(anyhow!("failed to acquire DHCP option"))
+            })
+    }
+
+    fn try_networkd(&self) -> Result<String> {
         let key = match *self {
             Self::DhcpServerId => "SERVER_ADDRESS",
             Self::AzureFabricAddress => "OPTION_245",
@@ -40,32 +54,25 @@ impl DhcpOption {
         let interfaces = pnet_datalink::interfaces();
         trace!("interfaces - {:?}", interfaces);
 
-        retry::Retry::new()
-            .initial_backoff(Duration::from_millis(50))
-            .max_backoff(Duration::from_millis(500))
-            .max_retries(60)
-            .retry(|_| {
-                for interface in interfaces.clone() {
-                    trace!("looking at interface {:?}", interface);
-                    let lease_path = format!("/run/systemd/netif/leases/{}", interface.index);
-                    let lease_path = Path::new(&lease_path);
-                    if lease_path.exists() {
-                        debug!("found lease file - {:?}", lease_path);
-                        let lease = File::open(lease_path).with_context(|| {
-                            format!("failed to open lease file ({:?})", lease_path)
-                        })?;
+        for interface in interfaces {
+            trace!("looking at interface {:?}", interface);
+            let lease_path = format!("/run/systemd/netif/leases/{}", interface.index);
+            let lease_path = Path::new(&lease_path);
+            if lease_path.exists() {
+                debug!("found lease file - {:?}", lease_path);
+                let lease = File::open(lease_path)
+                    .with_context(|| format!("failed to open lease file ({:?})", lease_path))?;
 
-                        if let Some(v) = key_lookup('=', key, lease)? {
-                            return Ok(v);
-                        }
-
-                        debug!(
-                            "failed to get value from existing lease file '{:?}'",
-                            lease_path
-                        );
-                    }
+                if let Some(v) = key_lookup('=', key, lease)? {
+                    return Ok(v);
                 }
-                Err(anyhow!("failed to retrieve fabric address"))
-            })
+
+                debug!(
+                    "failed to get value from existing lease file '{:?}'",
+                    lease_path
+                );
+            }
+        }
+        Err(anyhow!("failed to acquire DHCP option {key}"))
     }
 }
