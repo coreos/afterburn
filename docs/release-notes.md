@@ -8,6 +8,8 @@ nav_order: 8
 
 Major changes:
 
+- Support reading DHCP options from NetworkManager, fixing 30s delay on
+  Azure, Azure Stack, and CloudStack
 
 Minor changes:
 
