@@ -1,7 +1,7 @@
 # Afterburn
 
 [![crates.io](https://img.shields.io/crates/v/afterburn.svg)](https://crates.io/crates/afterburn)
-![minimum rust 1.58](https://img.shields.io/badge/rust-1.58%2B-orange.svg)
+![minimum rust 1.66](https://img.shields.io/badge/rust-1.66%2B-orange.svg)
 
 Afterburn is a one-shot agent for cloud-like platforms which interacts with provider-specific metadata endpoints.
 It is typically used in conjunction with [Ignition](https://github.com/coreos/ignition).

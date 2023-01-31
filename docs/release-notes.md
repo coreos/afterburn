@@ -19,7 +19,7 @@ Minor changes:
 Packaging changes:
 
 - Remove static libraries from vendor archive
-- Require Rust ≥ 1.58.0
+- Require Rust ≥ 1.66.0
 - Disable LTO in release builds
 - Drop `base64`, `byteorder`, `hostname`, `mime`, `serde_derive` dependencies
 
