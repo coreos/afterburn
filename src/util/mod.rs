@@ -14,16 +14,14 @@
 
 //! utility functions
 
-use crate::retry;
-use anyhow::{anyhow, Context, Result};
-use slog_scope::{debug, trace};
-use std::fs::File;
+use anyhow::Result;
 use std::io::{BufRead, BufReader, Read};
-use std::path::Path;
-use std::time::Duration;
 
 mod cmdline;
 pub use self::cmdline::{get_platform, has_network_kargs};
+
+mod dhcp;
+pub use self::dhcp::DhcpOption;
 
 mod mount;
 pub(crate) use mount::{mount_ro, unmount};
@@ -52,38 +50,6 @@ pub fn key_lookup<R: Read>(delim: char, key: &str, reader: R) -> Result<Option<S
         }
     }
     Ok(None)
-}
-
-pub fn dns_lease_key_lookup(key: &str) -> Result<String> {
-    let interfaces = pnet_datalink::interfaces();
-    trace!("interfaces - {:?}", interfaces);
-
-    retry::Retry::new()
-        .initial_backoff(Duration::from_millis(50))
-        .max_backoff(Duration::from_millis(500))
-        .max_retries(60)
-        .retry(|_| {
-            for interface in interfaces.clone() {
-                trace!("looking at interface {:?}", interface);
-                let lease_path = format!("/run/systemd/netif/leases/{}", interface.index);
-                let lease_path = Path::new(&lease_path);
-                if lease_path.exists() {
-                    debug!("found lease file - {:?}", lease_path);
-                    let lease = File::open(lease_path)
-                        .with_context(|| format!("failed to open lease file ({:?})", lease_path))?;
-
-                    if let Some(v) = key_lookup('=', key, lease)? {
-                        return Ok(v);
-                    }
-
-                    debug!(
-                        "failed to get value from existing lease file '{:?}'",
-                        lease_path
-                    );
-                }
-            }
-            Err(anyhow!("failed to retrieve fabric address"))
-        })
 }
 
 #[cfg(test)]

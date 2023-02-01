@@ -8,6 +8,8 @@ nav_order: 8
 
 Major changes:
 
+- Support reading DHCP options from NetworkManager, fixing 30s delay on
+  Azure, Azure Stack, and CloudStack
 
 Minor changes:
 
@@ -15,6 +17,7 @@ Minor changes:
 - Add release notes to documentation
 - Fix default dependency ordering on all `checkin` services
 - Fix failure setting SSH keys on IBM Cloud if none are provided
+- Don't ignore network interfaces that appear during DHCP option lookup retry
 
 Packaging changes:
 

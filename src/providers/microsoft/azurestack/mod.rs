@@ -194,12 +194,12 @@ impl AzureStack {
 
     #[cfg(not(test))]
     fn get_fabric_address_from_dhcp() -> Result<IpAddr> {
-        let v = crate::util::dns_lease_key_lookup("OPTION_245")?;
-        // value is an 8 digit hex value. convert it to u32 and
-        // then parse that into an ip. Ipv4Addr::from(u32)
-        // performs conversion from big-endian
+        let v = crate::util::DhcpOption::AzureFabricAddress.get_value()?;
+        // value is an 8 digit hex value, with colons if it came from
+        // NetworkManager.  Convert it to u32 and then parse that into an
+        // IP.  Ipv4Addr::from(u32) performs conversion from big-endian.
         slog_scope::trace!("found fabric address in hex - {:?}", v);
-        let dec = u32::from_str_radix(&v, 16)
+        let dec = u32::from_str_radix(&v.replace(':', ""), 16)
             .with_context(|| format!("failed to convert '{}' from hex", v))?;
         Ok(IpAddr::V4(dec.into()))
     }
