@@ -4,7 +4,19 @@ nav_order: 8
 
 # Release notes
 
-## Upcoming Afterburn 5.4.0 (unreleased)
+## Upcoming Afterburn 5.5.0 (unreleased)
+
+Major changes:
+
+
+Minor changes:
+
+
+Packaging changes:
+
+
+
+## Afterburn 5.4.0 (2023-02-03)
 
 Major changes:
 
@@ -13,18 +25,19 @@ Major changes:
 
 Minor changes:
 
-- Add `AWS_AVAILABILITY_ZONE_ID` attribute to AWS
-- Add release notes to documentation
+- Add `AWS_AVAILABILITY_ZONE_ID` attribute on AWS
 - Fix default dependency ordering on all `checkin` services
 - Fix failure setting SSH keys on IBM Cloud if none are provided
 - Don't ignore network interfaces that appear during DHCP option lookup retry
+- Add release notes to documentation
 
 Packaging changes:
 
-- Remove static libraries from vendor archive
 - Require Rust ≥ 1.66.0
-- Disable LTO in release builds
+- Require `zbus` ≥ 2.3
 - Drop `base64`, `byteorder`, `hostname`, `mime`, `serde_derive` dependencies
+- Remove static libraries from vendor archive
+- Disable LTO in release builds
 
 
 ## Afterburn 5.3.0 (2022-04-29)
