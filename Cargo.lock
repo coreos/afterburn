@@ -4,17 +4,17 @@ version = 3
 
 [[package]]
 name = "afterburn"
-version = "5.3.0"
+version = "5.4.0"
 dependencies = [
  "anyhow",
  "cfg-if",
  "clap",
- "ipnetwork 0.20.0",
+ "ipnetwork",
  "libsystemd",
  "mailparse",
  "maplit",
  "mockito",
- "nix 0.26.2",
+ "nix 0.25.1",
  "openssh-keys",
  "openssl",
  "pnet_base",
@@ -764,15 +764,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ipnetwork"
-version = "0.20.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bf466541e9d546596ee94f9f69590f89473455f88372423e0008fc1a7daf100e"
-dependencies = [
- "serde",
-]
-
-[[package]]
 name = "itoa"
 version = "1.0.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -976,7 +967,6 @@ dependencies = [
  "cfg-if",
  "libc",
  "memoffset 0.7.1",
- "pin-utils",
  "static_assertions",
 ]
 
@@ -1172,7 +1162,7 @@ version = "0.31.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e466faf03a98ad27f6e15cd27a2b7cc89e73e640a43527742977bc503c37f8aa"
 dependencies = [
- "ipnetwork 0.19.0",
+ "ipnetwork",
  "libc",
  "pnet_base",
  "pnet_sys",
