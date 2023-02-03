@@ -14,6 +14,7 @@ Minor changes:
 
 Packaging changes:
 
+- Remove non-Linux dependencies from vendor tarball
 
 
 ## Afterburn 5.4.0 (2023-02-03)
