@@ -14,6 +14,13 @@ Minor changes:
 
 Packaging changes:
 
+
+
+## Afterburn 5.4.1 (2023-02-06)
+
+Packaging changes:
+
+- Fix missing static archives in vendor tarball
 - Remove non-Linux dependencies from vendor tarball
 
 
