@@ -4,7 +4,7 @@ version = 3
 
 [[package]]
 name = "afterburn"
-version = "5.4.0"
+version = "5.4.1"
 dependencies = [
  "anyhow",
  "cfg-if",
@@ -14,7 +14,7 @@ dependencies = [
  "mailparse",
  "maplit",
  "mockito",
- "nix 0.26.2",
+ "nix 0.25.1",
  "openssh-keys",
  "openssl",
  "pnet_base",
@@ -967,7 +967,6 @@ dependencies = [
  "cfg-if",
  "libc",
  "memoffset 0.7.1",
- "pin-utils",
  "static_assertions",
 ]
 
