@@ -18,6 +18,7 @@ This guide requires:
  * [GPG setup][GPG setup] and personal key for signing
  * `cargo` (suggested: latest stable toolchain from [rustup][rustup])
  * `cargo-release` (suggested: `cargo install -f cargo-release`)
+ * `cargo vendor-filterer` (suggested: `cargo install -f cargo-vendor-filterer`)
  * Write access to this GitHub project
  * A verified account on crates.io
  * Membership in the [Fedora CoreOS Crates Owners group](https://github.com/orgs/coreos/teams/fedora-coreos-crates-owners/members), which will give you upload access to crates.io
@@ -35,6 +36,7 @@ Push access to the upstream repository is required in order to publish the new t
 
 - make sure the project is clean and prepare the environment:
   - [ ] Make sure `cargo-release` is up to date: `cargo install cargo-release`
+  - [ ] Make sure `cargo-vendor-filterer` is up to date: `cargo install cargo-vendor-filterer`
   - [ ] `cargo test --all-features`
   - [ ] `cargo clean`
   - [ ] `git clean -fd`
@@ -58,9 +60,7 @@ Push access to the upstream repository is required in order to publish the new t
   - [ ] `cargo publish`
 
 - assemble vendor archive:
-  - [ ] `cargo vendor target/vendor`
-  - [ ] `find target/vendor -name '*.a' -delete`
-  - [ ] `tar -czf target/afterburn-${RELEASE_VER}-vendor.tar.gz -C target vendor`
+  - [ ] `cargo vendor-filterer --format=tar.gz --prefix=vendor target/afterburn-${RELEASE_VER}-vendor.tar.gz`
 
 - publish this release on GitHub:
   - [ ] find the new tag in the [GitHub tag list](https://github.com/coreos/afterburn/tags), click the triple dots menu, and create a release for it
