@@ -29,7 +29,7 @@ impl OpenstackProviderNetwork {
 
     #[cfg(not(test))]
     fn endpoint_for(key: &str) -> String {
-        format!("{}/{}", URL, key)
+        format!("{URL}/{key}")
     }
 
     fn fetch_keys(&self) -> Result<Vec<String>> {

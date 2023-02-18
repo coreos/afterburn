@@ -67,8 +67,8 @@ impl IBMGen2Provider {
     /// Read metadata file and parse attributes.
     fn read_metadata(&self) -> Result<HashMap<String, String>> {
         let filename = self.metadata_dir().join("meta-data");
-        let file = File::open(&filename)
-            .with_context(|| format!("failed to open file '{:?}'", filename))?;
+        let file =
+            File::open(&filename).with_context(|| format!("failed to open file '{filename:?}'"))?;
         let bufrd = BufReader::new(file);
         Self::parse_metadata(bufrd)
     }
@@ -100,7 +100,7 @@ impl IBMGen2Provider {
     fn read_vendordata(&self) -> Result<Vec<u8>> {
         let filename = self.metadata_dir().join("vendor-data");
         let mut file = File::open(&filename)
-            .with_context(|| format!("Failed to open vendordata '{:?}'", filename))?;
+            .with_context(|| format!("Failed to open vendordata '{filename:?}'"))?;
         let mut contents = String::new();
         let _ = file.read_to_string(&mut contents);
         Ok(contents.into_bytes())

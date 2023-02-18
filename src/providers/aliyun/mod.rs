@@ -39,7 +39,7 @@ impl AliyunProvider {
 
     #[cfg(not(test))]
     fn endpoint_for(name: &str) -> String {
-        format!("http://100.100.100.200/latest/meta-data/{}", name)
+        format!("http://100.100.100.200/latest/meta-data/{name}")
     }
 
     /// Fetch a metadata attribute from its specific endpoint.
@@ -80,7 +80,7 @@ impl AliyunProvider {
         let mut out = BTreeSet::new();
         for entry in keys_list.lines() {
             let key_id = entry.trim_end_matches('/');
-            let ep = format!("public-keys/{}/openssh-key", key_id);
+            let ep = format!("public-keys/{key_id}/openssh-key");
             let key: String = self
                 .client
                 .get(retry::Raw, AliyunProvider::endpoint_for(&ep))
@@ -113,44 +113,36 @@ impl MetadataProvider for AliyunProvider {
         // See https://www.alibabacloud.com/help/doc-detail/49122.htm.
         let mut out = HashMap::with_capacity(10);
 
-        self.fetch_attribute(&mut out, &format!("{}_EIPV4", PROVIDER_PREFIX), "eipv4")?;
+        self.fetch_attribute(&mut out, &format!("{PROVIDER_PREFIX}_EIPV4"), "eipv4")?;
+        self.fetch_attribute(&mut out, &format!("{PROVIDER_PREFIX}_HOSTNAME"), "hostname")?;
+        self.fetch_attribute(&mut out, &format!("{PROVIDER_PREFIX}_IMAGE_ID"), "image-id")?;
         self.fetch_attribute(
             &mut out,
-            &format!("{}_HOSTNAME", PROVIDER_PREFIX),
-            "hostname",
-        )?;
-        self.fetch_attribute(
-            &mut out,
-            &format!("{}_IMAGE_ID", PROVIDER_PREFIX),
-            "image-id",
-        )?;
-        self.fetch_attribute(
-            &mut out,
-            &format!("{}_INSTANCE_ID", PROVIDER_PREFIX),
+            &format!("{PROVIDER_PREFIX}_INSTANCE_ID"),
             "instance-id",
         )?;
         self.fetch_attribute(
             &mut out,
-            &format!("{}_INSTANCE_TYPE", PROVIDER_PREFIX),
+            &format!("{PROVIDER_PREFIX}_INSTANCE_TYPE"),
             "instance/instance-type",
         )?;
         self.fetch_attribute(
             &mut out,
-            &format!("{}_IPV4_PRIVATE", PROVIDER_PREFIX),
+            &format!("{PROVIDER_PREFIX}_IPV4_PRIVATE"),
             "private-ipv4",
         )?;
         self.fetch_attribute(
             &mut out,
-            &format!("{}_IPV4_PUBLIC", PROVIDER_PREFIX),
+            &format!("{PROVIDER_PREFIX}_IPV4_PUBLIC"),
             "public-ipv4",
         )?;
         self.fetch_attribute(
             &mut out,
-            &format!("{}_REGION_ID", PROVIDER_PREFIX),
+            &format!("{PROVIDER_PREFIX}_REGION_ID"),
             "region-id",
         )?;
-        self.fetch_attribute(&mut out, &format!("{}_VPC_ID", PROVIDER_PREFIX), "vpc-id")?;
-        self.fetch_attribute(&mut out, &format!("{}_ZONE_ID", PROVIDER_PREFIX), "zone-id")?;
+        self.fetch_attribute(&mut out, &format!("{PROVIDER_PREFIX}_VPC_ID"), "vpc-id")?;
+        self.fetch_attribute(&mut out, &format!("{PROVIDER_PREFIX}_ZONE_ID"), "zone-id")?;
 
         Ok(out)
     }

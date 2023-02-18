@@ -61,10 +61,9 @@ fn create_file(filename: &str) -> Result<File> {
     let folder = file_path
         .parent()
         .ok_or_else(|| anyhow!("could not get parent directory of {:?}", file_path))?;
-    fs::create_dir_all(folder)
-        .with_context(|| format!("failed to create directory {:?}", folder))?;
+    fs::create_dir_all(folder).with_context(|| format!("failed to create directory {folder:?}"))?;
     // create (or truncate) the file we want to write to
-    File::create(file_path).with_context(|| format!("failed to create file {:?}", file_path))
+    File::create(file_path).with_context(|| format!("failed to create file {file_path:?}"))
 }
 
 /// Add a message to the journal logging SSH key additions; this
@@ -113,13 +112,13 @@ fn write_ssh_keys(user: User, ssh_keys: Vec<PublicKey>) -> Result<()> {
 
         // create temporary file
         let mut temp_file = tempfile::Builder::new()
-            .prefix(&format!(".{}-", file_name))
+            .prefix(&format!(".{file_name}-"))
             .tempfile_in(&dir_path)
             .context("failed to create temporary file")?;
 
         // write out keys
         for key in ssh_keys {
-            writeln!(temp_file, "{}", key).with_context(|| {
+            writeln!(temp_file, "{key}").with_context(|| {
                 format!("failed to write to file {:?}", temp_file.path().display())
             })?;
         }
@@ -222,8 +221,8 @@ pub trait MetadataProvider {
     fn write_attributes(&self, attributes_file_path: String) -> Result<()> {
         let mut attributes_file = create_file(&attributes_file_path)?;
         for (k, v) in self.attributes()? {
-            writeln!(&mut attributes_file, "AFTERBURN_{}={}", k, v).with_context(|| {
-                format!("failed to write attributes to file {:?}", attributes_file)
+            writeln!(&mut attributes_file, "AFTERBURN_{k}={v}").with_context(|| {
+                format!("failed to write attributes to file {attributes_file:?}")
             })?;
         }
         Ok(())
@@ -260,11 +259,8 @@ pub trait MetadataProvider {
             }
 
             let mut hostname_file = create_file(&hostname_file_path)?;
-            writeln!(&mut hostname_file, "{}", hostname).with_context(|| {
-                format!(
-                    "failed to write hostname {:?} to file {:?}",
-                    hostname, hostname_file
-                )
+            writeln!(&mut hostname_file, "{hostname}").with_context(|| {
+                format!("failed to write hostname {hostname:?} to file {hostname_file:?}")
             })?;
             slog_scope::info!("wrote hostname {} to {}", hostname, hostname_file_path);
         }
@@ -274,19 +270,16 @@ pub trait MetadataProvider {
     fn write_network_units(&self, network_units_dir: String) -> Result<()> {
         let dir_path = Path::new(&network_units_dir);
         fs::create_dir_all(dir_path)
-            .with_context(|| format!("failed to create directory {:?}", dir_path))?;
+            .with_context(|| format!("failed to create directory {dir_path:?}"))?;
 
         // Write `.network` fragments for network interfaces/links.
         for interface in &self.networks()? {
             let unit_name = interface.sd_network_unit_name()?;
             let file_path = dir_path.join(unit_name);
             let mut unit_file = File::create(&file_path)
-                .with_context(|| format!("failed to create file {:?}", file_path))?;
+                .with_context(|| format!("failed to create file {file_path:?}"))?;
             write!(&mut unit_file, "{}", interface.config()).with_context(|| {
-                format!(
-                    "failed to write network interface unit file {:?}",
-                    unit_file
-                )
+                format!("failed to write network interface unit file {unit_file:?}")
             })?;
         }
 
@@ -294,9 +287,9 @@ pub trait MetadataProvider {
         for device in &self.virtual_network_devices()? {
             let file_path = dir_path.join(device.netdev_unit_name());
             let mut unit_file = File::create(&file_path)
-                .with_context(|| format!("failed to create netdev unit file {:?}", file_path))?;
+                .with_context(|| format!("failed to create netdev unit file {file_path:?}"))?;
             write!(&mut unit_file, "{}", device.sd_netdev_config())
-                .with_context(|| format!("failed to write netdev unit file {:?}", unit_file))?;
+                .with_context(|| format!("failed to write netdev unit file {unit_file:?}"))?;
         }
         Ok(())
     }

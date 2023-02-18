@@ -124,7 +124,7 @@ mod tests {
 
         let final_res: AttemptResult = driver.retry(|attempt| {
             if attempt != 0 {
-                panic!("unreachable attempt {}", attempt);
+                panic!("unreachable attempt {attempt}");
             }
 
             bail!("expected error")
@@ -146,7 +146,7 @@ mod tests {
                 return AttemptResult::Ok(attempt);
             }
             if attempt > retries {
-                panic!("unreachable attempt {}", attempt);
+                panic!("unreachable attempt {attempt}");
             }
 
             bail!("expected error #{}", attempt)

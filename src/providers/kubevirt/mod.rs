@@ -85,8 +85,8 @@ impl KubeVirtProvider {
     /// Read and parse metadata file.
     fn read_metadata(&self) -> Result<MetaDataJSON> {
         let filename = self.metadata_dir().join("meta_data.json");
-        let file = File::open(&filename)
-            .with_context(|| format!("failed to open file '{:?}'", filename))?;
+        let file =
+            File::open(&filename).with_context(|| format!("failed to open file '{filename:?}'"))?;
         let bufrd = BufReader::new(file);
         Self::parse_metadata(bufrd)
     }

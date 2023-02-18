@@ -185,7 +185,7 @@ impl Azure {
         // IP.  Ipv4Addr::from(u32) performs conversion from big-endian.
         slog_scope::trace!("found fabric address in hex - {:?}", v);
         let dec = u32::from_str_radix(&v.replace(':', ""), 16)
-            .with_context(|| format!("failed to convert '{}' from hex", v))?;
+            .with_context(|| format!("failed to convert '{v}' from hex"))?;
         Ok(IpAddr::V4(dec.into()))
     }
 

@@ -28,7 +28,7 @@ const CMDLINE_PLATFORM_FLAG: &str = "ignition.platform.id";
 /// Get platform/OEM value from cmdline file.
 pub fn get_platform(fpath: &str) -> Result<String> {
     let content = std::fs::read_to_string(fpath)
-        .with_context(|| format!("Failed to read cmdline file ({})", fpath))?;
+        .with_context(|| format!("Failed to read cmdline file ({fpath})"))?;
 
     match find_flag_value(CMDLINE_PLATFORM_FLAG, &content) {
         Some(platform) => {
@@ -49,7 +49,7 @@ pub fn has_network_kargs(fpath: &str) -> Result<bool> {
     const IP_PREFIX: &str = "ip=";
 
     let content = std::fs::read_to_string(fpath)
-        .with_context(|| format!("Failed to read cmdline file ({})", fpath))?;
+        .with_context(|| format!("Failed to read cmdline file ({fpath})"))?;
     let has_ip = contains_flag_prefix(&content, IP_PREFIX);
     Ok(has_ip)
 }
@@ -110,7 +110,7 @@ mod tests {
         ];
         for (tcase, tres) in tests {
             let res = find_flag_value(flagname, tcase);
-            assert_eq!(res, tres, "failed testcase: '{}'", tcase);
+            assert_eq!(res, tres, "failed testcase: '{tcase}'");
         }
     }
 
@@ -127,7 +127,7 @@ mod tests {
         ];
         for (tcase, tres) in tests {
             let res = contains_flag_prefix(tcase, prefix);
-            assert_eq!(res, tres, "failed testcase: '{}'", tcase);
+            assert_eq!(res, tres, "failed testcase: '{tcase}'");
         }
     }
 }

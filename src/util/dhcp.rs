@@ -122,7 +122,7 @@ impl DhcpOption {
             if lease_path.exists() {
                 debug!("found lease file - {:?}", lease_path);
                 let lease = File::open(lease_path)
-                    .with_context(|| format!("failed to open lease file ({:?})", lease_path))?;
+                    .with_context(|| format!("failed to open lease file ({lease_path:?})"))?;
 
                 if let Some(v) = key_lookup('=', key, lease)? {
                     return Ok(v);

@@ -24,7 +24,7 @@ pub(crate) fn fetch_network_kargs(provider: &str) -> Result<Option<String>> {
 /// Write network kargs into a cmdline.d fragment.
 pub(crate) fn write_network_kargs(kargs: &str) -> Result<()> {
     let mut fragment_file = File::create(KARGS_PATH)
-        .with_context(|| format!("failed to create file {:?}", KARGS_PATH))?;
+        .with_context(|| format!("failed to create file {KARGS_PATH:?}"))?;
 
     fragment_file
         .write_all(kargs.as_bytes())
