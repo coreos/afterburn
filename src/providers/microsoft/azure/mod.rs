@@ -202,7 +202,7 @@ impl Azure {
 
     #[cfg(test)]
     fn fabric_base_url(&self) -> String {
-        mockito::server_url().to_string()
+        mockito::server_url()
     }
 
     fn is_fabric_compatible(&self, version: &str) -> Result<()> {

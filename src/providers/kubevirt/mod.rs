@@ -253,7 +253,7 @@ mod tests {
 
         assert!(!parsed.instance_id.is_empty());
         assert!(!parsed.hostname.is_empty());
-        assert!(!parsed.public_keys.is_none());
+        assert!(parsed.public_keys.is_some());
     }
 
     #[test]

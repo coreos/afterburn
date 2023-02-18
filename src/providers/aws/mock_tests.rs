@@ -134,7 +134,7 @@ fn test_aws_imds_version1() {
         .with_body("Forbidden")
         .create();
 
-    let provider = aws::AwsProvider::with_client(client.clone()).unwrap();
+    let provider = aws::AwsProvider::with_client(client).unwrap();
 
     let v = provider.attributes().unwrap();
     assert_eq!(v, attributes);
@@ -171,7 +171,7 @@ fn test_aws_imds_version2() {
         .with_body(token)
         .create();
 
-    let provider = aws::AwsProvider::with_client(client.clone()).unwrap();
+    let provider = aws::AwsProvider::with_client(client).unwrap();
 
     let v = provider.attributes().unwrap();
     assert_eq!(v, attributes);

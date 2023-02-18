@@ -252,10 +252,7 @@ impl PacketProvider {
                     unmanaged: false,
                     required_for_online: Some("degraded-carrier".to_owned()),
                 };
-                if !bonds
-                    .iter()
-                    .any(|&(_, ref b): &(MacAddr, Interface)| &bond == b)
-                {
+                if !bonds.iter().any(|(_, b): &(MacAddr, Interface)| &bond == b) {
                     bonds.push((mac, bond));
                 }
             }
