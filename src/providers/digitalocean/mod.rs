@@ -102,7 +102,7 @@ impl DigitalOceanProvider {
                 }
                 if let Some(ref anchor_v4) = a.anchor_ipv4 {
                     attrs.push((
-                        format!("DIGITALOCEAN_IPV4_ANCHOR_{}", i),
+                        format!("DIGITALOCEAN_IPV4_ANCHOR_{i}"),
                         format!("{}", anchor_v4.ip_address),
                     ));
                 }
@@ -113,13 +113,13 @@ impl DigitalOceanProvider {
             for (i, a) in ifaces.iter().enumerate() {
                 if let Some(ref v4) = a.ipv4 {
                     attrs.push((
-                        format!("DIGITALOCEAN_IPV4_PRIVATE_{}", i),
+                        format!("DIGITALOCEAN_IPV4_PRIVATE_{i}"),
                         format!("{}", v4.ip_address),
                     ));
                 }
                 if let Some(ref v6) = a.ipv6 {
                     attrs.push((
-                        format!("DIGITALOCEAN_IPV6_PRIVATE_{}", i),
+                        format!("DIGITALOCEAN_IPV6_PRIVATE_{i}"),
                         format!("{}", v6.ip_address),
                     ));
                 }

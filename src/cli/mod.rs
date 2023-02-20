@@ -184,7 +184,7 @@ fn translate_legacy_args(cli: impl IntoIterator<Item = String>) -> impl Iterator
     // Go-style arguments are supported for backwards compatibility.
     argv.map(move |arg| {
         if legacy_mode && arg.starts_with('-') && !arg.starts_with("--") && arg.len() > 2 {
-            format!("-{}", arg)
+            format!("-{arg}")
         } else {
             arg
         }
@@ -225,7 +225,7 @@ mod tests {
         let cmd = parse_args(legacy).unwrap();
         match cmd {
             CliConfig::Multi(_) => {}
-            x => panic!("unexpected cmd: {:?}", x),
+            x => panic!("unexpected cmd: {x:?}"),
         };
     }
 
@@ -245,7 +245,7 @@ mod tests {
         let cmd = parse_args(args).unwrap();
         match cmd {
             CliConfig::Multi(_) => {}
-            x => panic!("unexpected cmd: {:?}", x),
+            x => panic!("unexpected cmd: {x:?}"),
         };
     }
 
@@ -259,7 +259,7 @@ mod tests {
         let cmd = parse_args(args).unwrap();
         match cmd {
             CliConfig::Multi(_) => {}
-            x => panic!("unexpected cmd: {:?}", x),
+            x => panic!("unexpected cmd: {x:?}"),
         };
     }
 
@@ -281,13 +281,13 @@ mod tests {
         let cmd = parse_args(args).unwrap();
         let subcmd = match cmd {
             CliConfig::Exp(v) => v,
-            x => panic!("unexpected cmd: {:?}", x),
+            x => panic!("unexpected cmd: {x:?}"),
         };
 
         match subcmd {
             exp::CliExp::RdNetworkKargs(_) => {}
             #[allow(unreachable_patterns)]
-            x => panic!("unexpected 'exp' sub-command: {:?}", x),
+            x => panic!("unexpected 'exp' sub-command: {x:?}"),
         };
     }
 
@@ -313,7 +313,7 @@ mod tests {
         .collect();
 
         for args in vec![t1, t2] {
-            let input = format!("{:?}", args);
+            let input = format!("{args:?}");
             parse_args(args).expect_err(&input);
         }
 

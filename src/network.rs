@@ -147,22 +147,22 @@ impl Interface {
         // [Match] section
         writeln!(config, "[Match]").unwrap();
         if let Some(name) = self.name.clone() {
-            writeln!(config, "Name={}", name).unwrap();
+            writeln!(config, "Name={name}").unwrap();
         }
         if let Some(mac) = self.mac_address {
-            writeln!(config, "MACAddress={}", mac).unwrap();
+            writeln!(config, "MACAddress={mac}").unwrap();
         }
         if let Some(path) = &self.path {
-            writeln!(config, "Path={}", path).unwrap();
+            writeln!(config, "Path={path}").unwrap();
         }
 
         // [Network] section
         writeln!(config, "\n[Network]").unwrap();
         for ns in &self.nameservers {
-            writeln!(config, "DNS={}", ns).unwrap()
+            writeln!(config, "DNS={ns}").unwrap()
         }
         if let Some(bond) = self.bond.clone() {
-            writeln!(config, "Bond={}", bond).unwrap();
+            writeln!(config, "Bond={bond}").unwrap();
         }
 
         // [Link] section
@@ -173,12 +173,12 @@ impl Interface {
             writeln!(config, "Unmanaged=yes").unwrap();
         }
         if let Some(operational_state) = &self.required_for_online {
-            writeln!(config, "RequiredForOnline={}", operational_state).unwrap();
+            writeln!(config, "RequiredForOnline={operational_state}").unwrap();
         }
 
         // [Address] sections
         for addr in &self.ip_addresses {
-            writeln!(config, "\n[Address]\nAddress={}", addr).unwrap();
+            writeln!(config, "\n[Address]\nAddress={addr}").unwrap();
         }
 
         // [Route] sections

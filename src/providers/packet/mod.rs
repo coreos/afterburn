@@ -138,44 +138,44 @@ impl PacketProvider {
             match (a.address, a.public) {
                 (IpAddr::V4(ip), true) => {
                     attrs.push((
-                        format!("PACKET_IPV4_PUBLIC_{}", v4_public_counter),
-                        format!("{}", ip),
+                        format!("PACKET_IPV4_PUBLIC_{v4_public_counter}"),
+                        format!("{ip}"),
                     ));
                     attrs.push((
-                        format!("PACKET_IPV4_PUBLIC_GATEWAY_{}", v4_public_counter),
+                        format!("PACKET_IPV4_PUBLIC_GATEWAY_{v4_public_counter}"),
                         format!("{}", a.gateway),
                     ));
                     v4_public_counter += 1;
                 }
                 (IpAddr::V4(ip), false) => {
                     attrs.push((
-                        format!("PACKET_IPV4_PRIVATE_{}", v4_private_counter),
-                        format!("{}", ip),
+                        format!("PACKET_IPV4_PRIVATE_{v4_private_counter}"),
+                        format!("{ip}"),
                     ));
                     attrs.push((
-                        format!("PACKET_IPV4_PRIVATE_GATEWAY_{}", v4_private_counter),
+                        format!("PACKET_IPV4_PRIVATE_GATEWAY_{v4_private_counter}"),
                         format!("{}", a.gateway),
                     ));
                     v4_private_counter += 1;
                 }
                 (IpAddr::V6(ip), true) => {
                     attrs.push((
-                        format!("PACKET_IPV6_PUBLIC_{}", v6_public_counter),
-                        format!("{}", ip),
+                        format!("PACKET_IPV6_PUBLIC_{v6_public_counter}"),
+                        format!("{ip}"),
                     ));
                     attrs.push((
-                        format!("PACKET_IPV6_PUBLIC_GATEWAY_{}", v6_public_counter),
+                        format!("PACKET_IPV6_PUBLIC_GATEWAY_{v6_public_counter}"),
                         format!("{}", a.gateway),
                     ));
                     v6_public_counter += 1;
                 }
                 (IpAddr::V6(ip), false) => {
                     attrs.push((
-                        format!("PACKET_IPV6_PRIVATE_{}", v6_private_counter),
-                        format!("{}", ip),
+                        format!("PACKET_IPV6_PRIVATE_{v6_private_counter}"),
+                        format!("{ip}"),
                     ));
                     attrs.push((
-                        format!("PACKET_IPV6_PRIVATE_GATEWAY_{}", v6_private_counter),
+                        format!("PACKET_IPV6_PRIVATE_GATEWAY_{v6_private_counter}"),
                         format!("{}", a.gateway),
                     ));
                     v6_private_counter += 1;
@@ -252,10 +252,7 @@ impl PacketProvider {
                     unmanaged: false,
                     required_for_online: Some("degraded-carrier".to_owned()),
                 };
-                if !bonds
-                    .iter()
-                    .any(|&(_, ref b): &(MacAddr, Interface)| &bond == b)
-                {
+                if !bonds.iter().any(|(_, b): &(MacAddr, Interface)| &bond == b) {
                     bonds.push((mac, bond));
                 }
             }

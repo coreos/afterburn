@@ -30,7 +30,7 @@ fn key_lookup_line(delim: char, key: &str, line: &str) -> Option<String> {
     match line.find(delim) {
         Some(index) => {
             let (k, val) = line.split_at(index + 1);
-            if k != format!("{}{}", key, delim) {
+            if k != format!("{key}{delim}") {
                 None
             } else {
                 Some(val.to_owned())

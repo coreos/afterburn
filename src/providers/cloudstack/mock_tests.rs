@@ -11,7 +11,7 @@ fn test_ssh_keys() {
 
     let _m = mockito::mock("GET", "/latest/meta-data/public-keys")
         .with_status(200)
-        .with_body(format!("{}\n{}", key1, key2))
+        .with_body(format!("{key1}\n{key2}"))
         .create();
 
     let keys = provider.ssh_keys().unwrap();

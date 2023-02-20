@@ -71,26 +71,26 @@ impl ConfigDrive {
     }
 
     fn fetch_value(&self, key: &str) -> Result<Option<String>> {
-        let filename = self.metadata_dir().join(format!("{}.txt", key));
+        let filename = self.metadata_dir().join(format!("{key}.txt"));
 
         if !filename.exists() {
             return Ok(None);
         }
 
-        let mut file = File::open(&filename)
-            .with_context(|| format!("failed to open file '{:?}'", filename))?;
+        let mut file =
+            File::open(&filename).with_context(|| format!("failed to open file '{filename:?}'"))?;
 
         let mut contents = String::new();
         file.read_to_string(&mut contents)
-            .with_context(|| format!("failed to read from file '{:?}'", filename))?;
+            .with_context(|| format!("failed to read from file '{filename:?}'"))?;
 
         Ok(Some(contents))
     }
 
     fn fetch_publickeys(&self) -> Result<Vec<PublicKey>> {
         let filename = self.metadata_dir().join("public_keys.txt");
-        let file = File::open(&filename)
-            .with_context(|| format!("failed to open file '{:?}'", filename))?;
+        let file =
+            File::open(&filename).with_context(|| format!("failed to open file '{filename:?}'"))?;
 
         PublicKey::read_keys(file).context("failed to read public keys from config drive file")
     }

@@ -39,8 +39,8 @@ impl CloudstackNetwork {
         let server = DhcpOption::DhcpServerId.get_value()?;
         let ip = server
             .parse::<IpAddr>()
-            .with_context(|| format!("failed to parse server ip address: {}", server))?;
-        Ok(format!("http://{}", ip))
+            .with_context(|| format!("failed to parse server ip address: {server}"))?;
+        Ok(format!("http://{ip}"))
     }
 }
 

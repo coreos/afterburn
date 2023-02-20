@@ -67,7 +67,7 @@ fn settle_udev(timeout: Option<u8>) {
     cmd.arg("settle");
     // If none, udevadm default is 120s.
     if let Some(t) = timeout {
-        cmd.arg(format!("--timeout={}", t));
+        cmd.arg(format!("--timeout={t}"));
     }
 
     match cmd.output() {

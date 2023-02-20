@@ -49,7 +49,7 @@ impl VultrProvider {
 
     #[cfg(not(test))]
     fn endpoint_for(name: &str) -> String {
-        format!("http://169.254.169.254/v1/{}", name)
+        format!("http://169.254.169.254/v1/{name}")
     }
 
     fn fetch_attribute(
