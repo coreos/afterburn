@@ -25,7 +25,7 @@ use slog_scope::trace;
 /// Platform key.
 const CMDLINE_PLATFORM_FLAG: &str = "ignition.platform.id";
 
-/// Get platform/OEM value from cmdline file.
+/// Get platform value from cmdline file.
 pub fn get_platform(fpath: &str) -> Result<String> {
     let content = std::fs::read_to_string(fpath)
         .with_context(|| format!("Failed to read cmdline file ({fpath})"))?;
@@ -62,7 +62,7 @@ fn contains_flag_prefix(cmdline: &str, prefix: &str) -> bool {
     cmdline.split(' ').any(|s| s.starts_with(prefix))
 }
 
-// Find OEM ID flag value in cmdline string.
+// Find value of flag in cmdline string.
 fn find_flag_value(flagname: &str, cmdline: &str) -> Option<String> {
     // split the contents into elements and keep key-value tuples only.
     let params: Vec<(&str, &str)> = cmdline
