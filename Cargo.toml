@@ -39,7 +39,7 @@ debug = true
 [dependencies]
 anyhow = "1.0"
 cfg-if = "1.0"
-clap = { version = ">= 3.1, < 4", "default_features" = false, "features" = ["std", "cargo", "suggestions", "wrap_help"] }
+clap = { version = "4", "default_features" = false, "features" = ["std", "cargo", "error-context", "help", "suggestions", "usage", "wrap_help"] }
 ipnetwork = ">= 0.17, < 0.21"
 libsystemd = ">= 0.2.1, < 0.7.0"
 mailparse = ">= 0.13, < 0.15"

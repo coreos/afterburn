@@ -14,6 +14,7 @@ Minor changes:
 
 Packaging changes:
 
+- Require clap ≥ 4
 
 
 ## Afterburn 5.4.1 (2023-02-06)

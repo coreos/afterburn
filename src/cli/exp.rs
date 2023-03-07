@@ -42,9 +42,9 @@ impl CliRdNetworkKargs {
     pub(crate) fn parse(matches: &ArgMatches) -> Result<CliExp> {
         let platform = super::parse_provider(matches)?;
         let default_kargs = matches
-            .value_of("default-value")
+            .get_one::<String>("default-value")
             .ok_or_else(|| anyhow!("missing network kargs default value"))?
-            .to_string();
+            .clone();
 
         let cfg = Self {
             platform,
