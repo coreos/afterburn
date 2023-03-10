@@ -17,6 +17,7 @@ It comprises several modules which may run at different times during the lifecyc
 Depending on the specific platform, the following services may run in the [initramfs](https://github.com/coreos/afterburn/tree/main/dracut/30afterburn) on first boot:
  * setting local hostname
  * injecting [network command-line arguments](usage/initrd-network-cmdline.md)
+ * configuring the network with [Netplan guestinfo metadata on VMware](usage/vmware-netplan-guestinfo-metadata.md)
 
 The following features are conditionally available on some platforms as [systemd service units](https://github.com/coreos/afterburn/tree/main/systemd):
  * installing public SSH keys for local system users

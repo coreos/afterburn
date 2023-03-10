@@ -200,6 +200,10 @@ pub trait MetadataProvider {
         Ok(vec![])
     }
 
+    fn netplan_config(&self) -> Result<Option<String>> {
+        Ok(None)
+    }
+
     fn boot_checkin(&self) -> Result<()> {
         warn!("boot check-in requested, but not supported on this platform");
         Ok(())
@@ -292,6 +296,22 @@ pub trait MetadataProvider {
                 .with_context(|| format!("failed to create netdev unit file {file_path:?}"))?;
             write!(&mut unit_file, "{}", device.sd_netdev_config())
                 .with_context(|| format!("failed to write netdev unit file {unit_file:?}"))?;
+        }
+        Ok(())
+    }
+
+    fn write_netplan_config(&self, netplan_config_dir: String) -> Result<()> {
+        let dir_path = Path::new(&netplan_config_dir);
+        fs::create_dir_all(dir_path)
+            .with_context(|| format!("failed to create directory {dir_path:?}"))?;
+
+        // Write a single afterburn `.yaml` netplan config.
+        if let Some(netplan_config) = &self.netplan_config()? {
+            let file_path = dir_path.join("50-afterburn.yaml");
+            let mut config_file = File::create(&file_path)
+                .with_context(|| format!("failed to create file {file_path:?}"))?;
+            write!(&mut config_file, "{netplan_config}")
+                .with_context(|| format!("failed to write netplan config file {config_file:?}"))?;
         }
         Ok(())
     }
