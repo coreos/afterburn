@@ -168,10 +168,11 @@ impl AzureStack {
             .ok_or_else(|| anyhow!("failed to get goal state: not found response"))
     }
 
-    fn fetch_identity() -> Result<InstanceMetadata> {
+    fn fetch_identity(&self) -> Result<InstanceMetadata> {
         const NAME_URL: &str = "Microsoft.Compute/identity?api-version=2019-03-11";
         let url = format!("{}/{}", Self::metadata_endpoint(), NAME_URL);
-        retry::Client::try_new()?
+        self.client
+            .clone()
             .header(
                 HeaderName::from_static("metadata"),
                 HeaderValue::from_static("true"),
@@ -306,7 +307,7 @@ impl AzureStack {
     }
 
     fn fetch_hostname(&self) -> Result<Option<String>> {
-        let instance_metadata = AzureStack::fetch_identity()?;
+        let instance_metadata = self.fetch_identity()?;
         Ok(Some(instance_metadata.vm_name))
     }
 

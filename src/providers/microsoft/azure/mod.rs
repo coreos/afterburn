@@ -338,7 +338,9 @@ impl Azure {
         const NAME_URL: &str = "metadata/instance/compute/name?api-version=2017-08-01&format=text";
         let url = format!("{}/{}", Self::metadata_endpoint(), NAME_URL);
 
-        let name = retry::Client::try_new()?
+        let name = self
+            .client
+            .clone()
             .header(
                 HeaderName::from_static("metadata"),
                 HeaderValue::from_static("true"),
@@ -354,7 +356,9 @@ impl Azure {
             "metadata/instance/compute/vmSize?api-version=2017-08-01&format=text";
         let url = format!("{}/{}", Self::metadata_endpoint(), VMSIZE_URL);
 
-        let vmsize = retry::Client::try_new()?
+        let vmsize = self
+            .client
+            .clone()
             .header(
                 HeaderName::from_static("metadata"),
                 HeaderValue::from_static("true"),
