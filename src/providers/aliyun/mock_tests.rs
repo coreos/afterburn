@@ -4,11 +4,14 @@ use mockito;
 
 #[test]
 fn basic_hostname() {
-    let ep = "/hostname";
+    let ep = "/latest/meta-data/hostname";
     let hostname = "test-hostname";
 
     let mut provider = aliyun::AliyunProvider::try_new().unwrap();
-    provider.client = provider.client.max_retries(0);
+    provider.client = provider
+        .client
+        .max_retries(0)
+        .mock_base_url(mockito::server_url());
 
     {
         let _m503 = mockito::mock("GET", ep).with_status(503).create();
@@ -46,18 +49,21 @@ fn basic_hostname() {
 #[test]
 fn basic_pubkeys() {
     let mut provider = aliyun::AliyunProvider::try_new().unwrap();
-    provider.client = provider.client.max_retries(0);
+    provider.client = provider
+        .client
+        .max_retries(0)
+        .mock_base_url(mockito::server_url());
 
     // Setup two entries with identical content, in order to test de-dup.
-    let _m_keys = mockito::mock("GET", "/public-keys/")
+    let _m_keys = mockito::mock("GET", "/latest/meta-data/public-keys/")
         .with_status(200)
         .with_body("0/\ntest/\n")
         .create();
-    let _m_key0 = mockito::mock("GET", "/public-keys/0/openssh-key")
+    let _m_key0 = mockito::mock("GET", "/latest/meta-data/public-keys/0/openssh-key")
         .with_status(200)
         .with_body("ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIadOopfaOOAdFWRkCoOimvDyOftqphtnIeiECJuhkdq test-comment")
         .create();
-    let _m_keytest = mockito::mock("GET", "/public-keys/test/openssh-key")
+    let _m_keytest = mockito::mock("GET", "/latest/meta-data/public-keys/test/openssh-key")
         .with_status(200)
         .with_body("ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIadOopfaOOAdFWRkCoOimvDyOftqphtnIeiECJuhkdq test-comment")
         .create();
@@ -87,16 +93,16 @@ fn basic_attributes() {
     let zone_id = "test-zone-id";
 
     let endpoints = maplit::btreemap! {
-        "/eipv4" => eipv4,
-        "/hostname" => hostname,
-        "/image-id" => image_id,
-        "/instance-id" => instance_id,
-        "/instance/instance-type" => instance_type,
-        "/private-ipv4" => private_ipv4,
-        "/public-ipv4" => public_ipv4,
-        "/region-id" => region_id,
-        "/vpc-id" => vpc_id,
-        "/zone-id" => zone_id,
+        "/latest/meta-data/eipv4" => eipv4,
+        "/latest/meta-data/hostname" => hostname,
+        "/latest/meta-data/image-id" => image_id,
+        "/latest/meta-data/instance-id" => instance_id,
+        "/latest/meta-data/instance/instance-type" => instance_type,
+        "/latest/meta-data/private-ipv4" => private_ipv4,
+        "/latest/meta-data/public-ipv4" => public_ipv4,
+        "/latest/meta-data/region-id" => region_id,
+        "/latest/meta-data/vpc-id" => vpc_id,
+        "/latest/meta-data/zone-id" => zone_id,
     };
     let mut mocks = Vec::with_capacity(endpoints.len());
     for (endpoint, body) in endpoints {
@@ -123,7 +129,8 @@ fn basic_attributes() {
     let client = crate::retry::Client::try_new()
         .unwrap()
         .max_retries(0)
-        .return_on_404(true);
+        .return_on_404(true)
+        .mock_base_url(mockito::server_url());
     let provider = aliyun::AliyunProvider { client };
 
     let v = provider.attributes().unwrap();

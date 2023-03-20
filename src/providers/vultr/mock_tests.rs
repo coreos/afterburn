@@ -4,11 +4,14 @@ use mockito;
 
 #[test]
 fn test_hostname() {
-    let ep = "/hostname";
+    let ep = "/v1/hostname";
     let hostname = "test-hostname";
 
     let mut provider = vultr::VultrProvider::try_new().unwrap();
-    provider.client = provider.client.max_retries(0);
+    provider.client = provider
+        .client
+        .max_retries(0)
+        .mock_base_url(mockito::server_url());
 
     {
         let _m503 = mockito::mock("GET", ep).with_status(503).create();
@@ -46,9 +49,12 @@ fn test_hostname() {
 #[test]
 fn test_pubkeys() {
     let mut provider = vultr::VultrProvider::try_new().unwrap();
-    provider.client = provider.client.max_retries(0);
+    provider.client = provider
+        .client
+        .max_retries(0)
+        .mock_base_url(mockito::server_url());
 
-    let _m_keys = mockito::mock("GET", "/public-keys")
+    let _m_keys = mockito::mock("GET", "/v1/public-keys")
         .with_status(200)
         .with_body("ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCsXe6CfHl45kCIzMF92VhDf2NpBWUyS1+IiTtxm5a83mT9730Hb8xim7GYeJu47kiESw2DAN8vNJ/Irg0apZ217ah2rXXjPQuWYSXuEuap8yLBSjqw8exgqVj/kzW+YqmnHASxI13eoFDxTQQGzyqbqowvxu/5gQmDwBmNAa9bT809ziB/qmpS1mD6qyyFDpR23kUwu3TkgAbwMXBDoqK+pdwfaF9uo9XaLHNEH8lD5BZuG2BeDafm2o76DhNSo83MvcCPNXKLxu3BbX/FCMFO6O8RRqony4i91fEV1b8TbXrbJz1bwEYEnJRvmjnqI/389tQFeYvplXR2WdT9PCKyEAG+j8y6XgecIcdTqV/7gFfak1mp2S7mYHZDnXixsn3MjCP/cIxxJVDitKusnj1TdFqtSXl4tqGccbg/5Sqnt/EVSK4bGwwBxv/YmE0P9cbXLxuEVI0JYzgrQvC8TtUgd8kUu2jqi1/Yj9IWm3aFsl/hhh8YwYrv/gm8PV0TxkM= root@example1\n
                    ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDj6FBVgkTt7/DB93VVLk6304Nx7WUjLBJDSCh38zjCimHUpeo9uYDxflfu2N1CLtrSImIKBVP/JRy9g7K4zmRAH/wXw2UxYziX+hZoFIpbW3GmYQqhjx2lDvIRXJI7blhHhTUNWX5f10lFAYOLqA9J859AB1w7ND09+MS3jQgSazCx17h+QZ0qQ6kLSfnXw9PMUOE1Xba9hD1nYj14ryTVj9jrFPMFuUfXdb/G9lsDJ+cGvdE2/RMuPfDmEdo04zvZ5fQJJKvS7OyAuYev4Y+JC8MhEr756ITDZ17yq4BEMo/8rNPxZ5Von/8xnvry+8/2C3ep9rZyHtCwpRb6WT6TndV2ddXKhEIneyd1XiOcWPJguHj5vSoMN3mo8k2PvznGauvxBstvpjUSFLQu869/ZQwyMnbQi3wnkJk5CpLXePXn1J9njocJjt8+SKGijmmIAsmYosx8gmmu3H1mvq9Wi0qqWDITMm+J24AZBEPBhwVrjhLZb5MKxylF6JFJJBs= root@example2")
@@ -75,9 +81,9 @@ fn test_attributes() {
     let regioncode = "test-regioncode";
 
     let endpoints = maplit::btreemap! {
-        "/hostname" => hostname,
-        "/instanceid" => instance_id,
-        "/region/regioncode" => regioncode,
+        "/v1/hostname" => hostname,
+        "/v1/instanceid" => instance_id,
+        "/v1/region/regioncode" => regioncode,
     };
 
     let mut mocks = Vec::with_capacity(endpoints.len());
@@ -98,7 +104,8 @@ fn test_attributes() {
     let client = crate::retry::Client::try_new()
         .unwrap()
         .max_retries(0)
-        .return_on_404(true);
+        .return_on_404(true)
+        .mock_base_url(mockito::server_url());
     let provider = vultr::VultrProvider { client };
 
     let v = provider.attributes().unwrap();

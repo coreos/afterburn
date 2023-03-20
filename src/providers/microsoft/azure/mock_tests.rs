@@ -125,8 +125,11 @@ fn test_boot_checkin() {
         .with_status(200)
         .create();
 
-    let provider = azure::Azure::try_new();
-    let r = provider.unwrap().boot_checkin();
+    let client = retry::Client::try_new()
+        .unwrap()
+        .mock_base_url(mockito::server_url());
+    let provider = azure::Azure::with_client(Some(client)).unwrap();
+    let r = provider.boot_checkin();
 
     m_version.assert();
     m_goalstate.assert();
@@ -136,7 +139,10 @@ fn test_boot_checkin() {
     mockito::reset();
 
     // Check error logic, but fail fast without re-trying.
-    let client = retry::Client::try_new().unwrap().max_retries(0);
+    let client = retry::Client::try_new()
+        .unwrap()
+        .max_retries(0)
+        .mock_base_url(mockito::server_url());
     azure::Azure::with_client(Some(client)).unwrap_err();
 }
 
@@ -152,8 +158,11 @@ fn test_hostname() {
         .with_status(200)
         .create();
 
-    let provider = azure::Azure::try_new();
-    let r = provider.unwrap().hostname().unwrap();
+    let client = retry::Client::try_new()
+        .unwrap()
+        .mock_base_url(mockito::server_url());
+    let provider = azure::Azure::with_client(Some(client)).unwrap();
+    let r = provider.hostname().unwrap();
 
     m_version.assert();
 
@@ -164,7 +173,10 @@ fn test_hostname() {
     mockito::reset();
 
     // Check error logic, but fail fast without re-trying.
-    let client = retry::Client::try_new().unwrap().max_retries(0);
+    let client = retry::Client::try_new()
+        .unwrap()
+        .max_retries(0)
+        .mock_base_url(mockito::server_url());
     azure::Azure::with_client(Some(client)).unwrap_err();
 }
 
@@ -180,8 +192,11 @@ fn test_vmsize() {
         .with_status(200)
         .create();
 
-    let provider = azure::Azure::try_new();
-    let attributes = provider.unwrap().attributes().unwrap();
+    let client = retry::Client::try_new()
+        .unwrap()
+        .mock_base_url(mockito::server_url());
+    let provider = azure::Azure::with_client(Some(client)).unwrap();
+    let attributes = provider.attributes().unwrap();
     let r = attributes.get("AZURE_VMSIZE");
 
     m_version.assert();
@@ -193,7 +208,10 @@ fn test_vmsize() {
     mockito::reset();
 
     // Check error logic, but fail fast without re-trying.
-    let client = retry::Client::try_new().unwrap().max_retries(0);
+    let client = retry::Client::try_new()
+        .unwrap()
+        .max_retries(0)
+        .mock_base_url(mockito::server_url());
     azure::Azure::with_client(Some(client)).unwrap_err();
 }
 
@@ -202,7 +220,10 @@ fn test_goalstate_certs() {
     let m_version = mock_fab_version();
     let m_goalstate = mock_goalstate(true);
 
-    let provider = azure::Azure::try_new().unwrap();
+    let client = retry::Client::try_new()
+        .unwrap()
+        .mock_base_url(mockito::server_url());
+    let provider = azure::Azure::with_client(Some(client)).unwrap();
     let goalstate = provider.fetch_goalstate().unwrap();
 
     m_version.assert();
@@ -220,7 +241,10 @@ fn test_goalstate_no_certs() {
     let m_version = mock_fab_version();
     let m_goalstate = mock_goalstate(false);
 
-    let provider = azure::Azure::try_new().unwrap();
+    let client = retry::Client::try_new()
+        .unwrap()
+        .mock_base_url(mockito::server_url());
+    let provider = azure::Azure::with_client(Some(client)).unwrap();
     let goalstate = provider.fetch_goalstate().unwrap();
 
     m_version.assert();

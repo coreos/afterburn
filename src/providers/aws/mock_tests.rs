@@ -7,12 +7,13 @@ use mockito;
 
 #[test]
 fn test_aws_basic() {
-    let ep = "/meta-data/public-keys";
+    let ep = "/2021-01-03/meta-data/public-keys";
     let client = crate::retry::Client::try_new()
         .context("failed to create http client")
         .unwrap()
         .max_retries(0)
-        .return_on_404(true);
+        .return_on_404(true)
+        .mock_base_url(mockito::server_url());
     let provider = aws::AwsProvider { client };
 
     provider.fetch_ssh_keys().unwrap_err();
@@ -56,16 +57,16 @@ fn aws_get_maps() -> (
 
     (
         maplit::btreemap! {
-            "/meta-data/instance-id" => instance_id,
-            "/meta-data/instance-type" => instance_type,
-            "/meta-data/local-ipv4" => ipv4_local,
-            "/meta-data/public-ipv4" => ipv4_public,
-            "/meta-data/ipv6" => ipv6,
-            "/meta-data/placement/availability-zone" => availability_zone,
-            "/meta-data/placement/availability-zone-id" => availability_zone_id,
-            "/meta-data/hostname" => hostname,
-            "/meta-data/public-hostname" => public_hostname,
-            "/dynamic/instance-identity/document" => instance_id_doc,
+            "/2021-01-03/meta-data/instance-id" => instance_id,
+            "/2021-01-03/meta-data/instance-type" => instance_type,
+            "/2021-01-03/meta-data/local-ipv4" => ipv4_local,
+            "/2021-01-03/meta-data/public-ipv4" => ipv4_public,
+            "/2021-01-03/meta-data/ipv6" => ipv6,
+            "/2021-01-03/meta-data/placement/availability-zone" => availability_zone,
+            "/2021-01-03/meta-data/placement/availability-zone-id" => availability_zone_id,
+            "/2021-01-03/meta-data/hostname" => hostname,
+            "/2021-01-03/meta-data/public-hostname" => public_hostname,
+            "/2021-01-03/dynamic/instance-identity/document" => instance_id_doc,
         },
         maplit::hashmap! {
             "AWS_INSTANCE_ID".to_string() => instance_id.to_string(),
@@ -99,7 +100,8 @@ fn test_aws_attributes() {
         .context("failed to create http client")
         .unwrap()
         .max_retries(0)
-        .return_on_404(true);
+        .return_on_404(true)
+        .mock_base_url(mockito::server_url());
     let provider = aws::AwsProvider { client };
 
     let v = provider.attributes().unwrap();
@@ -117,7 +119,8 @@ fn test_aws_imds_version1() {
         .context("failed to create http client")
         .unwrap()
         .max_retries(0)
-        .return_on_404(true);
+        .return_on_404(true)
+        .mock_base_url(mockito::server_url());
 
     let mut mocks = Vec::with_capacity(endpoints.len());
     for (endpoint, body) in endpoints.clone() {
@@ -128,7 +131,7 @@ fn test_aws_imds_version1() {
         mocks.push(m);
     }
 
-    let _m = mockito::mock("PUT", "/api/token")
+    let _m = mockito::mock("PUT", "/latest/api/token")
         .match_header("X-aws-ec2-metadata-token-ttl-seconds", "21600")
         .with_status(403)
         .with_body("Forbidden")
@@ -152,7 +155,8 @@ fn test_aws_imds_version2() {
         .context("failed to create http client")
         .unwrap()
         .max_retries(0)
-        .return_on_404(true);
+        .return_on_404(true)
+        .mock_base_url(mockito::server_url());
 
     let token = "test-api-token";
     let mut mocks = Vec::with_capacity(endpoints.len());
@@ -165,7 +169,7 @@ fn test_aws_imds_version2() {
         mocks.push(m);
     }
 
-    let _m = mockito::mock("PUT", "/api/token")
+    let _m = mockito::mock("PUT", "/latest/api/token")
         .match_header("X-aws-ec2-metadata-token-ttl-seconds", "21600")
         .with_status(200)
         .with_body(token)

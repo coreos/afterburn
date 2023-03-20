@@ -117,16 +117,8 @@ impl PacketProvider {
         Ok(Self { client, data })
     }
 
-    #[cfg(test)]
     fn endpoint_for(name: &str) -> String {
-        let url = mockito::server_url();
-        format!("{url}/{name}")
-    }
-
-    #[cfg(not(test))]
-    fn endpoint_for(name: &str) -> String {
-        let url = "https://metadata.packet.net";
-        format!("{url}/{name}")
+        format!("https://metadata.packet.net/{name}")
     }
 
     fn get_attrs(&self) -> Vec<(String, String)> {

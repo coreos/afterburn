@@ -4,11 +4,14 @@ use mockito;
 
 #[test]
 fn basic_hostname() {
-    let ep = "/instance/hostname";
+    let ep = "/computeMetadata/v1/instance/hostname";
     let hostname = "test-hostname";
 
     let mut provider = gcp::GcpProvider::try_new().unwrap();
-    provider.client = provider.client.max_retries(0);
+    provider.client = provider
+        .client
+        .max_retries(0)
+        .mock_base_url(mockito::server_url());
 
     {
         let _m503 = mockito::mock("GET", ep).with_status(503).create();
@@ -42,10 +45,10 @@ fn basic_attributes() {
     let machine_type = "test-machine-type";
 
     let endpoints = maplit::btreemap! {
-        "/instance/hostname" => hostname,
-        "/instance/network-interfaces/0/access-configs/0/external-ip" => ip_external,
-        "/instance/network-interfaces/0/ip" => ip_local,
-        "/instance/machine-type" => machine_type,
+        "/computeMetadata/v1/instance/hostname" => hostname,
+        "/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip" => ip_external,
+        "/computeMetadata/v1/instance/network-interfaces/0/ip" => ip_local,
+        "/computeMetadata/v1/instance/machine-type" => machine_type,
     };
     let mut mocks = Vec::with_capacity(endpoints.len());
     for (endpoint, body) in endpoints {
@@ -66,7 +69,8 @@ fn basic_attributes() {
     let client = crate::retry::Client::try_new()
         .unwrap()
         .max_retries(0)
-        .return_on_404(true);
+        .return_on_404(true)
+        .mock_base_url(mockito::server_url());
     let provider = gcp::GcpProvider { client };
 
     let v = provider.attributes().unwrap();

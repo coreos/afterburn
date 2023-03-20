@@ -3,7 +3,10 @@ use mockito::{self, Matcher};
 
 #[test]
 fn test_boot_checkin() {
-    let client = crate::retry::Client::try_new().unwrap().max_retries(0);
+    let client = crate::retry::Client::try_new()
+        .unwrap()
+        .max_retries(0)
+        .mock_base_url(mockito::server_url());
     let data = packet::PacketData {
         id: String::new(),
         hostname: String::new(),
@@ -118,7 +121,11 @@ fn test_packet_attributes() {
         .with_body(metadata)
         .create();
 
-    let provider = packet::PacketProvider::try_new().unwrap();
+    let client = crate::retry::Client::try_new()
+        .unwrap()
+        .max_retries(0)
+        .mock_base_url(mockito::server_url());
+    let provider = packet::PacketProvider::fetch_content(Some(client)).unwrap();
     let v = provider.attributes().unwrap();
 
     assert_eq!(v, attributes);
@@ -126,6 +133,9 @@ fn test_packet_attributes() {
     mockito::reset();
 
     // Check error logic, but fail fast without re-trying.
-    let client = crate::retry::Client::try_new().unwrap().max_retries(0);
+    let client = crate::retry::Client::try_new()
+        .unwrap()
+        .max_retries(0)
+        .mock_base_url(mockito::server_url());
     packet::PacketProvider::fetch_content(Some(client)).unwrap_err();
 }

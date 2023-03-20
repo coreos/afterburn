@@ -205,7 +205,6 @@ impl AzureStack {
         Ok(IpAddr::V4(dec.into()))
     }
 
-    #[cfg(not(test))]
     fn fabric_base_url(&self) -> String {
         format!("http://{}", self.endpoint)
     }
@@ -214,11 +213,6 @@ impl AzureStack {
     fn get_fabric_address() -> IpAddr {
         use std::net::Ipv4Addr;
         IpAddr::from(Ipv4Addr::new(127, 0, 0, 1))
-    }
-
-    #[cfg(test)]
-    fn fabric_base_url(&self) -> String {
-        mockito::server_url()
     }
 
     fn is_fabric_compatible(&self, version: &str) -> Result<()> {
@@ -243,15 +237,8 @@ impl AzureStack {
         }
     }
 
-    #[cfg(test)]
     fn metadata_endpoint() -> String {
-        mockito::server_url()
-    }
-
-    #[cfg(not(test))]
-    fn metadata_endpoint() -> String {
-        const URL: &str = "http://169.254.169.254";
-        URL.to_string()
+        "http://169.254.169.254".into()
     }
 
     // Fetch the certificate.
