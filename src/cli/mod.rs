@@ -1,7 +1,7 @@
 //! Command-line arguments parsing.
 
 use anyhow::Result;
-use clap::{self, crate_version, Arg, ArgAction, ArgGroup, ArgMatches, Command};
+use clap::Parser;
 use slog_scope::trace;
 
 mod exp;
@@ -10,25 +10,18 @@ mod multi;
 /// Path to kernel command-line (requires procfs mount).
 const CMDLINE_PATH: &str = "/proc/cmdline";
 
-/// CLI sub-commands configuration.
-#[derive(Debug)]
+// NOTE(lucab): due to legacy translation there can't be global arguments
+//  here, i.e. a sub-command is always expected first.
+#[derive(Debug, Parser)]
+#[clap(display_name = "Afterburn")]
+#[clap(version, propagate_version = true)]
 pub(crate) enum CliConfig {
     Multi(multi::CliMulti),
+    #[clap(subcommand)]
     Exp(exp::CliExp),
 }
 
 impl CliConfig {
-    /// Parse CLI sub-commands into configuration.
-    pub fn parse_subcommands(app_matches: ArgMatches) -> Result<Self> {
-        let cfg = match app_matches.subcommand().expect("no subcommand") {
-            ("multi", matches) => multi::CliMulti::parse(matches)?,
-            ("exp", matches) => exp::CliExp::parse(matches)?,
-            (x, _) => unreachable!("unrecognized subcommand '{}'", x),
-        };
-
-        Ok(cfg)
-    }
-
     /// Run the relevant CLI sub-command.
     pub fn run(self) -> Result<()> {
         match self {
@@ -41,128 +34,21 @@ impl CliConfig {
 /// Parse command-line arguments into CLI configuration.
 pub(crate) fn parse_args(argv: impl IntoIterator<Item = String>) -> Result<CliConfig> {
     let args = translate_legacy_args(argv);
-    let matches = match cli_setup().try_get_matches_from(args) {
+    let cfg = match CliConfig::try_parse_from(args) {
         Err(e) if e.kind() == clap::error::ErrorKind::DisplayHelp => e.exit(),
         Err(e) if e.kind() == clap::error::ErrorKind::DisplayVersion => e.exit(),
         v => v,
     }?;
-
-    let cfg = CliConfig::parse_subcommands(matches)?;
     trace!("cli configuration - {:?}", cfg);
     Ok(cfg)
 }
 
-/// Parse provider ID from flag or kargs.
-fn parse_provider(matches: &clap::ArgMatches) -> Result<String> {
-    if let Some(provider) = matches.get_one::<String>("provider") {
-        Ok(String::from(provider))
-    } else {
-        crate::util::get_platform(CMDLINE_PATH)
+/// Return specified provider or parse provider ID from kargs.
+fn get_provider(provider: Option<&str>) -> Result<String> {
+    match provider {
+        Some(p) => Ok(p.to_string()),
+        None => crate::util::get_platform(CMDLINE_PATH),
     }
-}
-
-/// CLI setup, covering all sub-commands and arguments.
-fn cli_setup() -> Command {
-    // NOTE(lucab): due to legacy translation there can't be global arguments
-    //  here, i.e. a sub-command is always expected first.
-    Command::new("Afterburn")
-        .version(crate_version!())
-        .propagate_version(true)
-        .subcommand(
-            Command::new("multi")
-                .about("Perform multiple tasks in a single call")
-                .arg(
-                    Arg::new("legacy-cli")
-                        .long("legacy-cli")
-                        .help("Whether this command was translated from legacy CLI args")
-                        .action(ArgAction::SetTrue)
-                        .hide(true),
-                )
-                .arg(
-                    Arg::new("provider")
-                        .long("provider")
-                        .value_name("name")
-                        .help("The name of the cloud provider")
-                        .global(true),
-                )
-                .arg(
-                    Arg::new("cmdline")
-                        .long("cmdline")
-                        .global(true)
-                        .help("Read the cloud provider from the kernel cmdline")
-                        .action(ArgAction::SetTrue),
-                )
-                .arg(
-                    Arg::new("attributes")
-                        .long("attributes")
-                        .value_name("path")
-                        .help("The file into which the metadata attributes are written"),
-                )
-                .arg(
-                    Arg::new("check-in")
-                        .long("check-in")
-                        .help("Check-in this instance boot with the cloud provider")
-                        .action(ArgAction::SetTrue),
-                )
-                .arg(
-                    Arg::new("hostname")
-                        .long("hostname")
-                        .value_name("path")
-                        .help("The file into which the hostname should be written"),
-                )
-                .arg(
-                    Arg::new("network-units")
-                        .long("network-units")
-                        .value_name("path")
-                        .help("The directory into which network units are written"),
-                )
-                .arg(
-                    Arg::new("ssh-keys")
-                        .long("ssh-keys")
-                        .value_name("username")
-                        .help("Update SSH keys for the given user"),
-                )
-                .group(
-                    ArgGroup::new("provider-group")
-                        .args(["cmdline", "provider"])
-                        .required(true),
-                ),
-        )
-        .subcommand(
-            Command::new("exp")
-                .about("experimental subcommands")
-                .subcommand_required(true)
-                .subcommand(
-                    Command::new("rd-network-kargs")
-                        .about("Supplement initrd with network configuration kargs")
-                        .arg(
-                            Arg::new("cmdline")
-                                .long("cmdline")
-                                .global(true)
-                                .help("Read the cloud provider from the kernel cmdline")
-                                .action(ArgAction::SetTrue),
-                        )
-                        .arg(
-                            Arg::new("provider")
-                                .long("provider")
-                                .value_name("name")
-                                .help("The name of the cloud provider")
-                                .global(true),
-                        )
-                        .arg(
-                            Arg::new("default-value")
-                                .long("default-value")
-                                .value_name("args")
-                                .help("Default value for network kargs fallback")
-                                .required(true),
-                        )
-                        .group(
-                            ArgGroup::new("provider-group")
-                                .args(["cmdline", "provider"])
-                                .required(true),
-                        ),
-                ),
-        )
 }
 
 /// Translate command-line arguments from legacy mode.
@@ -208,7 +94,8 @@ mod tests {
 
     #[test]
     fn clap_tests() {
-        cli_setup().debug_assert();
+        use clap::CommandFactory;
+        CliConfig::command().debug_assert();
     }
 
     #[test]
