@@ -8,34 +8,29 @@ use mockito;
 #[test]
 fn test_aws_basic() {
     let ep = "/2021-01-03/meta-data/public-keys";
+    let mut server = mockito::Server::new();
     let client = crate::retry::Client::try_new()
         .context("failed to create http client")
         .unwrap()
         .max_retries(0)
         .return_on_404(true)
-        .mock_base_url(mockito::server_url());
+        .mock_base_url(server.url());
     let provider = aws::AwsProvider { client };
 
     provider.fetch_ssh_keys().unwrap_err();
 
-    {
-        let _m503 = mockito::mock("GET", ep).with_status(503).create();
-        provider.fetch_ssh_keys().unwrap_err();
-    }
+    server.mock("GET", ep).with_status(503).create();
+    provider.fetch_ssh_keys().unwrap_err();
 
-    {
-        let _m200 = mockito::mock("GET", ep).with_status(200).create();
-        let v = provider.fetch_ssh_keys().unwrap();
-        assert_eq!(v.len(), 0);
-    }
+    server.mock("GET", ep).with_status(200).create();
+    let v = provider.fetch_ssh_keys().unwrap();
+    assert_eq!(v.len(), 0);
 
-    {
-        let _m404 = mockito::mock("GET", ep).with_status(404).create();
-        let v = provider.fetch_ssh_keys().unwrap();
-        assert_eq!(v.len(), 0);
-    }
+    server.mock("GET", ep).with_status(404).create();
+    let v = provider.fetch_ssh_keys().unwrap();
+    assert_eq!(v.len(), 0);
 
-    mockito::reset();
+    server.reset();
     provider.fetch_ssh_keys().unwrap_err();
 }
 
@@ -87,13 +82,13 @@ fn aws_get_maps() -> (
 fn test_aws_attributes() {
     let (endpoints, attributes) = aws_get_maps();
 
-    let mut mocks = Vec::with_capacity(endpoints.len());
+    let mut server = mockito::Server::new();
     for (endpoint, body) in endpoints {
-        let m = mockito::mock("GET", endpoint)
+        server
+            .mock("GET", endpoint)
             .with_status(200)
             .with_body(body)
             .create();
-        mocks.push(m);
     }
 
     let client = crate::retry::Client::try_new()
@@ -101,13 +96,13 @@ fn test_aws_attributes() {
         .unwrap()
         .max_retries(0)
         .return_on_404(true)
-        .mock_base_url(mockito::server_url());
+        .mock_base_url(server.url());
     let provider = aws::AwsProvider { client };
 
     let v = provider.attributes().unwrap();
     assert_eq!(v, attributes);
 
-    mockito::reset();
+    server.reset();
     provider.attributes().unwrap_err();
 }
 
@@ -115,23 +110,24 @@ fn test_aws_attributes() {
 fn test_aws_imds_version1() {
     let (endpoints, attributes) = aws_get_maps();
 
+    let mut server = mockito::Server::new();
     let client = crate::retry::Client::try_new()
         .context("failed to create http client")
         .unwrap()
         .max_retries(0)
         .return_on_404(true)
-        .mock_base_url(mockito::server_url());
+        .mock_base_url(server.url());
 
-    let mut mocks = Vec::with_capacity(endpoints.len());
     for (endpoint, body) in endpoints.clone() {
-        let m = mockito::mock("GET", endpoint)
+        server
+            .mock("GET", endpoint)
             .with_status(200)
             .with_body(body)
             .create();
-        mocks.push(m);
     }
 
-    let _m = mockito::mock("PUT", "/latest/api/token")
+    server
+        .mock("PUT", "/latest/api/token")
         .match_header("X-aws-ec2-metadata-token-ttl-seconds", "21600")
         .with_status(403)
         .with_body("Forbidden")
@@ -142,8 +138,7 @@ fn test_aws_imds_version1() {
     let v = provider.attributes().unwrap();
     assert_eq!(v, attributes);
 
-    drop(mocks);
-    mockito::reset();
+    server.reset();
     provider.attributes().unwrap_err();
 }
 
@@ -151,25 +146,26 @@ fn test_aws_imds_version1() {
 fn test_aws_imds_version2() {
     let (endpoints, attributes) = aws_get_maps();
 
+    let mut server = mockito::Server::new();
     let client = crate::retry::Client::try_new()
         .context("failed to create http client")
         .unwrap()
         .max_retries(0)
         .return_on_404(true)
-        .mock_base_url(mockito::server_url());
+        .mock_base_url(server.url());
 
     let token = "test-api-token";
-    let mut mocks = Vec::with_capacity(endpoints.len());
     for (endpoint, body) in endpoints.clone() {
-        let m = mockito::mock("GET", endpoint)
+        server
+            .mock("GET", endpoint)
             .match_header("X-aws-ec2-metadata-token", token)
             .with_status(200)
             .with_body(body)
             .create();
-        mocks.push(m);
     }
 
-    let _m = mockito::mock("PUT", "/latest/api/token")
+    server
+        .mock("PUT", "/latest/api/token")
         .match_header("X-aws-ec2-metadata-token-ttl-seconds", "21600")
         .with_status(200)
         .with_body(token)
@@ -180,7 +176,6 @@ fn test_aws_imds_version2() {
     let v = provider.attributes().unwrap();
     assert_eq!(v, attributes);
 
-    drop(mocks);
-    mockito::reset();
+    server.reset();
     provider.attributes().unwrap_err();
 }

@@ -14,7 +14,8 @@ Minor changes:
 
 Packaging changes:
 
-- Require clap ≥ 4
+- Require `clap` ≥ 4
+- Require `mockito` ≥ 1
 
 
 ## Afterburn 5.4.1 (2023-02-06)

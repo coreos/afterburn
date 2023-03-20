@@ -3,10 +3,11 @@ use mockito::{self, Matcher};
 
 #[test]
 fn test_boot_checkin() {
+    let mut server = mockito::Server::new();
     let client = crate::retry::Client::try_new()
         .unwrap()
         .max_retries(0)
-        .mock_base_url(mockito::server_url());
+        .mock_base_url(server.url());
     let data = packet::PacketData {
         id: String::new(),
         hostname: String::new(),
@@ -21,14 +22,15 @@ fn test_boot_checkin() {
             bonding: packet::PacketBondingMode { mode: 0 },
         },
         error: None,
-        phone_home_url: mockito::server_url(),
+        phone_home_url: server.url(),
     };
     let provider = packet::PacketProvider {
         client: client.clone(),
         data,
     };
 
-    let mock = mockito::mock("POST", "/")
+    let mock = server
+        .mock("POST", "/")
         .match_header(
             "content-type",
             Matcher::Regex("application/json".to_string()),
@@ -41,7 +43,7 @@ fn test_boot_checkin() {
     mock.assert();
     r.unwrap();
 
-    mockito::reset();
+    server.reset();
 
     // Check error logic, but fail fast without re-trying.
     packet::PacketProvider::fetch_content(Some(client)).unwrap_err();
@@ -116,7 +118,9 @@ fn test_packet_attributes() {
         "PACKET_IPV6_PRIVATE_GATEWAY_0".to_string() => "fd00::".to_string(),
     };
 
-    let _m = mockito::mock("GET", "/metadata")
+    let mut server = mockito::Server::new();
+    server
+        .mock("GET", "/metadata")
         .with_status(200)
         .with_body(metadata)
         .create();
@@ -124,18 +128,18 @@ fn test_packet_attributes() {
     let client = crate::retry::Client::try_new()
         .unwrap()
         .max_retries(0)
-        .mock_base_url(mockito::server_url());
+        .mock_base_url(server.url());
     let provider = packet::PacketProvider::fetch_content(Some(client)).unwrap();
     let v = provider.attributes().unwrap();
 
     assert_eq!(v, attributes);
 
-    mockito::reset();
+    server.reset();
 
     // Check error logic, but fail fast without re-trying.
     let client = crate::retry::Client::try_new()
         .unwrap()
         .max_retries(0)
-        .mock_base_url(mockito::server_url());
+        .mock_base_url(server.url());
     packet::PacketProvider::fetch_content(Some(client)).unwrap_err();
 }
