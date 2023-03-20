@@ -213,7 +213,7 @@ where
     where
         T: for<'de> serde::Deserialize<'de>,
     {
-        let url = reqwest::Url::parse(self.url.as_str()).context("failed to parse uri")?;
+        let url = self.parse_url()?;
         let mut req = blocking::Request::new(Method::GET, url);
         req.headers_mut().extend(self.headers.clone().into_iter());
 
@@ -227,7 +227,7 @@ where
     where
         T: for<'de> serde::Deserialize<'de>,
     {
-        let url = reqwest::Url::parse(self.url.as_str()).context("failed to parse uri")?;
+        let url = self.parse_url()?;
 
         self.retry.clone().retry(|attempt| {
             let mut builder = blocking::Client::new()
@@ -254,7 +254,7 @@ where
     }
 
     pub fn dispatch_post(self) -> Result<reqwest::StatusCode> {
-        let url = reqwest::Url::parse(self.url.as_str()).context("failed to parse uri")?;
+        let url = self.parse_url()?;
 
         self.retry.clone().retry(|attempt| {
             let mut builder = blocking::Client::new()
@@ -307,6 +307,10 @@ where
                 Err(anyhow!(e).context("failed to fetch"))
             }
         }
+    }
+
+    fn parse_url(&self) -> Result<reqwest::Url> {
+        reqwest::Url::parse(self.url.as_str()).context("failed to parse uri")
     }
 }
 
