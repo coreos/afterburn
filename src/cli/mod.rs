@@ -81,6 +81,7 @@ fn cli_setup() -> Command {
                 .arg(
                     Arg::new("provider")
                         .long("provider")
+                        .value_name("name")
                         .help("The name of the cloud provider")
                         .global(true),
                 )
@@ -94,6 +95,7 @@ fn cli_setup() -> Command {
                 .arg(
                     Arg::new("attributes")
                         .long("attributes")
+                        .value_name("path")
                         .help("The file into which the metadata attributes are written"),
                 )
                 .arg(
@@ -105,16 +107,19 @@ fn cli_setup() -> Command {
                 .arg(
                     Arg::new("hostname")
                         .long("hostname")
+                        .value_name("path")
                         .help("The file into which the hostname should be written"),
                 )
                 .arg(
                     Arg::new("network-units")
                         .long("network-units")
+                        .value_name("path")
                         .help("The directory into which network units are written"),
                 )
                 .arg(
                     Arg::new("ssh-keys")
                         .long("ssh-keys")
+                        .value_name("username")
                         .help("Update SSH keys for the given user"),
                 )
                 .group(
@@ -140,12 +145,14 @@ fn cli_setup() -> Command {
                         .arg(
                             Arg::new("provider")
                                 .long("provider")
+                                .value_name("name")
                                 .help("The name of the cloud provider")
                                 .global(true),
                         )
                         .arg(
                             Arg::new("default-value")
                                 .long("default-value")
+                                .value_name("args")
                                 .help("Default value for network kargs fallback")
                                 .required(true),
                         )
