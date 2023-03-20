@@ -1,7 +1,7 @@
 //! Command-line arguments parsing.
 
-use anyhow::{bail, Result};
-use clap::{self, crate_version, Arg, ArgAction, ArgMatches, Command};
+use anyhow::Result;
+use clap::{self, crate_version, Arg, ArgAction, ArgGroup, ArgMatches, Command};
 use slog_scope::trace;
 
 mod exp;
@@ -54,17 +54,11 @@ pub(crate) fn parse_args(argv: impl IntoIterator<Item = String>) -> Result<CliCo
 
 /// Parse provider ID from flag or kargs.
 fn parse_provider(matches: &clap::ArgMatches) -> Result<String> {
-    let provider = match (
-        matches.get_one::<String>("provider"),
-        matches.get_flag("cmdline"),
-    ) {
-        (Some(provider), false) => String::from(provider),
-        (None, true) => crate::util::get_platform(CMDLINE_PATH)?,
-        (None, false) => bail!("must set either --provider or --cmdline"),
-        (Some(_), true) => bail!("cannot process both --provider and --cmdline"),
-    };
-
-    Ok(provider)
+    if let Some(provider) = matches.get_one::<String>("provider") {
+        Ok(String::from(provider))
+    } else {
+        crate::util::get_platform(CMDLINE_PATH)
+    }
 }
 
 /// CLI setup, covering all sub-commands and arguments.
@@ -122,6 +116,11 @@ fn cli_setup() -> Command {
                     Arg::new("ssh-keys")
                         .long("ssh-keys")
                         .help("Update SSH keys for the given user"),
+                )
+                .group(
+                    ArgGroup::new("provider-group")
+                        .args(["cmdline", "provider"])
+                        .required(true),
                 ),
         )
         .subcommand(
@@ -148,6 +147,11 @@ fn cli_setup() -> Command {
                             Arg::new("default-value")
                                 .long("default-value")
                                 .help("Default value for network kargs fallback")
+                                .required(true),
+                        )
+                        .group(
+                            ArgGroup::new("provider-group")
+                                .args(["cmdline", "provider"])
                                 .required(true),
                         ),
                 ),
