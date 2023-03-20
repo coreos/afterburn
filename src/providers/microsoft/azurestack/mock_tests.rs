@@ -1,4 +1,5 @@
 use crate::providers::{microsoft::azurestack, MetadataProvider};
+use crate::retry;
 use mockito::{self, Matcher};
 
 /// Response body for goalstate (with certificates endpoint).
@@ -135,7 +136,7 @@ fn test_boot_checkin() {
     mockito::reset();
 
     // Check error logic, but fail fast without re-trying.
-    let client = crate::retry::Client::try_new().unwrap().max_retries(0);
+    let client = retry::Client::try_new().unwrap().max_retries(0);
     azurestack::AzureStack::with_client(Some(client)).unwrap_err();
 }
 
@@ -164,7 +165,7 @@ fn test_identity() {
     mockito::reset();
 
     // Check error logic, but fail fast without re-trying.
-    let client = crate::retry::Client::try_new().unwrap().max_retries(0);
+    let client = retry::Client::try_new().unwrap().max_retries(0);
     azurestack::AzureStack::with_client(Some(client)).unwrap_err();
 }
 
@@ -193,7 +194,7 @@ fn test_hostname() {
     mockito::reset();
 
     // Check error logic, but fail fast without re-trying.
-    let client = crate::retry::Client::try_new().unwrap().max_retries(0);
+    let client = retry::Client::try_new().unwrap().max_retries(0);
     azurestack::AzureStack::with_client(Some(client)).unwrap_err();
 }
 
