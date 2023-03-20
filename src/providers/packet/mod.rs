@@ -90,6 +90,7 @@ struct PacketAddressInfo {
 
 #[derive(Clone, Debug)]
 pub struct PacketProvider {
+    client: retry::Client,
     data: PacketData,
 }
 
@@ -113,7 +114,7 @@ impl PacketProvider {
             .send()?
             .ok_or_else(|| anyhow!("metadata endpoint unreachable"))?;
 
-        Ok(Self { data })
+        Ok(Self { client, data })
     }
 
     #[cfg(test)]
@@ -383,9 +384,8 @@ impl MetadataProvider for PacketProvider {
     }
 
     fn boot_checkin(&self) -> Result<()> {
-        let client = retry::Client::try_new()?;
         let url = self.data.phone_home_url.clone();
-        client.post(retry::Json, url, None).dispatch_post()?;
+        self.client.post(retry::Json, url, None).dispatch_post()?;
         Ok(())
     }
 }

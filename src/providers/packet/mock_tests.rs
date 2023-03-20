@@ -3,6 +3,7 @@ use mockito::{self, Matcher};
 
 #[test]
 fn test_boot_checkin() {
+    let client = crate::retry::Client::try_new().unwrap().max_retries(0);
     let data = packet::PacketData {
         id: String::new(),
         hostname: String::new(),
@@ -19,7 +20,10 @@ fn test_boot_checkin() {
         error: None,
         phone_home_url: mockito::server_url(),
     };
-    let provider = packet::PacketProvider { data };
+    let provider = packet::PacketProvider {
+        client: client.clone(),
+        data,
+    };
 
     let mock = mockito::mock("POST", "/")
         .match_header(
@@ -37,7 +41,6 @@ fn test_boot_checkin() {
     mockito::reset();
 
     // Check error logic, but fail fast without re-trying.
-    let client = crate::retry::Client::try_new().unwrap().max_retries(0);
     packet::PacketProvider::fetch_content(Some(client)).unwrap_err();
 }
 
