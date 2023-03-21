@@ -2,49 +2,55 @@
 
 use crate::metadata;
 use anyhow::{Context, Result};
+use clap::{ArgGroup, Parser};
 
-#[derive(Debug)]
+/// Perform multiple tasks in a single call
+#[derive(Debug, Parser)]
+#[command(group(ArgGroup::new("provider-group").args(["cmdline", "provider"]).required(true)))]
 pub struct CliMulti {
+    /// The name of the cloud provider
+    #[arg(long, value_name = "name")]
+    provider: Option<String>,
+    /// Read the cloud provider from the kernel cmdline
+    #[arg(long)]
+    cmdline: bool,
+    /// The file into which the metadata attributes are written
+    #[arg(long = "attributes", value_name = "path")]
     attributes_file: Option<String>,
+    /// Check-in this instance boot with the cloud provider
+    #[arg(long)]
     check_in: bool,
+    /// The file into which the hostname should be written
+    #[arg(long = "hostname", value_name = "path")]
     hostname_file: Option<String>,
+    /// The directory into which network units are written
+    #[arg(long = "network-units", value_name = "path")]
     network_units_dir: Option<String>,
-    provider: String,
+    /// Update SSH keys for the given user
+    #[arg(long = "ssh-keys", value_name = "username")]
     ssh_keys_user: Option<String>,
+    /// Whether this command was translated from legacy CLI args
+    #[arg(long, hide = true)]
+    legacy_cli: bool,
 }
 
 impl CliMulti {
-    /// Parse flags for the `multi` sub-command.
-    pub(crate) fn parse(matches: &clap::ArgMatches) -> Result<super::CliConfig> {
-        let provider = super::parse_provider(matches)?;
+    /// Run the `multi` sub-command.
+    pub(crate) fn run(self) -> Result<()> {
+        let provider = super::get_provider(self.provider.as_deref())?;
 
-        let multi = Self {
-            attributes_file: matches.get_one::<String>("attributes").cloned(),
-            check_in: matches.get_flag("check-in"),
-            hostname_file: matches.get_one::<String>("hostname").cloned(),
-            network_units_dir: matches.get_one::<String>("network-units").cloned(),
-            provider,
-            ssh_keys_user: matches.get_one::<String>("ssh-keys").cloned(),
-        };
-
-        if multi.attributes_file.is_none()
-            && multi.network_units_dir.is_none()
-            && !multi.check_in
-            && multi.ssh_keys_user.is_none()
-            && multi.hostname_file.is_none()
-            && multi.network_units_dir.is_none()
+        if self.attributes_file.is_none()
+            && self.network_units_dir.is_none()
+            && !self.check_in
+            && self.ssh_keys_user.is_none()
+            && self.hostname_file.is_none()
         {
             slog_scope::warn!("multi: no action specified");
         }
 
-        Ok(super::CliConfig::Multi(multi))
-    }
-
-    /// Run the `multi` sub-command.
-    pub(crate) fn run(self) -> Result<()> {
         // fetch the metadata from the configured provider
         let metadata =
-            metadata::fetch_metadata(&self.provider).context("fetching metadata from provider")?;
+            metadata::fetch_metadata(&provider).context("fetching metadata from provider")?;
 
         // write attributes if configured to do so
         self.attributes_file
