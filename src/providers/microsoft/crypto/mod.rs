@@ -60,15 +60,16 @@ pub fn p12_to_ssh_pubkey(p12_der: &[u8]) -> Result<PublicKey> {
     // PKCS12 has the ability to have a password, but we don't have one, hence
     // empty string.
     let p12 = Pkcs12::from_der(p12_der).context("failed to get pkcs12 blob from der")?;
-    let p12 = p12.parse("").context("failed to parse pkcs12 blob")?;
+    let p12 = p12.parse2("").context("failed to parse pkcs12 blob")?;
 
-    // PKCS12 has three parts: a pkey, a main x509 cert, and a list of other
-    // x509 certs. The list of other x509 certs is called the chain. There is
-    // only one cert in this chain, and it is the ssh public key.
-    let chain = p12
-        .chain
+    // ParsedPKCS12_2 has three parts: a pkey, a main x509 cert, and a list of other
+    // x509 certs. The list of other x509 certs are called the `certificate chain`
+    // currently denoted as `ca`; there is only one cert in this `certificate chain`,
+    // which is the ssh public key.
+    let ca = p12
+        .ca
         .ok_or_else(|| anyhow!("failed to get chain from pkcs12"))?;
-    let ssh_pem = chain
+    let ssh_pem = ca
         .get(0)
         .ok_or_else(|| anyhow!("failed to get cert from pkcs12 chain"))?;
     // get the public key from the x509 cert
