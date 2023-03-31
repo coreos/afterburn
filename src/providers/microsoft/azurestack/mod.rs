@@ -168,10 +168,11 @@ impl AzureStack {
             .ok_or_else(|| anyhow!("failed to get goal state: not found response"))
     }
 
-    fn fetch_identity() -> Result<InstanceMetadata> {
+    fn fetch_identity(&self) -> Result<InstanceMetadata> {
         const NAME_URL: &str = "Microsoft.Compute/identity?api-version=2019-03-11";
         let url = format!("{}/{}", Self::metadata_endpoint(), NAME_URL);
-        retry::Client::try_new()?
+        self.client
+            .clone()
             .header(
                 HeaderName::from_static("metadata"),
                 HeaderValue::from_static("true"),
@@ -204,7 +205,6 @@ impl AzureStack {
         Ok(IpAddr::V4(dec.into()))
     }
 
-    #[cfg(not(test))]
     fn fabric_base_url(&self) -> String {
         format!("http://{}", self.endpoint)
     }
@@ -213,11 +213,6 @@ impl AzureStack {
     fn get_fabric_address() -> IpAddr {
         use std::net::Ipv4Addr;
         IpAddr::from(Ipv4Addr::new(127, 0, 0, 1))
-    }
-
-    #[cfg(test)]
-    fn fabric_base_url(&self) -> String {
-        mockito::server_url()
     }
 
     fn is_fabric_compatible(&self, version: &str) -> Result<()> {
@@ -242,15 +237,8 @@ impl AzureStack {
         }
     }
 
-    #[cfg(test)]
     fn metadata_endpoint() -> String {
-        mockito::server_url()
-    }
-
-    #[cfg(not(test))]
-    fn metadata_endpoint() -> String {
-        const URL: &str = "http://169.254.169.254";
-        URL.to_string()
+        "http://169.254.169.254".into()
     }
 
     // Fetch the certificate.
@@ -306,7 +294,7 @@ impl AzureStack {
     }
 
     fn fetch_hostname(&self) -> Result<Option<String>> {
-        let instance_metadata = AzureStack::fetch_identity()?;
+        let instance_metadata = self.fetch_identity()?;
         Ok(Some(instance_metadata.vm_name))
     }
 

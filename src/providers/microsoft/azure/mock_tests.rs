@@ -1,4 +1,5 @@
 use crate::providers::{microsoft::azure, MetadataProvider};
+use crate::retry;
 use mockito::{self, Matcher};
 
 /// Response body for goalstate (with certificates endpoint).
@@ -66,7 +67,7 @@ static GOALSTATE_BODY_NO_CERTS: &str = r#"<?xml version="1.0" encoding="utf-8"?>
 </GoalState>
 "#;
 
-fn mock_fab_version() -> mockito::Mock {
+fn mock_fab_version(server: &mut mockito::Server) -> mockito::Mock {
     let fab_version = "/?comp=versions";
     let ver_body = r#"<?xml version="1.0" encoding="utf-8"?>
 <Versions>
@@ -87,13 +88,14 @@ fn mock_fab_version() -> mockito::Mock {
   </Supported>
 </Versions>"#;
 
-    mockito::mock("GET", fab_version)
+    server
+        .mock("GET", fab_version)
         .with_body(ver_body)
         .with_status(200)
         .create()
 }
 
-fn mock_goalstate(with_certificates: bool) -> mockito::Mock {
+fn mock_goalstate(server: &mut mockito::Server, with_certificates: bool) -> mockito::Mock {
     let fab_goalstate = "/machine/?comp=goalstate";
 
     let gs_body = if with_certificates {
@@ -102,7 +104,8 @@ fn mock_goalstate(with_certificates: bool) -> mockito::Mock {
         GOALSTATE_BODY_NO_CERTS
     };
 
-    mockito::mock("GET", fab_goalstate)
+    server
+        .mock("GET", fab_goalstate)
         .with_body(gs_body)
         .with_status(200)
         .create()
@@ -110,11 +113,13 @@ fn mock_goalstate(with_certificates: bool) -> mockito::Mock {
 
 #[test]
 fn test_boot_checkin() {
-    let m_version = mock_fab_version();
-    let m_goalstate = mock_goalstate(true);
+    let mut server = mockito::Server::new();
+    let m_version = mock_fab_version(&mut server);
+    let m_goalstate = mock_goalstate(&mut server, true);
 
     let fab_health = "/machine/?comp=health";
-    let m_health = mockito::mock("POST", fab_health)
+    let m_health = server
+        .mock("POST", fab_health)
         .match_header("content-type", Matcher::Regex("text/xml".to_string()))
         .match_header("x-ms-version", Matcher::Regex("2012-11-30".to_string()))
         .match_body(Matcher::Regex("<State>Ready</State>".to_string()))
@@ -124,35 +129,46 @@ fn test_boot_checkin() {
         .with_status(200)
         .create();
 
-    let provider = azure::Azure::try_new();
-    let r = provider.unwrap().boot_checkin();
+    let client = retry::Client::try_new()
+        .unwrap()
+        .mock_base_url(server.url());
+    let provider = azure::Azure::with_client(Some(client)).unwrap();
+    let r = provider.boot_checkin();
 
     m_version.assert();
     m_goalstate.assert();
     m_health.assert();
     r.unwrap();
 
-    mockito::reset();
+    server.reset();
 
     // Check error logic, but fail fast without re-trying.
-    let client = crate::retry::Client::try_new().unwrap().max_retries(0);
+    let client = retry::Client::try_new()
+        .unwrap()
+        .max_retries(0)
+        .mock_base_url(server.url());
     azure::Azure::with_client(Some(client)).unwrap_err();
 }
 
 #[test]
 fn test_hostname() {
-    let m_version = mock_fab_version();
+    let mut server = mockito::Server::new();
+    let m_version = mock_fab_version(&mut server);
 
     let testname = "testname";
     let endpoint = "/metadata/instance/compute/name?api-version=2017-08-01&format=text";
-    let m_hostname = mockito::mock("GET", endpoint)
+    let m_hostname = server
+        .mock("GET", endpoint)
         .match_header("Metadata", "true")
         .with_body(testname)
         .with_status(200)
         .create();
 
-    let provider = azure::Azure::try_new();
-    let r = provider.unwrap().hostname().unwrap();
+    let client = retry::Client::try_new()
+        .unwrap()
+        .mock_base_url(server.url());
+    let provider = azure::Azure::with_client(Some(client)).unwrap();
+    let r = provider.hostname().unwrap();
 
     m_version.assert();
 
@@ -160,27 +176,35 @@ fn test_hostname() {
     let hostname = r.unwrap();
     assert_eq!(hostname, testname);
 
-    mockito::reset();
+    server.reset();
 
     // Check error logic, but fail fast without re-trying.
-    let client = crate::retry::Client::try_new().unwrap().max_retries(0);
+    let client = retry::Client::try_new()
+        .unwrap()
+        .max_retries(0)
+        .mock_base_url(server.url());
     azure::Azure::with_client(Some(client)).unwrap_err();
 }
 
 #[test]
 fn test_vmsize() {
-    let m_version = mock_fab_version();
+    let mut server = mockito::Server::new();
+    let m_version = mock_fab_version(&mut server);
 
     let testvmsize = "testvmsize";
     let endpoint = "/metadata/instance/compute/vmSize?api-version=2017-08-01&format=text";
-    let m_vmsize = mockito::mock("GET", endpoint)
+    let m_vmsize = server
+        .mock("GET", endpoint)
         .match_header("Metadata", "true")
         .with_body(testvmsize)
         .with_status(200)
         .create();
 
-    let provider = azure::Azure::try_new();
-    let attributes = provider.unwrap().attributes().unwrap();
+    let client = retry::Client::try_new()
+        .unwrap()
+        .mock_base_url(server.url());
+    let provider = azure::Azure::with_client(Some(client)).unwrap();
+    let attributes = provider.attributes().unwrap();
     let r = attributes.get("AZURE_VMSIZE");
 
     m_version.assert();
@@ -189,19 +213,26 @@ fn test_vmsize() {
     let vmsize = r.unwrap();
     assert_eq!(vmsize, testvmsize);
 
-    mockito::reset();
+    server.reset();
 
     // Check error logic, but fail fast without re-trying.
-    let client = crate::retry::Client::try_new().unwrap().max_retries(0);
+    let client = retry::Client::try_new()
+        .unwrap()
+        .max_retries(0)
+        .mock_base_url(server.url());
     azure::Azure::with_client(Some(client)).unwrap_err();
 }
 
 #[test]
 fn test_goalstate_certs() {
-    let m_version = mock_fab_version();
-    let m_goalstate = mock_goalstate(true);
+    let mut server = mockito::Server::new();
+    let m_version = mock_fab_version(&mut server);
+    let m_goalstate = mock_goalstate(&mut server, true);
 
-    let provider = azure::Azure::try_new().unwrap();
+    let client = retry::Client::try_new()
+        .unwrap()
+        .mock_base_url(server.url());
+    let provider = azure::Azure::with_client(Some(client)).unwrap();
     let goalstate = provider.fetch_goalstate().unwrap();
 
     m_version.assert();
@@ -211,15 +242,19 @@ fn test_goalstate_certs() {
     let certs_url = reqwest::Url::parse(&ep).unwrap();
     assert_eq!(certs_url.scheme(), "http");
 
-    mockito::reset();
+    server.reset();
 }
 
 #[test]
 fn test_goalstate_no_certs() {
-    let m_version = mock_fab_version();
-    let m_goalstate = mock_goalstate(false);
+    let mut server = mockito::Server::new();
+    let m_version = mock_fab_version(&mut server);
+    let m_goalstate = mock_goalstate(&mut server, false);
 
-    let provider = azure::Azure::try_new().unwrap();
+    let client = retry::Client::try_new()
+        .unwrap()
+        .mock_base_url(server.url());
+    let provider = azure::Azure::with_client(Some(client)).unwrap();
     let goalstate = provider.fetch_goalstate().unwrap();
 
     m_version.assert();
@@ -227,5 +262,5 @@ fn test_goalstate_no_certs() {
 
     assert_eq!(goalstate.certs_endpoint(), None);
 
-    mockito::reset();
+    server.reset();
 }

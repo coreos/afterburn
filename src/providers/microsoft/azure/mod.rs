@@ -189,7 +189,6 @@ impl Azure {
         Ok(IpAddr::V4(dec.into()))
     }
 
-    #[cfg(not(test))]
     fn fabric_base_url(&self) -> String {
         format!("http://{}", self.endpoint)
     }
@@ -198,11 +197,6 @@ impl Azure {
     fn get_fabric_address() -> IpAddr {
         use std::net::Ipv4Addr;
         IpAddr::from(Ipv4Addr::new(127, 0, 0, 1))
-    }
-
-    #[cfg(test)]
-    fn fabric_base_url(&self) -> String {
-        mockito::server_url()
     }
 
     fn is_fabric_compatible(&self, version: &str) -> Result<()> {
@@ -227,15 +221,8 @@ impl Azure {
         }
     }
 
-    #[cfg(test)]
     fn metadata_endpoint() -> String {
-        mockito::server_url()
-    }
-
-    #[cfg(not(test))]
-    fn metadata_endpoint() -> String {
-        const URL: &str = "http://169.254.169.254";
-        URL.to_string()
+        "http://169.254.169.254".into()
     }
 
     // Fetch the certificate.
@@ -338,7 +325,9 @@ impl Azure {
         const NAME_URL: &str = "metadata/instance/compute/name?api-version=2017-08-01&format=text";
         let url = format!("{}/{}", Self::metadata_endpoint(), NAME_URL);
 
-        let name = retry::Client::try_new()?
+        let name = self
+            .client
+            .clone()
             .header(
                 HeaderName::from_static("metadata"),
                 HeaderValue::from_static("true"),
@@ -354,7 +343,9 @@ impl Azure {
             "metadata/instance/compute/vmSize?api-version=2017-08-01&format=text";
         let url = format!("{}/{}", Self::metadata_endpoint(), VMSIZE_URL);
 
-        let vmsize = retry::Client::try_new()?
+        let vmsize = self
+            .client
+            .clone()
             .header(
                 HeaderName::from_static("metadata"),
                 HeaderValue::from_static("true"),

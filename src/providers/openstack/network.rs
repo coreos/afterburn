@@ -8,7 +8,6 @@ use openssh_keys::PublicKey;
 use crate::providers::MetadataProvider;
 use crate::retry;
 
-#[cfg(not(test))]
 const URL: &str = "http://169.254.169.254/latest/meta-data";
 
 #[derive(Clone, Debug)]
@@ -22,12 +21,6 @@ impl OpenstackProviderNetwork {
         Ok(OpenstackProviderNetwork { client })
     }
 
-    #[cfg(test)]
-    fn endpoint_for(key: &str) -> String {
-        format!("{}/{}", &mockito::server_url(), key)
-    }
-
-    #[cfg(not(test))]
     fn endpoint_for(key: &str) -> String {
         format!("{URL}/{key}")
     }

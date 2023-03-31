@@ -64,4 +64,4 @@ vmw_backdoor = "0.2"
 zbus = ">= 2.3, < 4"
 
 [dev-dependencies]
-mockito = ">= 0.29, < 0.33"
+mockito = "1"

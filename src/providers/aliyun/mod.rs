@@ -4,8 +4,6 @@
 //! The metadata endpoint is documented at https://www.alibabacloud.com/help/doc-detail/49122.htm.
 
 use anyhow::{anyhow, Result};
-#[cfg(test)]
-use mockito;
 use openssh_keys::PublicKey;
 use slog_scope::error;
 use std::collections::{BTreeSet, HashMap};
@@ -31,13 +29,6 @@ impl AliyunProvider {
         Ok(AliyunProvider { client })
     }
 
-    #[cfg(test)]
-    fn endpoint_for(name: &str) -> String {
-        let url = mockito::server_url();
-        format!("{url}/{name}")
-    }
-
-    #[cfg(not(test))]
     fn endpoint_for(name: &str) -> String {
         format!("http://100.100.100.200/latest/meta-data/{name}")
     }

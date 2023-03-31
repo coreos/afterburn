@@ -18,8 +18,6 @@
 use std::collections::HashMap;
 
 use anyhow::{anyhow, bail, Context, Result};
-#[cfg(test)]
-use mockito;
 use openssh_keys::PublicKey;
 use reqwest::header;
 use serde::Deserialize;
@@ -71,13 +69,6 @@ impl AwsProvider {
         Ok(AwsProvider { client })
     }
 
-    #[cfg(test)]
-    fn endpoint_for(key: &str, _use_latest: bool) -> String {
-        let url = mockito::server_url();
-        format!("{url}/{key}")
-    }
-
-    #[cfg(not(test))]
     fn endpoint_for(key: &str, use_latest: bool) -> String {
         // https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instancedata-data-categories.html
         const URL: &str = "http://169.254.169.254/2021-01-03";

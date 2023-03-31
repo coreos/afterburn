@@ -90,6 +90,7 @@ struct PacketAddressInfo {
 
 #[derive(Clone, Debug)]
 pub struct PacketProvider {
+    client: retry::Client,
     data: PacketData,
 }
 
@@ -113,19 +114,11 @@ impl PacketProvider {
             .send()?
             .ok_or_else(|| anyhow!("metadata endpoint unreachable"))?;
 
-        Ok(Self { data })
+        Ok(Self { client, data })
     }
 
-    #[cfg(test)]
     fn endpoint_for(name: &str) -> String {
-        let url = mockito::server_url();
-        format!("{url}/{name}")
-    }
-
-    #[cfg(not(test))]
-    fn endpoint_for(name: &str) -> String {
-        let url = "https://metadata.packet.net";
-        format!("{url}/{name}")
+        format!("https://metadata.packet.net/{name}")
     }
 
     fn get_attrs(&self) -> Vec<(String, String)> {
@@ -383,9 +376,8 @@ impl MetadataProvider for PacketProvider {
     }
 
     fn boot_checkin(&self) -> Result<()> {
-        let client = retry::Client::try_new()?;
         let url = self.data.phone_home_url.clone();
-        client.post(retry::Json, url, None).dispatch_post()?;
+        self.client.post(retry::Json, url, None).dispatch_post()?;
         Ok(())
     }
 }

@@ -94,6 +94,8 @@ pub struct Client {
     headers: header::HeaderMap,
     retry: Retry,
     return_on_404: bool,
+    #[cfg(test)]
+    mock_base_url: Option<String>,
 }
 
 impl Client {
@@ -106,6 +108,8 @@ impl Client {
             headers: header::HeaderMap::new(),
             retry: Retry::new(),
             return_on_404: false,
+            #[cfg(test)]
+            mock_base_url: None,
         })
     }
 
@@ -141,6 +145,12 @@ impl Client {
         self
     }
 
+    #[cfg(test)]
+    pub fn mock_base_url(mut self, base_url: String) -> Self {
+        self.mock_base_url = Some(base_url);
+        self
+    }
+
     pub fn get<D>(&self, d: D, url: String) -> RequestBuilder<D>
     where
         D: Deserializer,
@@ -153,6 +163,8 @@ impl Client {
             headers: self.headers.clone(),
             retry: self.retry.clone(),
             return_on_404: self.return_on_404,
+            #[cfg(test)]
+            mock_base_url: self.mock_base_url.clone(),
         }
     }
 
@@ -168,6 +180,8 @@ impl Client {
             headers: self.headers.clone(),
             retry: self.retry.clone(),
             return_on_404: self.return_on_404,
+            #[cfg(test)]
+            mock_base_url: self.mock_base_url.clone(),
         }
     }
 
@@ -183,6 +197,8 @@ impl Client {
             headers: self.headers.clone(),
             retry: self.retry.clone(),
             return_on_404: self.return_on_404,
+            #[cfg(test)]
+            mock_base_url: self.mock_base_url.clone(),
         }
     }
 }
@@ -198,6 +214,8 @@ where
     headers: header::HeaderMap,
     retry: Retry,
     return_on_404: bool,
+    #[cfg(test)]
+    mock_base_url: Option<String>,
 }
 
 impl<D> RequestBuilder<D>
@@ -213,7 +231,7 @@ where
     where
         T: for<'de> serde::Deserialize<'de>,
     {
-        let url = reqwest::Url::parse(self.url.as_str()).context("failed to parse uri")?;
+        let url = self.parse_url()?;
         let mut req = blocking::Request::new(Method::GET, url);
         req.headers_mut().extend(self.headers.clone().into_iter());
 
@@ -227,7 +245,7 @@ where
     where
         T: for<'de> serde::Deserialize<'de>,
     {
-        let url = reqwest::Url::parse(self.url.as_str()).context("failed to parse uri")?;
+        let url = self.parse_url()?;
 
         self.retry.clone().retry(|attempt| {
             let mut builder = blocking::Client::new()
@@ -254,7 +272,7 @@ where
     }
 
     pub fn dispatch_post(self) -> Result<reqwest::StatusCode> {
-        let url = reqwest::Url::parse(self.url.as_str()).context("failed to parse uri")?;
+        let url = self.parse_url()?;
 
         self.retry.clone().retry(|attempt| {
             let mut builder = blocking::Client::new()
@@ -307,6 +325,27 @@ where
                 Err(anyhow!(e).context("failed to fetch"))
             }
         }
+    }
+
+    fn parse_url(&self) -> Result<reqwest::Url> {
+        #[allow(unused_mut)]
+        let mut url = reqwest::Url::parse(self.url.as_str()).context("failed to parse uri")?;
+        #[cfg(test)]
+        if let Some(mock_base_url) = &self.mock_base_url {
+            let base_url =
+                reqwest::Url::parse(mock_base_url).context("failed to parse mock base URL")?;
+            url.set_scheme(base_url.scheme())
+                .map_err(|_| anyhow!("failed to update URL scheme"))?;
+            let host = base_url
+                .host()
+                .context("mock base URL doesn't have a host")?
+                .to_string();
+            url.set_host(Some(&host))
+                .context("failed to update URL host")?;
+            url.set_port(base_url.port())
+                .map_err(|_| anyhow!("failed to update URL port"))?;
+        }
+        Ok(url)
     }
 }
 

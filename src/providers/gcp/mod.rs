@@ -15,8 +15,6 @@
 //! google compute engine metadata fetcher
 
 use anyhow::{anyhow, Result};
-#[cfg(test)]
-use mockito;
 use openssh_keys::PublicKey;
 use reqwest::header::{HeaderName, HeaderValue};
 use std::collections::HashMap;
@@ -46,13 +44,6 @@ impl GcpProvider {
         Ok(GcpProvider { client })
     }
 
-    #[cfg(test)]
-    fn endpoint_for(name: &str) -> String {
-        let url = mockito::server_url();
-        format!("{url}/{name}")
-    }
-
-    #[cfg(not(test))]
     fn endpoint_for(name: &str) -> String {
         format!("http://169.254.169.254/computeMetadata/v1/{name}")
     }

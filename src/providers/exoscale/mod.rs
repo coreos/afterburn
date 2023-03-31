@@ -39,13 +39,6 @@ impl ExoscaleProvider {
         Ok(ExoscaleProvider { client })
     }
 
-    #[cfg(test)]
-    fn endpoint_for(&self, key: &str) -> String {
-        let url = mockito::server_url();
-        format!("{url}/{key}")
-    }
-
-    #[cfg(not(test))]
     fn endpoint_for(&self, key: &str) -> String {
         format!("http://169.254.169.254/1.0/meta-data/{key}")
     }

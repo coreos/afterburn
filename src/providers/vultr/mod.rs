@@ -17,8 +17,6 @@
 //! The metadata endpoint is documented at https://www.vultr.com/metadata/.
 
 use anyhow::Result;
-#[cfg(test)]
-use mockito;
 use openssh_keys::PublicKey;
 use slog_scope::error;
 use std::collections::HashMap;
@@ -41,13 +39,6 @@ impl VultrProvider {
         Ok(VultrProvider { client })
     }
 
-    #[cfg(test)]
-    fn endpoint_for(name: &str) -> String {
-        let url = mockito::server_url();
-        format!("{url}/{name}")
-    }
-
-    #[cfg(not(test))]
     fn endpoint_for(name: &str) -> String {
         format!("http://169.254.169.254/v1/{name}")
     }

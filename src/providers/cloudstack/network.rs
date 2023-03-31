@@ -33,8 +33,8 @@ impl CloudstackNetwork {
 
     fn get_server_base_url_from_dhcp() -> Result<String> {
         if cfg!(test) {
-            #[cfg(test)]
-            return Ok(mockito::server_url());
+            // will be ignored by retry.Client
+            return Ok("http://localhost".into());
         }
         let server = DhcpOption::DhcpServerId.get_value()?;
         let ip = server

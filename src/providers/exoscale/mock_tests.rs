@@ -4,45 +4,43 @@ use mockito;
 
 #[test]
 fn basic_hostname() {
-    let ep = "/local-hostname";
+    let ep = "/1.0/meta-data/local-hostname";
     let hostname = "test-hostname";
 
+    let mut server = mockito::Server::new();
     let mut provider = exoscale::ExoscaleProvider::try_new().unwrap();
-    provider.client = provider.client.max_retries(0);
+    provider.client = provider.client.max_retries(0).mock_base_url(server.url());
 
-    {
-        let _m503 = mockito::mock("GET", ep).with_status(503).create();
-        provider.hostname().unwrap_err();
-    }
+    server.mock("GET", ep).with_status(503).create();
+    provider.hostname().unwrap_err();
 
-    {
-        let _m200 = mockito::mock("GET", ep)
-            .with_status(200)
-            .with_body(hostname)
-            .create();
-        let v = provider.hostname().unwrap();
-        assert_eq!(v, Some(hostname.to_string()));
-    }
+    server
+        .mock("GET", ep)
+        .with_status(200)
+        .with_body(hostname)
+        .create();
+    let v = provider.hostname().unwrap();
+    assert_eq!(v, Some(hostname.to_string()));
 
-    {
-        let _m200_empty = mockito::mock("GET", ep)
-            .with_status(200)
-            .with_body("")
-            .create();
-        let v = provider.hostname().unwrap();
-        assert_eq!(v, None);
-    }
+    server
+        .mock("GET", ep)
+        .with_status(200)
+        .with_body("")
+        .create();
+    let v = provider.hostname().unwrap();
+    assert_eq!(v, None);
 
-    mockito::reset();
+    server.reset();
     provider.hostname().unwrap_err();
 }
 
 #[test]
 fn basic_pubkeys() {
+    let mut server = mockito::Server::new();
     let mut provider = exoscale::ExoscaleProvider::try_new().unwrap();
-    provider.client = provider.client.max_retries(0);
+    provider.client = provider.client.max_retries(0).mock_base_url(server.url());
 
-    let _m_keys = mockito::mock("GET", "/public-keys")
+    server.mock("GET", "/1.0/meta-data/public-keys")
         .with_status(200)
         .with_body("ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC+bqdi18/+JfjrqmOEtVKyCU0bsIc6tBqqU7p9mesJkALocLddDU6d97w2zwERhzaqReDyg4msvQQohgtncb4afKKWQjCCCWlcwtP0nAeg9GFtUfmLeYcP2KAjxblabncluuAnvMHyBixKAjr5eWD4B1HjOmpMRmycwmy85QhGTYhF+AkiHGCPPUDrVy2cIvrPSDXEEa7bz5aQUime0Eold56n3O7E5BJuAozf+oeiWCERRRt9ATlLkMvwVItzBHN25YoMOd0KfgYMtBVAw86TErYFx4Tu98blYNUQTthf9VxcU8xy0rFacXmuS7LHbp+CKDY0X5dNHuhqz0wFto4J test-comment")
         .create();
@@ -54,7 +52,7 @@ fn basic_pubkeys() {
     assert_eq!(keys[0].options, None);
     assert_eq!(keys[0].comment, Some("test-comment".to_string()));
 
-    mockito::reset();
+    server.reset();
     provider.ssh_keys().unwrap_err();
 }
 
@@ -71,23 +69,23 @@ fn basic_attributes() {
     let vm_id = "test-vm-id";
 
     let endpoints = maplit::btreemap! {
-        "/local-hostname" => local_hostname,
-        "/public-hostname" => public_hostname,
-        "/instance-id" => instance_id,
-        "/service-offering" => service_offering,
-        "/local-ipv4" => local_ipv4,
-        "/public-ipv4" => public_ipv4,
-        "/availability-zone" => availability_zone,
-        "/cloud-identifier" => cloud_identifier,
-        "/vm-id" => vm_id,
+        "/1.0/meta-data/local-hostname" => local_hostname,
+        "/1.0/meta-data/public-hostname" => public_hostname,
+        "/1.0/meta-data/instance-id" => instance_id,
+        "/1.0/meta-data/service-offering" => service_offering,
+        "/1.0/meta-data/local-ipv4" => local_ipv4,
+        "/1.0/meta-data/public-ipv4" => public_ipv4,
+        "/1.0/meta-data/availability-zone" => availability_zone,
+        "/1.0/meta-data/cloud-identifier" => cloud_identifier,
+        "/1.0/meta-data/vm-id" => vm_id,
     };
-    let mut mocks = Vec::with_capacity(endpoints.len());
+    let mut server = mockito::Server::new();
     for (endpoint, body) in endpoints {
-        let m = mockito::mock("GET", endpoint)
+        server
+            .mock("GET", endpoint)
             .with_status(200)
             .with_body(body)
             .create();
-        mocks.push(m);
     }
 
     let attributes = maplit::hashmap! {
@@ -105,12 +103,13 @@ fn basic_attributes() {
     let client = crate::retry::Client::try_new()
         .unwrap()
         .max_retries(0)
-        .return_on_404(true);
+        .return_on_404(true)
+        .mock_base_url(server.url());
     let provider = exoscale::ExoscaleProvider { client };
 
     let v = provider.attributes().unwrap();
     assert_eq!(v, attributes);
 
-    mockito::reset();
+    server.reset();
     provider.attributes().unwrap_err();
 }
