@@ -238,18 +238,20 @@ pub trait MetadataProvider {
         Ok(())
     }
 
-    fn write_hostname(&self, hostname_file_path: String) -> Result<()> {
+    fn write_hostname(&self, hostname_file_path: String, short: bool) -> Result<()> {
         if let Some(mut hostname) = self.hostname()? {
             if let Some(maxlen) = max_hostname_len()? {
-                // Get the short form hostname (i.e. without the domain name).
-                // The domain name is usually set as a search domain via DHCP, and
-                // it can optionally be added as a canonical hostname to /etc/hosts
-                // as well, as the first value after the local IP address.
-                //
-                // Example:
-                // 127.0.0.1  example.local example
-                if let Some(idx) = hostname.find('.') {
-                    hostname.truncate(idx);
+                if short {
+                    // Get the short form hostname (i.e. without the domain name).
+                    // The domain name is usually set as a search domain via DHCP, and
+                    // it can optionally be added as a canonical hostname to /etc/hosts
+                    // as well, as the first value after the local IP address.
+                    //
+                    // Example:
+                    // 127.0.0.1  example.local example
+                    if let Some(idx) = hostname.find('.') {
+                        hostname.truncate(idx);
+                    }
                 }
                 if hostname.len() > maxlen {
                     // Value exceeds the system's maximum hostname length.
@@ -262,6 +264,9 @@ pub trait MetadataProvider {
                         maxlen
                     );
                     hostname.truncate(maxlen);
+                    if let Some(idx) = hostname.find('.') {
+                        hostname.truncate(idx);
+                    }
                 }
             }
 
@@ -316,11 +321,11 @@ mod tests {
     }
 
     // write specified hostname to a file, then read it back
-    fn try_write_hostname(hostname: &str) -> String {
+    fn try_write_hostname(hostname: &str, short: bool) -> String {
         let mut temp = NamedTempFile::new().unwrap();
         let provider = HostnameMock(hostname.into());
         provider
-            .write_hostname(temp.path().to_str().unwrap().into())
+            .write_hostname(temp.path().to_str().unwrap().into(), short)
             .unwrap();
         let mut ret = String::new();
         temp.read_to_string(&mut ret).unwrap();
@@ -337,30 +342,35 @@ mod tests {
             .take(maxlen * 2)
             .collect::<String>();
         // simple hostname
-        assert_eq!(try_write_hostname("hostname7"), "hostname7");
+        assert_eq!(try_write_hostname("hostname7", false), "hostname7");
         // simple FQDN
         assert_eq!(
-            try_write_hostname("hostname7.example.com"),
+            try_write_hostname("hostname7.example.com", false),
+            "hostname7.example.com"
+        );
+        // short form hostname
+        assert_eq!(
+            try_write_hostname("hostname7.example.com", true),
             "hostname7"
         );
         // truncated simple hostname
         assert_eq!(
-            try_write_hostname(&long_string[0..maxlen + 10]),
+            try_write_hostname(&long_string[0..maxlen + 10], false),
             long_string[0..maxlen]
         );
         // truncated FQDN
         assert_eq!(
-            try_write_hostname(&format!("{}.example.com", &long_string[0..maxlen + 5])),
+            try_write_hostname(&format!("{}.example.com", &long_string[0..maxlen + 5]), false),
             long_string[0..maxlen]
         );
         // truncate to first dot
         assert_eq!(
-            try_write_hostname(&format!("{}.example.com", &long_string[0..maxlen - 5])),
+            try_write_hostname(&format!("{}.example.com", &long_string[0..maxlen - 5]), false),
             long_string[0..maxlen - 5]
         );
         // truncate to first dot even if we could truncate to second dot
         assert_eq!(
-            try_write_hostname(&format!("{}.example.com", &long_string[0..maxlen - 10])),
+            try_write_hostname(&format!("{}.example.com", &long_string[0..maxlen - 10]), false),
             long_string[0..maxlen - 10]
         );
     }
