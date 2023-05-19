@@ -11,6 +11,7 @@ Major changes:
 
 Minor changes:
 
+- Fix SSH key fetching on Azure with `openssl` crate ≥ 0.10.46
 
 Packaging changes:
 
