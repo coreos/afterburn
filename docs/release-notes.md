@@ -11,6 +11,15 @@ Major changes:
 
 Minor changes:
 
+
+Packaging changes:
+
+
+
+## Afterburn 5.4.2 (2023-05-18)
+
+Minor changes:
+
 - Fix SSH key fetching on Azure with `openssl` crate ≥ 0.10.46
 
 Packaging changes:
