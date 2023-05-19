@@ -4,7 +4,7 @@ version = 3
 
 [[package]]
 name = "afterburn"
-version = "5.4.1"
+version = "5.4.2"
 dependencies = [
  "anyhow",
  "cfg-if",
