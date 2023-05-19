@@ -11,11 +11,13 @@ Major changes:
 
 Minor changes:
 
+- Fix SSH key fetching on Azure with `openssl` crate ≥ 0.10.46
 
 Packaging changes:
 
 - Require `clap` ≥ 4
 - Require `mockito` ≥ 1
+- Require `openssl` ≥ 0.10.46
 
 
 ## Afterburn 5.4.1 (2023-02-06)
