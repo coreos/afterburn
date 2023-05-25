@@ -11,6 +11,8 @@ Major changes:
 
 Minor changes:
 
+- openstack: Add `OPENSTACK_INSTANCE_UUID` attribute
+- openstack-metadata: Add `OPENSTACK_INSTANCE_UUID` attribute
 
 Packaging changes:
 

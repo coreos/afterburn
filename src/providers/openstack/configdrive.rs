@@ -37,6 +37,8 @@ pub struct MetadataEc2JSON {
 /// Partial object for openstack `meta_data.json`
 #[derive(Debug, Deserialize)]
 pub struct MetadataOpenstackJSON {
+    /// Instance ID.
+    pub uuid: Option<String>,
     /// Availability zone.
     pub availability_zone: Option<String>,
     /// Local hostname.
@@ -140,7 +142,7 @@ impl OpenstackConfigDrive {
 
 impl MetadataProvider for OpenstackConfigDrive {
     fn attributes(&self) -> Result<HashMap<String, String>> {
-        let mut out = HashMap::with_capacity(5);
+        let mut out = HashMap::with_capacity(6);
         let metadata_ec2: MetadataEc2JSON = self.read_metadata_ec2()?;
         let metadata_openstack: MetadataOpenstackJSON = self.read_metadata_openstack()?;
         if let Some(hostname) = metadata_openstack.hostname {
@@ -148,6 +150,9 @@ impl MetadataProvider for OpenstackConfigDrive {
         }
         if let Some(instance_id) = metadata_ec2.instance_id {
             out.insert("OPENSTACK_INSTANCE_ID".to_string(), instance_id);
+        }
+        if let Some(uuid) = metadata_openstack.uuid {
+            out.insert("OPENSTACK_INSTANCE_UUID".to_string(), uuid);
         }
         if let Some(instance_type) = metadata_ec2.instance_type {
             out.insert("OPENSTACK_INSTANCE_TYPE".to_string(), instance_type);
@@ -228,6 +233,10 @@ mod tests {
             "abai-fcos-afterburn-test"
         );
         assert_eq!(parsed.availability_zone.unwrap_or_default(), "nova");
+        assert_eq!(
+            parsed.uuid.unwrap_or_default(),
+            "b3c7f4de-da0b-44ae-a42c-fa3806b61d7f"
+        );
         assert_eq!(parsed.public_keys.unwrap_or_default(), expect);
     }
 
