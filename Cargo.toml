@@ -21,11 +21,8 @@ tag-message = "Afterburn v{{version}}"
 
 # See https://github.com/coreos/cargo-vendor-filterer
 [package.metadata.vendor-filter]
-# cargo-vendor-filterer supports wildcards but requires some degree of LLVM
-# support for every matching platform, which isn't necessarily available
-# out of the box.  Use this as a stand-in.  Note that architecture-specific
-# crate dependencies (apart from wasm32) are uncommon in the ecosystem.
-platforms = ["x86_64-unknown-linux-gnu"]
+platforms = ["*-unknown-linux-gnu"]
+tier = "2"
 all-features = true
 
 [[bin]]
