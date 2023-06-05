@@ -3,15 +3,15 @@
 buildPod {
     checkout scm
     stage("Build") {
-        shwrap("make && make install DESTDIR=install")
+        // Including debug symbols in the installed binary adds almost 150
+        // MiB to the initrd, which is large enough to cause some kola tests
+        // to fail.  Strip symbols.
+        shwrap("make && strip --strip-unneeded target/release/afterburn && make install DESTDIR=install")
         stash name: 'build', includes: 'install/**'
     }
 }
 
 cosaPod {
     unstash name: 'build'
-    cosaBuild(skipKola: true, overlays: ["install"])
-    // Skipping kdump.crash due to CI failure in afterburn repo
-    // https://github.com/coreos/fedora-coreos-tracker/issues/1075
-    kola(extraArgs: "--denylist-test ext.config.kdump.crash")
+    cosaBuild(overlays: ["install"])
 }
