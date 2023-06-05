@@ -1118,11 +1118,11 @@ checksum = "6f61fba1741ea2b3d6a1e3178721804bb716a68a6aeba1149b5d52e3d464ea66"
 
 [[package]]
 name = "openssh-keys"
-version = "0.6.0"
+version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "37b58a8e78d8aa4cb398da5616fd29ab28b615c46b452aac6cbab45a9e5ac0ac"
+checksum = "87e8cf2fdea16b7beeb32193ec11103355c232fbb504b7d9e2aac322534c4f51"
 dependencies = [
- "base64 0.13.1",
+ "base64 0.21.0",
  "byteorder",
  "md-5",
  "sha2",
