@@ -45,11 +45,15 @@ The following platforms are supported, with a different set of features availabl
   - Attributes
   - SSH Keys
 * openstack
-  - Attributes
-  - SSH Keys
+  * Metadata source: config-drive if present, otherwise metadata service
+  * Features:
+      - Attributes
+      - SSH Keys
 * openstack-metadata
-  - Attributes
-  - SSH Keys
+  * Metadata source: metadata service
+  * Features:
+      - Attributes
+      - SSH Keys
 * packet
   - Attributes
   - First-boot check-in
