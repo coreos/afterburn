@@ -16,6 +16,13 @@ Packaging changes:
 
 
 
+## Afterburn 5.4.3 (2023-06-05)
+
+Packaging changes:
+
+- Fix incomplete package in vendor tarball
+
+
 ## Afterburn 5.4.2 (2023-05-18)
 
 Minor changes:
