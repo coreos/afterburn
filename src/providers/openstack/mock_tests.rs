@@ -51,3 +51,60 @@ fn test_ssh_keys_404_ok() {
     server.reset();
     provider.ssh_keys().unwrap_err();
 }
+
+#[test]
+fn test_instance_uuid() {
+    let mut server = mockito::Server::new();
+    let mut provider = OpenstackProviderNetwork::try_new().unwrap();
+    provider.client = provider.client.max_retries(0).mock_base_url(server.url());
+
+    server
+        .mock("GET", "/openstack/2012-08-10/meta_data.json")
+        .with_status(200)
+        .with_header("content-type", "application/json")
+        .with_body_from_file(
+            "tests/fixtures/openstack-metadata/openstack/2012-08-10/meta_data.json",
+        )
+        .create();
+
+    server
+        .mock(
+            "GET",
+            mockito::Matcher::Regex(r"^/latest/meta-data/.*$".to_string()),
+        )
+        .with_status(404)
+        .create();
+
+    let v = provider.attributes().unwrap();
+    assert_eq!(
+        v.get("OPENSTACK_INSTANCE_UUID"),
+        Some(&String::from("99dcf33b-6eb5-4acf-9abb-d81723e0c949"))
+    );
+    server.reset();
+    provider.attributes().unwrap_err();
+}
+
+#[test]
+fn test_instance_uuid_404_ok() {
+    let mut server = mockito::Server::new();
+    let mut provider = OpenstackProviderNetwork::try_new().unwrap();
+    provider.client = provider.client.max_retries(0).mock_base_url(server.url());
+
+    server
+        .mock("GET", "/openstack/2012-08-10/meta_data.json")
+        .with_status(404)
+        .create();
+
+    server
+        .mock(
+            "GET",
+            mockito::Matcher::Regex(r"^/latest/meta-data/.*$".to_string()),
+        )
+        .with_status(404)
+        .create();
+
+    let v = provider.attributes().unwrap();
+    assert_eq!(v.len(), 0);
+    server.reset();
+    provider.attributes().unwrap_err();
+}
