@@ -36,6 +36,7 @@ pub mod microsoft;
 pub mod openstack;
 pub mod packet;
 pub mod powervs;
+pub mod scaleway;
 pub mod vmware;
 pub mod vultr;
 

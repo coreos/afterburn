@@ -8,6 +8,7 @@ nav_order: 8
 
 Major changes:
 
+- Add support for Scaleway
 
 Minor changes:
 
