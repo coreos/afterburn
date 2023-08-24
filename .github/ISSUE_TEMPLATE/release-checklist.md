@@ -35,7 +35,7 @@ Push access to the upstream repository is required in order to publish the new t
   - [ ] `UPSTREAM_REMOTE=origin`
   - [ ] `git checkout -b pre-release-${RELEASE_VER}`
 
-- check `Cargo.toml` for unintended de-supporting of older dependency versions:
+- check `Cargo.toml` for unintended increases of lower version bounds:
   - [ ] `git diff $(git describe --abbrev=0) Cargo.toml`
 
 - update all dependencies:
