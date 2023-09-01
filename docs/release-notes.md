@@ -16,6 +16,7 @@ Minor changes:
 
 Packaging changes:
 
+Require Rust ≥ 1.71.0
 Specify features depended on from Nix
 
 
