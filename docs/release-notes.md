@@ -16,6 +16,7 @@ Minor changes:
 
 Packaging changes:
 
+Specify features depended on from Nix
 
 
 ## Afterburn 5.4.3 (2023-06-05)
