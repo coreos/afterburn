@@ -210,7 +210,7 @@ mod tests {
         .map(ToString::to_string)
         .collect();
 
-        for args in vec![t1, t2] {
+        for args in [t1, t2] {
             let input = format!("{args:?}");
             parse_args(args).expect_err(&input);
         }

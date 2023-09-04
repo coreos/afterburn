@@ -233,7 +233,7 @@ where
     {
         let url = self.parse_url()?;
         let mut req = blocking::Request::new(Method::GET, url);
-        req.headers_mut().extend(self.headers.clone().into_iter());
+        req.headers_mut().extend(self.headers.clone());
 
         self.retry.clone().retry(|attempt| {
             info!("Fetching {}: Attempt #{}", req.url(), attempt + 1);
@@ -353,8 +353,6 @@ where
 /// so we have to do it here.
 fn clone_request(req: &blocking::Request) -> blocking::Request {
     let mut newreq = blocking::Request::new(req.method().clone(), req.url().clone());
-    newreq
-        .headers_mut()
-        .extend(req.headers().clone().into_iter());
+    newreq.headers_mut().extend(req.headers().clone());
     newreq
 }
