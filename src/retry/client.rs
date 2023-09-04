@@ -73,6 +73,22 @@ impl Deserializer for Json {
 }
 
 #[derive(Debug, Clone, Copy)]
+pub struct Yaml;
+
+impl Deserializer for Yaml {
+    fn deserialize<T, R>(&self, r: R) -> Result<T>
+    where
+        T: serde::de::DeserializeOwned,
+        R: Read,
+    {
+        serde_yaml::from_reader(r).context("failed yaml deserialization")
+    }
+    fn content_type(&self) -> header::HeaderValue {
+        header::HeaderValue::from_static("application/x-yaml; charset=utf-8")
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
 pub struct Raw;
 
 impl Deserializer for Raw {

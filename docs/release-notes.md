@@ -13,6 +13,7 @@ Minor changes:
 
 - openstack: Add `OPENSTACK_INSTANCE_UUID` attribute
 - openstack-metadata: Add `OPENSTACK_INSTANCE_UUID` attribute
+- providers: Add Hetzner Cloud
 
 Packaging changes:
 
