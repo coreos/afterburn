@@ -49,7 +49,7 @@ use std::collections::HashMap;
 use std::fs::{self, File};
 use std::io::prelude::*;
 use std::path::Path;
-use users::{self, User};
+use uzers::{self, User};
 
 /// Message ID markers for authorized-keys entries in journal.
 const AFTERBURN_SSH_AUTHORIZED_KEYS_ADDED_MESSAGEID: &str = "0f7d7a502f2d433caa1323440a6b4190";
@@ -90,10 +90,10 @@ fn write_ssh_key_journal_entry(log: logging::Priority, name: &str, path: &str, a
 
 fn write_ssh_keys(user: User, ssh_keys: Vec<PublicKey>) -> Result<()> {
     use std::io::ErrorKind::NotFound;
-    use users::os::unix::UserExt;
+    use uzers::os::unix::UserExt;
 
     // switch users
-    let _guard = users::switch::switch_user_group(user.uid(), user.primary_group_id())
+    let _guard = uzers::switch::switch_user_group(user.uid(), user.primary_group_id())
         .context("failed to switch user/group")?;
 
     // get paths
@@ -230,7 +230,7 @@ pub trait MetadataProvider {
 
     fn write_ssh_keys(&self, ssh_keys_user: String) -> Result<()> {
         let ssh_keys = self.ssh_keys()?;
-        let user = users::get_user_by_name(&ssh_keys_user)
+        let user = uzers::get_user_by_name(&ssh_keys_user)
             .ok_or_else(|| anyhow!("could not find user with username {:?}", ssh_keys_user))?;
 
         write_ssh_keys(user, ssh_keys)?;
