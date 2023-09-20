@@ -16,8 +16,9 @@ Minor changes:
 
 Packaging changes:
 
-Require Rust ≥ 1.71.0
-Specify features depended on from Nix
+- Require Rust ≥ 1.71.0
+- Specify features depended on from Nix
+- Replace deprecated dependency `users` by `uzers`
 
 
 ## Afterburn 5.4.3 (2023-06-05)
