@@ -61,6 +61,10 @@ The following platforms are supported, with a different set of features availabl
 * powervs
   - Attributes
   - SSH keys
+* scaleway
+  - Attributes
+  - Boot check-in
+  - SSH keys
 * vmware
   - Custom network command-line arguments
 * vultr

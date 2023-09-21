@@ -11,6 +11,7 @@ ConditionKernelCommandLine=|ignition.platform.id=digitalocean
 ConditionKernelCommandLine=|ignition.platform.id=exoscale
 ConditionKernelCommandLine=|ignition.platform.id=hetzner
 ConditionKernelCommandLine=|ignition.platform.id=ibmcloud
+ConditionKernelCommandLine=|ignition.platform.id=scaleway
 ConditionKernelCommandLine=|ignition.platform.id=vultr
 
 # We order this service after sysroot has been mounted

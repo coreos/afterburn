@@ -3,6 +3,7 @@ Description=Afterburn (Check In)
 Documentation=https://coreos.github.io/afterburn/
 ConditionKernelCommandLine=|ignition.platform.id=azure
 ConditionKernelCommandLine=|ignition.platform.id=azurestack
+ConditionKernelCommandLine=|ignition.platform.id=scaleway
 After=network.target
 After=multi-user.target boot-complete.target
 

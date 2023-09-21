@@ -184,6 +184,23 @@ impl Client {
         }
     }
 
+    pub fn patch<D>(&self, d: D, url: String, body: Option<Cow<str>>) -> RequestBuilder<D>
+    where
+        D: Deserializer,
+    {
+        RequestBuilder {
+            url,
+            body: body.map(Cow::into_owned),
+            d,
+            client: self.client.clone(),
+            headers: self.headers.clone(),
+            retry: self.retry.clone(),
+            return_on_404: self.return_on_404,
+            #[cfg(test)]
+            mock_base_url: self.mock_base_url.clone(),
+        }
+    }
+
     pub fn post<D>(&self, d: D, url: String, body: Option<Cow<str>>) -> RequestBuilder<D>
     where
         D: Deserializer,
@@ -254,6 +271,33 @@ where
         self.retry.clone().retry(|attempt| {
             info!("Fetching {}: Attempt #{}", req.url(), attempt + 1);
             self.dispatch_request(&req)
+        })
+    }
+
+    pub fn dispatch_patch(self) -> Result<reqwest::StatusCode> {
+        let url = self.parse_url()?;
+
+        self.retry.clone().retry(|attempt| {
+            let mut builder = blocking::Client::new()
+                .patch(url.clone())
+                .headers(self.headers.clone())
+                .header(header::CONTENT_TYPE, self.d.content_type());
+            if let Some(ref content) = self.body {
+                builder = builder.body(content.clone());
+            };
+            let req = builder.build().context("failed to build PATCH request")?;
+
+            info!("Patching {}: Attempt #{}", req.url(), attempt + 1);
+            let status = self
+                .client
+                .execute(req)
+                .context("failed to PATCH request")?
+                .status();
+            if status.is_success() {
+                Ok(status)
+            } else {
+                Err(anyhow!("PATCH failed: {}", status))
+            }
         })
     }
 
