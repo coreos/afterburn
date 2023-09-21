@@ -36,6 +36,10 @@ The following platforms are supported, with a different set of features availabl
 * gcp
   - Attributes
   - SSH Keys
+* hetzner
+  - Attributes
+  - Hostname
+  - SSH Keys
 * ibmcloud
   - Attributes
   - SSH Keys

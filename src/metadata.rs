@@ -22,6 +22,7 @@ use crate::providers::cloudstack::network::CloudstackNetwork;
 use crate::providers::digitalocean::DigitalOceanProvider;
 use crate::providers::exoscale::ExoscaleProvider;
 use crate::providers::gcp::GcpProvider;
+use crate::providers::hetzner::HetznerProvider;
 use crate::providers::ibmcloud::IBMGen2Provider;
 use crate::providers::ibmcloud_classic::IBMClassicProvider;
 use crate::providers::kubevirt::KubeVirtProvider;
@@ -56,6 +57,7 @@ pub fn fetch_metadata(provider: &str) -> Result<Box<dyn providers::MetadataProvi
         "digitalocean" => box_result!(DigitalOceanProvider::try_new()?),
         "exoscale" => box_result!(ExoscaleProvider::try_new()?),
         "gcp" => box_result!(GcpProvider::try_new()?),
+        "hetzner" => box_result!(HetznerProvider::try_new()?),
         // IBM Cloud - VPC Generation 2.
         "ibmcloud" => box_result!(IBMGen2Provider::try_new()?),
         // IBM Cloud - Classic infrastructure.

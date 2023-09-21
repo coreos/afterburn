@@ -29,6 +29,7 @@ pub mod cloudstack;
 pub mod digitalocean;
 pub mod exoscale;
 pub mod gcp;
+pub mod hetzner;
 pub mod ibmcloud;
 pub mod ibmcloud_classic;
 pub mod kubevirt;

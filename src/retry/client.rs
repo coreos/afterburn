@@ -73,6 +73,22 @@ impl Deserializer for Json {
 }
 
 #[derive(Debug, Clone, Copy)]
+pub struct Yaml;
+
+impl Deserializer for Yaml {
+    fn deserialize<T, R>(&self, r: R) -> Result<T>
+    where
+        T: serde::de::DeserializeOwned,
+        R: Read,
+    {
+        serde_yaml::from_reader(r).context("failed yaml deserialization")
+    }
+    fn content_type(&self) -> header::HeaderValue {
+        header::HeaderValue::from_static("application/x-yaml; charset=utf-8")
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
 pub struct Raw;
 
 impl Deserializer for Raw {
@@ -233,7 +249,7 @@ where
     {
         let url = self.parse_url()?;
         let mut req = blocking::Request::new(Method::GET, url);
-        req.headers_mut().extend(self.headers.clone().into_iter());
+        req.headers_mut().extend(self.headers.clone());
 
         self.retry.clone().retry(|attempt| {
             info!("Fetching {}: Attempt #{}", req.url(), attempt + 1);
@@ -353,8 +369,6 @@ where
 /// so we have to do it here.
 fn clone_request(req: &blocking::Request) -> blocking::Request {
     let mut newreq = blocking::Request::new(req.method().clone(), req.url().clone());
-    newreq
-        .headers_mut()
-        .extend(req.headers().clone().into_iter());
+    newreq.headers_mut().extend(req.headers().clone());
     newreq
 }
