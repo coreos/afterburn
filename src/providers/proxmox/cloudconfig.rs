@@ -184,17 +184,23 @@ impl ProxmoxCloudNetworkConfigEntry {
         };
 
         for subnet in &self.subnets {
-            if subnet.subnet_type == "static" {
-                if subnet.address.is_none() || subnet.netmask.is_none() {
+            if subnet.subnet_type.contains("static") {
+                if subnet.address.is_none() {
                     return Err(anyhow::anyhow!(
-                        "cannot convert static subnet to interface: missing address and/or netmask"
+                        "cannot convert static subnet to interface: missing address"
                     ));
                 }
 
-                iface.ip_addresses.push(IpNetwork::with_netmask(
-                    IpAddr::from_str(subnet.address.as_ref().unwrap())?,
-                    IpAddr::from_str(subnet.netmask.as_ref().unwrap())?,
-                )?);
+                if let Some(netmask) = &subnet.netmask {
+                    iface.ip_addresses.push(IpNetwork::with_netmask(
+                        IpAddr::from_str(subnet.address.as_ref().unwrap())?,
+                        IpAddr::from_str(netmask)?,
+                    )?);
+                } else {
+                    iface
+                        .ip_addresses
+                        .push(IpNetwork::from_str(subnet.address.as_ref().unwrap())?);
+                }
 
                 if let Some(gateway) = &subnet.gateway {
                     iface.routes.push(NetworkRoute {
