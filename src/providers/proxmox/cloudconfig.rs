@@ -1,4 +1,7 @@
-use crate::{network, providers::MetadataProvider};
+use crate::{
+    network::{self, NetworkRoute},
+    providers::MetadataProvider,
+};
 use anyhow::Result;
 use ipnetwork::IpNetwork;
 use openssh_keys::PublicKey;
@@ -165,13 +168,13 @@ impl ProxmoxCloudNetworkConfigEntry {
             nameservers: vec![],
             // filled below
             ip_addresses: vec![],
+            // filled below
+            routes: vec![],
             // filled below because Option::try_map doesn't exist yet
             mac_address: None,
 
             // unsupported by proxmox
             bond: None,
-            // unsupported by proxmox
-            routes: vec![],
 
             // default values
             path: None,
@@ -184,7 +187,7 @@ impl ProxmoxCloudNetworkConfigEntry {
             if subnet.subnet_type == "static" {
                 if subnet.address.is_none() || subnet.netmask.is_none() {
                     return Err(anyhow::anyhow!(
-                        "cannot convert subnet config to interface: missing address and/or netmask"
+                        "cannot convert static subnet to interface: missing address and/or netmask"
                     ));
                 }
 
@@ -192,6 +195,15 @@ impl ProxmoxCloudNetworkConfigEntry {
                     IpAddr::from_str(subnet.address.as_ref().unwrap())?,
                     IpAddr::from_str(subnet.netmask.as_ref().unwrap())?,
                 )?);
+
+                if let Some(gateway) = &subnet.gateway {
+                    iface.routes.push(NetworkRoute {
+                        destination: IpNetwork::from_str("0.0.0.0/0")?,
+                        gateway: IpAddr::from_str(gateway)?,
+                    });
+                } else {
+                    warn!("found subnet type \"static\" without gateway");
+                }
             }
 
             if subnet.subnet_type == "ipv6_slaac" {

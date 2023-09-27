@@ -1,5 +1,8 @@
 use super::ProxmoxCloudConfig;
-use crate::{network, providers::MetadataProvider};
+use crate::{
+    network::{self, NetworkRoute},
+    providers::MetadataProvider,
+};
 use ipnetwork::IpNetwork;
 use openssh_keys::PublicKey;
 use pnet_base::MacAddr;
@@ -87,7 +90,10 @@ fn test_network_static() {
                 IpAddr::from_str("8.8.8.8").unwrap()
             ],
             ip_addresses: vec![IpNetwork::from_str("192.168.1.1/24").unwrap()],
-            routes: vec![],
+            routes: vec![NetworkRoute {
+                destination: IpNetwork::from_str("0.0.0.0/0").unwrap(),
+                gateway: IpAddr::from_str("192.168.1.254").unwrap(),
+            }],
             bond: None,
             unmanaged: false,
             required_for_online: None
