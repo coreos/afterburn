@@ -90,32 +90,60 @@ fn test_network_static() {
 
     assert_eq!(
         config.networks().expect("cannot get networks"),
-        vec![network::Interface {
-            name: Some("eth0".to_owned()),
-            mac_address: Some(MacAddr::from_str("01:23:45:67:89:00").unwrap()),
-            path: None,
-            priority: 20,
-            nameservers: vec![
-                IpAddr::from_str("1.1.1.1").unwrap(),
-                IpAddr::from_str("8.8.8.8").unwrap()
-            ],
-            ip_addresses: vec![
-                IpNetwork::from_str("192.168.1.1/24").unwrap(),
-                IpNetwork::from_str("2001:0db8:85a3:0000:0000:8a2e:0370:0/24").unwrap(),
-            ],
-            routes: vec![
-                NetworkRoute {
-                    destination: IpNetwork::from_str("0.0.0.0/0").unwrap(),
-                    gateway: IpAddr::from_str("192.168.1.254").unwrap(),
-                },
-                NetworkRoute {
-                    destination: IpNetwork::from_str("::/0").unwrap(),
-                    gateway: IpAddr::from_str("2001:0db8:85a3:0000:0000:8a2e:0370:9999").unwrap(),
-                },
-            ],
-            bond: None,
-            unmanaged: false,
-            required_for_online: None
-        }]
+        vec![
+            network::Interface {
+                name: Some("eth0".to_owned()),
+                mac_address: Some(MacAddr::from_str("01:23:45:67:89:00").unwrap()),
+                path: None,
+                priority: 20,
+                nameservers: vec![
+                    IpAddr::from_str("1.1.1.1").unwrap(),
+                    IpAddr::from_str("8.8.8.8").unwrap()
+                ],
+                ip_addresses: vec![
+                    IpNetwork::from_str("192.168.1.1/24").unwrap(),
+                    IpNetwork::from_str("2001:0db8:85a3:0000:0000:8a2e:0370:0/24").unwrap(),
+                ],
+                routes: vec![
+                    NetworkRoute {
+                        destination: IpNetwork::from_str("0.0.0.0/0").unwrap(),
+                        gateway: IpAddr::from_str("192.168.1.254").unwrap(),
+                    },
+                    NetworkRoute {
+                        destination: IpNetwork::from_str("::/0").unwrap(),
+                        gateway: IpAddr::from_str("2001:0db8:85a3:0000:0000:8a2e:0370:9999")
+                            .unwrap(),
+                    },
+                ],
+                bond: None,
+                unmanaged: false,
+                required_for_online: None
+            },
+            network::Interface {
+                name: Some("eth1".to_owned()),
+                mac_address: Some(MacAddr::from_str("01:23:45:67:89:99").unwrap()),
+                path: None,
+                priority: 20,
+                nameservers: vec![],
+                ip_addresses: vec![
+                    IpNetwork::from_str("192.168.42.1/24").unwrap(),
+                    IpNetwork::from_str("2001:0db8:85a3:0000:0000:8a2e:4242:0/24").unwrap(),
+                ],
+                routes: vec![
+                    NetworkRoute {
+                        destination: IpNetwork::from_str("0.0.0.0/0").unwrap(),
+                        gateway: IpAddr::from_str("192.168.42.254").unwrap(),
+                    },
+                    NetworkRoute {
+                        destination: IpNetwork::from_str("::/0").unwrap(),
+                        gateway: IpAddr::from_str("2001:0db8:85a3:0000:0000:8a2e:4242:9999")
+                            .unwrap(),
+                    },
+                ],
+                bond: None,
+                unmanaged: false,
+                required_for_online: None
+            },
+        ]
     );
 }
