@@ -8,6 +8,9 @@ config:
             address: '192.168.1.1'
             netmask: '255.255.255.0'
             gateway: '192.168.1.254'
+          - type: static6
+            address: '2001:0db8:85a3:0000:0000:8a2e:0370:0/24'
+            gateway: '2001:0db8:85a3:0000:0000:8a2e:0370:9999'
     - type: nameserver
       address:
       - '1.1.1.1'

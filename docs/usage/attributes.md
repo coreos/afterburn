@@ -124,6 +124,8 @@ Cloud providers with supported metadata endpoints and their respective attribute
 * proxmox
   - AFTERBURN_PROXMOX_HOSTNAME
   - AFTERBURN_PROXMOX_INSTANCE_ID
+  - AFTERBURN_PROXMOX_IPV4
+  - AFTERBURN_PROXMOX_IPV6
 * scaleway
   - AFTERBURN_SCALEWAY_HOSTNAME
   - AFTERBURN_SCALEWAY_INSTANCE_ID

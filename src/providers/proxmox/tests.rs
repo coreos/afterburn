@@ -10,7 +10,7 @@ use std::{net::IpAddr, path::Path, str::FromStr};
 
 #[test]
 fn test_attributes() {
-    let config = ProxmoxCloudConfig::try_new(Path::new("tests/fixtures/proxmox/dhcp"))
+    let config = ProxmoxCloudConfig::try_new(Path::new("tests/fixtures/proxmox/static"))
         .expect("cannot parse config");
     let attributes = config.attributes().expect("cannot get hostname");
 
@@ -22,6 +22,16 @@ fn test_attributes() {
     assert_eq!(
         attributes["AFTERBURN_PROXMOX_INSTANCE_ID"],
         "15a9919cb91024fbd1d70fa07f0efa749cbba03b".to_string()
+    );
+
+    assert_eq!(
+        attributes["AFTERBURN_PROXMOX_IPV4"],
+        "192.168.1.1".to_string()
+    );
+
+    assert_eq!(
+        attributes["AFTERBURN_PROXMOX_IPV6"],
+        "2001:db8:85a3::8a2e:370:0".to_string()
     );
 }
 
@@ -89,11 +99,20 @@ fn test_network_static() {
                 IpAddr::from_str("1.1.1.1").unwrap(),
                 IpAddr::from_str("8.8.8.8").unwrap()
             ],
-            ip_addresses: vec![IpNetwork::from_str("192.168.1.1/24").unwrap()],
-            routes: vec![NetworkRoute {
-                destination: IpNetwork::from_str("0.0.0.0/0").unwrap(),
-                gateway: IpAddr::from_str("192.168.1.254").unwrap(),
-            }],
+            ip_addresses: vec![
+                IpNetwork::from_str("192.168.1.1/24").unwrap(),
+                IpNetwork::from_str("2001:0db8:85a3:0000:0000:8a2e:0370:0/24").unwrap(),
+            ],
+            routes: vec![
+                NetworkRoute {
+                    destination: IpNetwork::from_str("0.0.0.0/0").unwrap(),
+                    gateway: IpAddr::from_str("192.168.1.254").unwrap(),
+                },
+                NetworkRoute {
+                    destination: IpNetwork::from_str("::/0").unwrap(),
+                    gateway: IpAddr::from_str("2001:0db8:85a3:0000:0000:8a2e:0370:9999").unwrap(),
+                },
+            ],
             bond: None,
             unmanaged: false,
             required_for_online: None

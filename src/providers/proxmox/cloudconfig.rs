@@ -104,6 +104,23 @@ impl MetadataProvider for ProxmoxCloudConfig {
             self.meta_data.instance_id.clone(),
         );
 
+        if let Some(first_interface) = self.networks()?.first() {
+            first_interface.ip_addresses.iter().for_each(|ip| match ip {
+                IpNetwork::V4(network) => {
+                    out.insert(
+                        "AFTERBURN_PROXMOX_IPV4".to_owned(),
+                        network.ip().to_string(),
+                    );
+                }
+                IpNetwork::V6(network) => {
+                    out.insert(
+                        "AFTERBURN_PROXMOX_IPV6".to_owned(),
+                        network.ip().to_string(),
+                    );
+                }
+            });
+        }
+
         Ok(out)
     }
 
@@ -203,9 +220,17 @@ impl ProxmoxCloudNetworkConfigEntry {
                 }
 
                 if let Some(gateway) = &subnet.gateway {
+                    let gateway = IpAddr::from_str(gateway)?;
+
+                    let destination = if gateway.is_ipv6() {
+                        IpNetwork::from_str("::/0")?
+                    } else {
+                        IpNetwork::from_str("0.0.0.0/0")?
+                    };
+
                     iface.routes.push(NetworkRoute {
-                        destination: IpNetwork::from_str("0.0.0.0/0")?,
-                        gateway: IpAddr::from_str(gateway)?,
+                        destination,
+                        gateway,
                     });
                 } else {
                     warn!("found subnet type \"static\" without gateway");
