@@ -1,8 +1,16 @@
 use crate::{network, providers::MetadataProvider};
 use anyhow::Result;
+use ipnetwork::IpNetwork;
 use openssh_keys::PublicKey;
+use pnet_base::MacAddr;
 use serde::Deserialize;
-use std::{fs::File, path::Path, str::FromStr};
+use slog_scope::warn;
+use std::{
+    fs::File,
+    net::{AddrParseError, IpAddr},
+    path::Path,
+    str::FromStr,
+};
 
 #[derive(Debug)]
 pub struct ProxmoxCloudConfig {
@@ -62,6 +70,9 @@ pub struct ProxmoxCloudNetworkConfigEntry {
 pub struct ProxmoxCloudNetworkConfigSubnet {
     #[serde(rename = "type")]
     pub subnet_type: String,
+    pub address: Option<String>,
+    pub netmask: Option<String>,
+    pub gateway: Option<String>,
 }
 
 impl ProxmoxCloudConfig {
@@ -90,6 +101,91 @@ impl MetadataProvider for ProxmoxCloudConfig {
     }
 
     fn networks(&self) -> Result<Vec<network::Interface>> {
-        Ok(vec![])
+        let nameservers = self
+            .network_config
+            .config
+            .iter()
+            .filter(|config: &&ProxmoxCloudNetworkConfigEntry| config.network_type == "nameserver")
+            .collect::<Vec<_>>();
+
+        if nameservers.len() > 1 {
+            return Err(anyhow::anyhow!("too many nameservers, only one supported"));
+        }
+
+        let mut interfaces = self
+            .network_config
+            .config
+            .iter()
+            .filter(|config: &&ProxmoxCloudNetworkConfigEntry| config.network_type == "physical")
+            .map(|entry| entry.to_interface())
+            .collect::<Result<Vec<_>, _>>()?;
+
+        if let Some(nameserver) = nameservers.first() {
+            interfaces[0].nameservers = nameserver
+                .address
+                .iter()
+                .map(|ip| IpAddr::from_str(ip))
+                .collect::<Result<Vec<IpAddr>, AddrParseError>>()?;
+        }
+
+        Ok(interfaces)
+    }
+}
+
+impl ProxmoxCloudNetworkConfigEntry {
+    pub fn to_interface(&self) -> Result<network::Interface> {
+        if self.network_type != "physical" {
+            return Err(anyhow::anyhow!(
+                "cannot convert config to interface: unsupported config type \"{}\"",
+                self.network_type
+            ));
+        }
+
+        let mut iface = network::Interface {
+            name: self.name.clone(),
+
+            // filled later
+            nameservers: vec![],
+            // filled below
+            ip_addresses: vec![],
+            // filled below because Option::try_map doesn't exist yet
+            mac_address: None,
+
+            // unsupported by proxmox
+            bond: None,
+            // unsupported by proxmox
+            routes: vec![],
+
+            // default values
+            path: None,
+            priority: 20,
+            unmanaged: false,
+            required_for_online: None,
+        };
+
+        for subnet in &self.subnets {
+            if subnet.subnet_type == "static" {
+                if subnet.address.is_none() || subnet.netmask.is_none() {
+                    return Err(anyhow::anyhow!(
+                        "cannot convert subnet config to interface: missing address and/or netmask"
+                    ));
+                }
+
+                iface.ip_addresses.push(IpNetwork::with_netmask(
+                    IpAddr::from_str(subnet.address.as_ref().unwrap())?,
+                    IpAddr::from_str(subnet.netmask.as_ref().unwrap())?,
+                )?);
+            }
+
+            if subnet.subnet_type == "ipv6_slaac" {
+                warn!("subnet type \"ipv6_slaac\" not supported, ignoring");
+            }
+        }
+
+        if let Some(mac) = &self.mac_address {
+            iface.mac_address = Some(MacAddr::from_str(&mac)?);
+        }
+
+        Ok(iface)
     }
 }

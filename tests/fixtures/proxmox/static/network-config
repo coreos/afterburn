@@ -1,0 +1,16 @@
+version: 1
+config:
+    - type: physical
+      name: eth0
+      mac_address: '01:23:45:67:89:00'
+      subnets:
+          - type: static
+            address: '192.168.1.1'
+            netmask: '255.255.255.0'
+            gateway: '192.168.1.254'
+    - type: nameserver
+      address:
+      - '1.1.1.1'
+      - '8.8.8.8'
+      search:
+      - 'local.com'
