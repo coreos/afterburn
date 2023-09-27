@@ -6,6 +6,23 @@ use pnet_base::MacAddr;
 use std::{net::IpAddr, path::Path, str::FromStr};
 
 #[test]
+fn test_attributes() {
+    let config = ProxmoxCloudConfig::try_new(Path::new("tests/fixtures/proxmox/dhcp"))
+        .expect("cannot parse config");
+    let attributes = config.attributes().expect("cannot get hostname");
+
+    assert_eq!(
+        attributes["AFTERBURN_PROXMOX_HOSTNAME"],
+        "dummy".to_string()
+    );
+
+    assert_eq!(
+        attributes["AFTERBURN_PROXMOX_INSTANCE_ID"],
+        "15a9919cb91024fbd1d70fa07f0efa749cbba03b".to_string()
+    );
+}
+
+#[test]
 fn test_hostname() {
     let config = ProxmoxCloudConfig::try_new(Path::new("tests/fixtures/proxmox/dhcp"))
         .expect("cannot parse config");

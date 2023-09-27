@@ -6,6 +6,7 @@ use pnet_base::MacAddr;
 use serde::Deserialize;
 use slog_scope::warn;
 use std::{
+    collections::HashMap,
     fs::File,
     net::{AddrParseError, IpAddr},
     path::Path,
@@ -87,6 +88,22 @@ impl ProxmoxCloudConfig {
 }
 
 impl MetadataProvider for ProxmoxCloudConfig {
+    fn attributes(&self) -> Result<HashMap<String, String>> {
+        let mut out = HashMap::new();
+
+        out.insert(
+            "AFTERBURN_PROXMOX_HOSTNAME".to_owned(),
+            self.hostname()?.unwrap_or_default(),
+        );
+
+        out.insert(
+            "AFTERBURN_PROXMOX_INSTANCE_ID".to_owned(),
+            self.meta_data.instance_id.clone(),
+        );
+
+        Ok(out)
+    }
+
     fn hostname(&self) -> Result<Option<String>> {
         Ok(Some(self.user_data.hostname.clone()))
     }

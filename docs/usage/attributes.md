@@ -121,6 +121,9 @@ Cloud providers with supported metadata endpoints and their respective attribute
 * powervs
   - AFTERBURN_POWERVS_INSTANCE_ID
   - AFTERBURN_POWERVS_LOCAL_HOSTNAME
+* proxmox
+  - AFTERBURN_PROXMOX_HOSTNAME
+  - AFTERBURN_PROXMOX_INSTANCE_ID
 * scaleway
   - AFTERBURN_SCALEWAY_HOSTNAME
   - AFTERBURN_SCALEWAY_INSTANCE_ID
