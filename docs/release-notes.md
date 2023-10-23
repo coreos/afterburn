@@ -15,6 +15,7 @@ Minor changes:
 - openstack: Add `OPENSTACK_INSTANCE_UUID` attribute
 - openstack-metadata: Add `OPENSTACK_INSTANCE_UUID` attribute
 - providers: Add Hetzner Cloud
+- dracut: run hostname service on kubevirt
 
 Packaging changes:
 
