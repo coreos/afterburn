@@ -11,6 +11,8 @@ use crate::providers::MetadataProvider;
 pub struct VmwareProvider {
     /// External network kargs for initrd.
     guestinfo_net_kargs: Option<String>,
+    /// Cloud-Init metadata for netplan YAML
+    guestinfo_metadata: Option<String>,
 }
 
 // Architecture-specific implementation.
@@ -29,5 +31,9 @@ impl MetadataProvider for VmwareProvider {
 
     fn rd_network_kargs(&self) -> Result<Option<String>> {
         Ok(self.guestinfo_net_kargs.clone())
+    }
+
+    fn netplan_config(&self) -> Result<Option<String>> {
+        self.parse_netplan_config()
     }
 }

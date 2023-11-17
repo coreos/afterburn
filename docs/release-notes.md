@@ -9,6 +9,7 @@ nav_order: 8
 Major changes:
 
 - Add support for Scaleway
+- Add Netplan guestinfo support on VMware
 
 Minor changes:
 
