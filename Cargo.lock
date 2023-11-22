@@ -978,14 +978,14 @@ dependencies = [
 
 [[package]]
 name = "libsystemd"
-version = "0.6.0"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "88b9597a67aa1c81a6624603e6bd0bcefb9e0f94c9c54970ec53771082104b4e"
+checksum = "c592dc396b464005f78a5853555b9f240bc5378bf5221acc4e129910b2678869"
 dependencies = [
  "hmac",
  "libc",
  "log",
- "nix 0.26.3",
+ "nix 0.27.1",
  "nom",
  "once_cell",
  "serde",
@@ -1064,6 +1064,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "memoffset"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5a634b1c61a95585bd15607c6ab0c4e5b226e695ff2800ba0cdccddf208c406c"
+dependencies = [
+ "autocfg",
+]
+
+[[package]]
 name = "mime"
 version = "0.3.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1132,7 +1141,7 @@ dependencies = [
  "bitflags 2.4.1",
  "cfg-if",
  "libc",
- "memoffset",
+ "memoffset 0.7.1",
 ]
 
 [[package]]
@@ -1144,6 +1153,7 @@ dependencies = [
  "bitflags 2.4.1",
  "cfg-if",
  "libc",
+ "memoffset 0.9.0",
 ]
 
 [[package]]
