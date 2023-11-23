@@ -4,10 +4,23 @@ nav_order: 8
 
 # Release notes
 
-## Upcoming Afterburn 5.5.0 (unreleased)
+## Upcoming Afterburn 5.6.0 (unreleased)
 
 Major changes:
 
+
+Minor changes:
+
+
+Packaging changes:
+
+
+
+## Afterburn 5.5.0 (2023-11-22)
+
+Major changes:
+
+- Add support for Hetzner Cloud
 - Add support for Scaleway
 - Add Netplan guestinfo support on VMware
 
@@ -15,7 +28,6 @@ Minor changes:
 
 - openstack: Add `OPENSTACK_INSTANCE_UUID` attribute
 - openstack-metadata: Add `OPENSTACK_INSTANCE_UUID` attribute
-- providers: Add Hetzner Cloud
 - dracut: run hostname service on kubevirt
 
 Packaging changes:
