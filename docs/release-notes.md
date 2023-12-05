@@ -11,6 +11,7 @@ Major changes:
 
 Minor changes:
 
+- providers/vmware: add missing public functions for non-amd64
 
 Packaging changes:
 
