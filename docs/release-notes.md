@@ -12,9 +12,14 @@ Major changes:
 
 Minor changes:
 
-
 Packaging changes:
 
+
+## Afterburn 5.5.1 (2024-01-12)
+
+Minor changes:
+
+- providers/vmware: add missing public functions for non-amd64
 
 
 ## Afterburn 5.5.0 (2023-11-22)
