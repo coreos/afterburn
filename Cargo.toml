@@ -60,7 +60,7 @@ slog-term = ">= 2.6, < 3"
 tempfile = ">= 3.2, < 4"
 uzers = "0.11"
 vmw_backdoor = "0.2"
-zbus = ">= 2.3, < 4"
+zbus = ">= 2.3, < 5"
 
 [dev-dependencies]
 mockito = "1"
