@@ -8,6 +8,8 @@ nav_order: 8
 
 Major changes:
 
+- Add support for Proxmox VE
+
 Minor changes:
 
 Packaging changes:
