@@ -48,10 +48,10 @@ The following platforms are supported, with a different set of features availabl
 * kubevirt
   - Attributes
   - SSH Keys
-* openstack
+* openstack (from config-drive, then possibly fallback to the Nova metadata service)
   - Attributes
   - SSH Keys
-* openstack-metadata
+* openstack-metadata (from the Nova metadata service directly, without trying the config-drive)
   - Attributes
   - SSH Keys
 * packet
