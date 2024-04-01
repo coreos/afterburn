@@ -5,6 +5,7 @@ Description=Afterburn (SSH Keys)
 # (e.g. via optional platform components); those platforms need a user-provided
 # dropin, adding an appropriate triggering condition and setting the value of
 # `AFTERBURN_OPT_PROVIDER` as needed.
+ConditionKernelCommandLine=|ignition.platform.id=akamai
 ConditionKernelCommandLine=|ignition.platform.id=aliyun
 ConditionKernelCommandLine=|ignition.platform.id=aws
 ConditionKernelCommandLine=|ignition.platform.id=azure
