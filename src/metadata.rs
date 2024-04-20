@@ -15,6 +15,7 @@
 use anyhow::{bail, Result};
 
 use crate::providers;
+use crate::providers::akamai::AkamaiProvider;
 use crate::providers::aliyun::AliyunProvider;
 use crate::providers::aws::AwsProvider;
 use crate::providers::cloudstack::configdrive::ConfigDrive;
@@ -49,6 +50,7 @@ macro_rules! box_result {
 /// to the provider-specific fetch logic.
 pub fn fetch_metadata(provider: &str) -> Result<Box<dyn providers::MetadataProvider>> {
     match provider {
+        "akamai" => box_result!(AkamaiProvider::try_new()?),
         "aliyun" => box_result!(AliyunProvider::try_new()?),
         "aws" => box_result!(AwsProvider::try_new()?),
         "azure" => box_result!(Azure::try_new()?),

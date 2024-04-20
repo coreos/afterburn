@@ -8,6 +8,8 @@ nav_order: 8
 
 Major changes:
 
+- Add support for Akamai Connected Cloud (Linode)
+
 Minor changes:
 
 Packaging changes:

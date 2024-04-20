@@ -8,6 +8,9 @@ By default Afterburn uses the Ignition platform ID to detect the environment whe
 
 The following platforms are supported, with a different set of features available on each:
 
+* akamai
+  - Attributes
+  - SSH Keys
 * aliyun
   - Attributes
   - SSH Keys
