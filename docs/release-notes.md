@@ -13,6 +13,7 @@ Major changes:
 Minor changes:
 
 - Hetzner: fix duplicate attribute prefix
+- Fix Azure SSH key fetching when no key provisioned
 
 Packaging changes:
 
