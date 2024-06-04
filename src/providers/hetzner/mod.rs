@@ -112,17 +112,17 @@ impl From<HetznerMetadata> for HashMap<String, String> {
 
         add_value(
             &mut out,
-            "AFTERBURN_HETZNER_AVAILABILITY_ZONE",
+            "HETZNER_AVAILABILITY_ZONE",
             meta.availability_zone,
         );
-        add_value(&mut out, "AFTERBURN_HETZNER_HOSTNAME", meta.hostname);
+        add_value(&mut out, "HETZNER_HOSTNAME", meta.hostname);
         add_value(
             &mut out,
-            "AFTERBURN_HETZNER_INSTANCE_ID",
+            "HETZNER_INSTANCE_ID",
             meta.instance_id.map(|i| i.to_string()),
         );
-        add_value(&mut out, "AFTERBURN_HETZNER_PUBLIC_IPV4", meta.public_ipv4);
-        add_value(&mut out, "AFTERBURN_HETZNER_REGION", meta.region);
+        add_value(&mut out, "HETZNER_PUBLIC_IPV4", meta.public_ipv4);
+        add_value(&mut out, "HETZNER_REGION", meta.region);
 
         out
     }

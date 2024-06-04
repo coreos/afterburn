@@ -35,11 +35,11 @@ vendor_data: "blah blah blah""#
     );
 
     let expected = maplit::hashmap! {
-        "AFTERBURN_HETZNER_AVAILABILITY_ZONE".to_string() => availability_zone.to_string(),
-        "AFTERBURN_HETZNER_HOSTNAME".to_string() => hostname.to_string(),
-        "AFTERBURN_HETZNER_INSTANCE_ID".to_string() => instance_id.to_string(),
-        "AFTERBURN_HETZNER_PUBLIC_IPV4".to_string() => public_ipv4.to_string(),
-        "AFTERBURN_HETZNER_REGION".to_string() => region.to_string(),
+        "HETZNER_AVAILABILITY_ZONE".to_string() => availability_zone.to_string(),
+        "HETZNER_HOSTNAME".to_string() => hostname.to_string(),
+        "HETZNER_INSTANCE_ID".to_string() => instance_id.to_string(),
+        "HETZNER_PUBLIC_IPV4".to_string() => public_ipv4.to_string(),
+        "HETZNER_REGION".to_string() => region.to_string(),
     };
 
     // Fail on not found

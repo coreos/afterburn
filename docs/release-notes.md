@@ -10,6 +10,8 @@ Major changes:
 
 Minor changes:
 
+- Hetzner: fix duplicate attribute prefix
+
 Packaging changes:
 
 
