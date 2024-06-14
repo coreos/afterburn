@@ -40,6 +40,7 @@ pub struct MetadataOpenstackJSON {
     /// Instance ID.
     pub uuid: Option<String>,
     /// Availability zone.
+    #[allow(dead_code)]
     pub availability_zone: Option<String>,
     /// Local hostname.
     pub hostname: Option<String>,
