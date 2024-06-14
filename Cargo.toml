@@ -4,7 +4,7 @@ repository = "https://github.com/coreos/afterburn"
 license = "Apache-2.0"
 edition = "2021"
 # when updating this, also update README.md and docs/index.md
-rust-version = "1.71.0"
+rust-version = "1.75.0"
 exclude = ["/.cci.jenkinsfile", "/.github", "/.gitignore"]
 authors = [ "Stephen Demos <stephen.demos@coreos.com>",
             "Luca Bruno <lucab@debian.org>" ]
