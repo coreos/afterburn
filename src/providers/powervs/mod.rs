@@ -44,6 +44,7 @@ pub struct PowerVSProvider {
 pub struct MetaDataJSON {
     /// Fully-Qualified Domain Name (FQDN).
     #[serde(rename = "hostname")]
+    #[allow(dead_code)]
     pub fqdn: String,
     /// Local hostname.
     #[serde(rename = "name")]

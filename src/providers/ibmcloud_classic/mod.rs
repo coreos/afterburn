@@ -46,6 +46,7 @@ pub struct IBMClassicProvider {
 pub struct MetaDataJSON {
     /// Fully-Qualified Domain Name (FQDN).
     #[serde(rename = "hostname")]
+    #[allow(dead_code)]
     pub fqdn: String,
     /// Local hostname.
     #[serde(rename = "name")]
@@ -54,6 +55,7 @@ pub struct MetaDataJSON {
     #[serde(rename = "uuid")]
     pub instance_id: String,
     /// SSH public keys.
+    #[allow(dead_code)]
     pub public_keys: HashMap<String, String>,
 }
 
@@ -78,9 +80,11 @@ pub struct NetLinkJSON {
 #[derive(Debug, Deserialize)]
 pub struct NetNetworkJSON {
     /// Unique network ID.
+    #[allow(dead_code)]
     pub id: String,
     /// Network type (e.g. `ipv4`)
     #[serde(rename = "type")]
+    #[allow(dead_code)]
     pub kind: String,
     /// Reference to the underlying interface (see `NetLinkJSON.id`)
     pub link: String,
