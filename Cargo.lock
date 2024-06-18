@@ -28,7 +28,7 @@ name = "afterburn"
 version = "5.5.1"
 dependencies = [
  "anyhow",
- "base64 0.21.7",
+ "base64 0.22.1",
  "cfg-if",
  "clap",
  "ipnetwork",
