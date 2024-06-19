@@ -79,6 +79,8 @@ pub struct Interface {
     pub priority: u8,
     pub nameservers: Vec<IpAddr>,
     pub ip_addresses: Vec<IpNetwork>,
+    // Optionally enable DHCP
+    pub dhcp: Option<DhcpSetting>,
     pub routes: Vec<NetworkRoute>,
     pub bond: Option<String>,
     pub unmanaged: bool,
@@ -128,6 +130,31 @@ impl NetDevKind {
     }
 }
 
+/// Optional use of DHCP.
+#[allow(dead_code)]
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum DhcpSetting {
+    Both,
+    V4,
+    V6,
+}
+
+impl DhcpSetting {
+    /// Return DHCP setting according to `systemd.network`
+    ///
+    /// See [systemd documentation](dhcp) for the full list.
+    ///
+    /// dhcp: https://www.freedesktop.org/software/systemd/man/latest/systemd.network.html#DHCP=
+    fn sd_dhcp_setting(&self) -> String {
+        let setting = match *self {
+            DhcpSetting::Both => "yes",
+            DhcpSetting::V4 => "ipv4",
+            DhcpSetting::V6 => "ipv6",
+        };
+        setting.to_string()
+    }
+}
+
 impl Interface {
     /// Return a deterministic `systemd.network` unit name for this device.
     pub fn sd_network_unit_name(&self) -> Result<String> {
@@ -158,6 +185,9 @@ impl Interface {
 
         // [Network] section
         writeln!(config, "\n[Network]").unwrap();
+        if let Some(dhcp) = &self.dhcp {
+            writeln!(config, "DHCP={}", dhcp.sd_dhcp_setting()).unwrap();
+        }
         for ns in &self.nameservers {
             writeln!(config, "DNS={ns}").unwrap()
         }
@@ -246,6 +276,7 @@ mod tests {
                     priority: 20,
                     nameservers: vec![],
                     ip_addresses: vec![],
+                    dhcp: None,
                     routes: vec![],
                     bond: None,
                     unmanaged: false,
@@ -261,6 +292,7 @@ mod tests {
                     priority: 10,
                     nameservers: vec![],
                     ip_addresses: vec![],
+                    dhcp: None,
                     routes: vec![],
                     bond: None,
                     unmanaged: false,
@@ -276,6 +308,7 @@ mod tests {
                     priority: 20,
                     nameservers: vec![],
                     ip_addresses: vec![],
+                    dhcp: None,
                     routes: vec![],
                     bond: None,
                     unmanaged: false,
@@ -291,6 +324,7 @@ mod tests {
                     priority: 20,
                     nameservers: vec![],
                     ip_addresses: vec![],
+                    dhcp: None,
                     routes: vec![],
                     bond: None,
                     unmanaged: false,
@@ -306,6 +340,7 @@ mod tests {
                     priority: 20,
                     nameservers: vec![],
                     ip_addresses: vec![],
+                    dhcp: None,
                     routes: vec![],
                     bond: None,
                     unmanaged: false,
@@ -330,6 +365,7 @@ mod tests {
             priority: 20,
             nameservers: vec![],
             ip_addresses: vec![],
+            dhcp: None,
             routes: vec![],
             bond: None,
             unmanaged: false,
@@ -387,6 +423,7 @@ mod tests {
                             Ipv6Network::new(Ipv6Addr::new(0, 0, 0, 0, 0, 0, 0, 1), 128).unwrap(),
                         ),
                     ],
+                    dhcp: None,
                     routes: vec![NetworkRoute {
                         destination: IpNetwork::V4(
                             Ipv4Network::new(Ipv4Addr::new(127, 0, 0, 1), 8).unwrap(),
@@ -428,6 +465,7 @@ Gateway=127.0.0.1
                     priority: 10,
                     nameservers: vec![],
                     ip_addresses: vec![],
+                    dhcp: None,
                     routes: vec![],
                     bond: None,
                     unmanaged: false,
@@ -447,6 +485,7 @@ Gateway=127.0.0.1
                     priority: 10,
                     nameservers: vec![],
                     ip_addresses: vec![],
+                    dhcp: None,
                     routes: vec![],
                     bond: None,
                     unmanaged: false,
@@ -470,6 +509,7 @@ RequiredForOnline=no
                     priority: 10,
                     nameservers: vec![],
                     ip_addresses: vec![],
+                    dhcp: None,
                     routes: vec![],
                     bond: None,
                     unmanaged: true,
@@ -482,6 +522,28 @@ Name=*
 
 [Link]
 Unmanaged=yes
+",
+            ),
+            // test the DHCP setting
+            (
+                Interface {
+                    name: Some("*".to_owned()),
+                    mac_address: None,
+                    path: None,
+                    priority: 10,
+                    nameservers: vec![],
+                    ip_addresses: vec![],
+                    dhcp: Some(DhcpSetting::V4),
+                    routes: vec![],
+                    bond: None,
+                    unmanaged: false,
+                    required_for_online: None,
+                },
+                "[Match]
+Name=*
+
+[Network]
+DHCP=ipv4
 ",
             ),
         ];

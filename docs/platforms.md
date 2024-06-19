@@ -64,6 +64,11 @@ The following platforms are supported, with a different set of features availabl
 * powervs
   - Attributes
   - SSH keys
+* proxmoxve
+  - Attributes
+  - Hostname
+  - SSH keys
+  - Network configuration
 * scaleway
   - Attributes
   - Boot check-in

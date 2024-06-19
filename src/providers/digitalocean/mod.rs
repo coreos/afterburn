@@ -156,6 +156,7 @@ impl DigitalOceanProvider {
                     mac_address: Some(mac),
                     nameservers: self.dns.nameservers.clone(),
                     ip_addresses: addrs,
+                    dhcp: None,
                     routes,
                     bond: None,
                     name: None,
