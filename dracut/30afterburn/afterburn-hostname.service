@@ -12,6 +12,7 @@ ConditionKernelCommandLine=|ignition.platform.id=exoscale
 ConditionKernelCommandLine=|ignition.platform.id=hetzner
 ConditionKernelCommandLine=|ignition.platform.id=ibmcloud
 ConditionKernelCommandLine=|ignition.platform.id=kubevirt
+ConditionKernelCommandLine=|ignition.platform.id=proxmoxve
 ConditionKernelCommandLine=|ignition.platform.id=scaleway
 ConditionKernelCommandLine=|ignition.platform.id=vultr
 

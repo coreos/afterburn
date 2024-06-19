@@ -251,6 +251,7 @@ impl IBMClassicProvider {
                 priority: 10,
                 nameservers: nameservers.clone(),
                 ip_addresses: vec![ip_net],
+                dhcp: None,
                 routes,
                 bond: None,
                 unmanaged: false,

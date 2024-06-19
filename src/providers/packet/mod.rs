@@ -216,6 +216,7 @@ impl PacketProvider {
                 priority: 10,
                 nameservers: Vec::new(),
                 ip_addresses: Vec::new(),
+                dhcp: None,
                 routes: Vec::new(),
                 // the interface should be unmanaged if it doesn't have a bond
                 // section
@@ -241,6 +242,7 @@ impl PacketProvider {
                     path: None,
                     bond: None,
                     ip_addresses: Vec::new(),
+                    dhcp: None,
                     routes: Vec::new(),
                     unmanaged: false,
                     required_for_online: Some("degraded-carrier".to_owned()),
@@ -334,6 +336,7 @@ impl PacketProvider {
             bond: None,
             nameservers: Vec::new(),
             ip_addresses: Vec::new(),
+            dhcp: None,
             routes: Vec::new(),
             required_for_online: None,
         };
