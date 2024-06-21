@@ -251,7 +251,7 @@ impl Azure {
     }
 
     // put it all together
-    fn get_ssh_pubkey(&self, certs_endpoint: String) -> Result<PublicKey> {
+    fn get_ssh_pubkey(&self, certs_endpoint: String) -> Result<Option<PublicKey>> {
         // we have to generate the rsa public/private keypair and the x509 cert
         // that we use to make the request. this is equivalent to
         // `openssl req -x509 -nodes -subj /CN=LinuxTransport -days 365 -newkey rsa:2048 -keyout private.pem -out cert.pem`
@@ -271,10 +271,7 @@ impl Azure {
             .context("failed to decrypt cms blob")?;
 
         // convert that to the OpenSSH public key format
-        let ssh_pubkey = crypto::p12_to_ssh_pubkey(&p12)
-            .context("failed to convert pkcs12 blob to ssh pubkey")?;
-
-        Ok(ssh_pubkey)
+        crypto::p12_to_ssh_pubkey(&p12).context("failed to convert pkcs12 blob to ssh pubkey")
     }
 
     #[cfg(test)]
@@ -402,18 +399,17 @@ impl MetadataProvider for Azure {
         let goalstate = self.fetch_goalstate()?;
         let certs_endpoint = match goalstate.certs_endpoint() {
             Some(ep) => ep,
-            None => {
-                warn!("SSH pubkeys requested, but not provisioned for this instance");
-                return Ok(vec![]);
-            }
+            None => return Ok(vec![]),
         };
 
         if certs_endpoint.is_empty() {
             bail!("unexpected empty certificates endpoint");
         }
 
-        let key = self.get_ssh_pubkey(certs_endpoint)?;
-        Ok(vec![key])
+        let maybe_key = self.get_ssh_pubkey(certs_endpoint)?;
+        let key: Vec<PublicKey> = maybe_key.into_iter().collect();
+
+        Ok(key)
     }
 
     fn boot_checkin(&self) -> Result<()> {

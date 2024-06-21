@@ -54,7 +54,7 @@ pub fn decrypt_cms(smime: &[u8], pkey: &PKey<Private>, x509: &X509) -> Result<Ve
     Ok(p12_der)
 }
 
-pub fn p12_to_ssh_pubkey(p12_der: &[u8]) -> Result<PublicKey> {
+pub fn p12_to_ssh_pubkey(p12_der: &[u8]) -> Result<Option<PublicKey>> {
     // the contents of that encrypted cms blob we got are actually a different
     // cryptographic structure. we read that in from the contents and parse it.
     // PKCS12 has the ability to have a password, but we don't have one, hence
@@ -65,7 +65,14 @@ pub fn p12_to_ssh_pubkey(p12_der: &[u8]) -> Result<PublicKey> {
     // ParsedPKCS12_2 has three parts: a pkey, a main x509 cert, and a list of other
     // x509 certs. The list of other x509 certs are called the `certificate chain`
     // currently denoted as `ca`; there is only one cert in this `certificate chain`,
-    // which is the ssh public key.
+    // which is the ssh public key. The certs endpoint may still be populated even if
+    // an SSH public key hasn't been provided, which would lead to this code being
+    // executed. The certificate chain will be empty in this case, so just return
+    // None and handle it further up the stack.
+    if p12.ca.is_none() {
+        return Ok(None);
+    }
+
     let ca = p12
         .ca
         .ok_or_else(|| anyhow!("failed to get chain from pkcs12"))?;
@@ -86,5 +93,5 @@ pub fn p12_to_ssh_pubkey(p12_der: &[u8]) -> Result<PublicKey> {
     let n = ssh_pubkey_rsa.n().to_vec();
     let ssh_pubkey = PublicKey::from_rsa(e, n);
 
-    Ok(ssh_pubkey)
+    Ok(Some(ssh_pubkey))
 }
