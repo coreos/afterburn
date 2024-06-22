@@ -46,7 +46,7 @@ maplit = "1.0"
 nix = { version = ">= 0.19, < 0.30", "default-features" = false, "features" = [ "mount", "user"] }
 openssh-keys = ">= 0.5, < 0.7"
 openssl = ">= 0.10.46, < 0.11"
-pnet_base = ">= 0.26, < 0.35"
+pnet_base = ">= 0.26, < 0.36"
 pnet_datalink = ">= 0.26, < 0.36"
 reqwest = { version = ">= 0.10, < 0.13", features = [ "blocking" ] }
 serde =  { version = "1.0", features = [ "derive" ] }
