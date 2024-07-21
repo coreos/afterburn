@@ -13,6 +13,7 @@ Major changes:
 Minor changes:
 
 - Hetzner: fix duplicate attribute prefix
+- Hetzner: Return private IPv4 addresses in attributes
 - Fix Azure SSH key fetching when no key provisioned
 
 Packaging changes:

@@ -14,7 +14,8 @@ fn setup() -> (mockito::ServerGuard, HetznerProvider) {
 
 #[test]
 fn test_attributes() {
-    let endpoint = "/hetzner/v1/metadata";
+    let endpoint_metadata = "/hetzner/v1/metadata";
+    let endpoint_networks = "/hetzner/v1/metadata/private-networks";
     let (mut server, provider) = setup();
 
     let availability_zone = "fsn1-dc14";
@@ -23,7 +24,7 @@ fn test_attributes() {
     let public_ipv4 = "192.0.2.10";
     let region = "eu-central";
 
-    let body = format!(
+    let body_metadata = format!(
         r#"availability-zone: {availability_zone}
 hostname: {hostname}
 instance-id: {instance_id}
@@ -34,30 +35,60 @@ public-keys: []
 vendor_data: "blah blah blah""#
     );
 
+    let ip_0 = "10.0.0.2";
+    let ip_1 = "10.128.0.2";
+
+    let body_networks = format!(
+        r#"- ip: {ip_0}
+- ip: {ip_1}"#
+    );
+
     let expected = maplit::hashmap! {
         "HETZNER_AVAILABILITY_ZONE".to_string() => availability_zone.to_string(),
         "HETZNER_HOSTNAME".to_string() => hostname.to_string(),
         "HETZNER_INSTANCE_ID".to_string() => instance_id.to_string(),
         "HETZNER_PUBLIC_IPV4".to_string() => public_ipv4.to_string(),
         "HETZNER_REGION".to_string() => region.to_string(),
+        "HETZNER_PRIVATE_IPV4_0".to_string() => ip_0.to_string(),
+        "HETZNER_PRIVATE_IPV4_1".to_string() => ip_1.to_string(),
     };
 
     // Fail on not found
     provider.attributes().unwrap_err();
 
-    // Fail on internal server errors
-    let mock = server.mock("GET", endpoint).with_status(503).create();
+    // Fail on internal server errors (metadata endpoint)
+    let mock_metadata = server
+        .mock("GET", endpoint_metadata)
+        .with_status(503)
+        .create();
     provider.attributes().unwrap_err();
-    mock.assert();
+    mock_metadata.assert();
+
+    let mock_metadata = server
+        .mock("GET", endpoint_metadata)
+        .with_status(200)
+        .with_body(body_metadata)
+        .expect(2) // Once for the private-networks error test and once to compare the result
+        .create();
+
+    // Fail on internal server errors (networks endpoint)
+    let mock_networks = server
+        .mock("GET", endpoint_networks)
+        .with_status(503)
+        .create();
+    provider.attributes().unwrap_err();
+    mock_networks.assert();
 
     // Fetch metadata
-    let mock = server
-        .mock("GET", endpoint)
+    let mock_networks = server
+        .mock("GET", endpoint_networks)
         .with_status(200)
-        .with_body(body)
+        .with_body(body_networks)
         .create();
+
     let actual = provider.attributes().unwrap();
-    mock.assert();
+    mock_metadata.assert();
+    mock_networks.assert();
     assert_eq!(actual, expected);
 }
 
