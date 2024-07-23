@@ -50,14 +50,24 @@ impl HetznerProvider {
 }
 
 impl MetadataProvider for HetznerProvider {
-    fn attributes(&self) -> Result<std::collections::HashMap<String, String>> {
-        let meta: HetznerMetadata = self
+    fn attributes(&self) -> Result<HashMap<String, String>> {
+        let metadata: Metadata = self
             .client
             .get(retry::Yaml, HETZNER_METADATA_BASE_URL.to_string())
             .send()?
             .unwrap();
 
-        Ok(meta.into())
+        let private_networks: Vec<PrivateNetwork> = self
+            .client
+            .get(retry::Yaml, Self::endpoint_for("private-networks"))
+            .send()?
+            .unwrap();
+
+        Ok(Attributes {
+            metadata,
+            private_networks,
+        }
+        .into())
     }
 
     fn hostname(&self) -> Result<Option<String>> {
@@ -91,8 +101,13 @@ impl MetadataProvider for HetznerProvider {
 }
 
 #[derive(Debug, Deserialize)]
+struct PrivateNetwork {
+    ip: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
 #[serde(rename_all = "kebab-case")]
-struct HetznerMetadata {
+struct Metadata {
     hostname: Option<String>,
     instance_id: Option<i64>,
     public_ipv4: Option<String>,
@@ -100,8 +115,13 @@ struct HetznerMetadata {
     region: Option<String>,
 }
 
-impl From<HetznerMetadata> for HashMap<String, String> {
-    fn from(meta: HetznerMetadata) -> Self {
+struct Attributes {
+    metadata: Metadata,
+    private_networks: Vec<PrivateNetwork>,
+}
+
+impl From<Attributes> for HashMap<String, String> {
+    fn from(attributes: Attributes) -> Self {
         let mut out = HashMap::with_capacity(5);
 
         let add_value = |map: &mut HashMap<_, _>, key: &str, value: Option<String>| {
@@ -113,16 +133,28 @@ impl From<HetznerMetadata> for HashMap<String, String> {
         add_value(
             &mut out,
             "HETZNER_AVAILABILITY_ZONE",
-            meta.availability_zone,
+            attributes.metadata.availability_zone,
         );
-        add_value(&mut out, "HETZNER_HOSTNAME", meta.hostname);
+        add_value(&mut out, "HETZNER_HOSTNAME", attributes.metadata.hostname);
         add_value(
             &mut out,
             "HETZNER_INSTANCE_ID",
-            meta.instance_id.map(|i| i.to_string()),
+            attributes.metadata.instance_id.map(|i| i.to_string()),
         );
-        add_value(&mut out, "HETZNER_PUBLIC_IPV4", meta.public_ipv4);
-        add_value(&mut out, "HETZNER_REGION", meta.region);
+        add_value(
+            &mut out,
+            "HETZNER_PUBLIC_IPV4",
+            attributes.metadata.public_ipv4,
+        );
+        add_value(&mut out, "HETZNER_REGION", attributes.metadata.region);
+
+        for (i, a) in attributes.private_networks.iter().enumerate() {
+            add_value(
+                &mut out,
+                format!("HETZNER_PRIVATE_IPV4_{i}").as_str(),
+                a.ip.clone(),
+            );
+        }
 
         out
     }
@@ -130,7 +162,7 @@ impl From<HetznerMetadata> for HashMap<String, String> {
 
 #[cfg(test)]
 mod tests {
-    use super::HetznerMetadata;
+    use super::{Metadata, PrivateNetwork};
 
     #[test]
     fn test_metadata_deserialize() {
@@ -141,11 +173,39 @@ public-ipv4: 1.2.3.4
 region: eu-central
 public-keys: []"#;
 
-        let meta: HetznerMetadata = serde_yaml::from_str(body).unwrap();
+        let meta: Metadata = serde_yaml::from_str(body).unwrap();
 
         assert_eq!(meta.availability_zone.unwrap(), "hel1-dc2");
         assert_eq!(meta.hostname.unwrap(), "my-server");
         assert_eq!(meta.instance_id.unwrap(), 42);
         assert_eq!(meta.public_ipv4.unwrap(), "1.2.3.4");
+    }
+
+    #[test]
+    fn test_private_networks_deserialize() {
+        let body = r"- ip: 10.0.0.2
+  alias_ips: []
+  interface_num: 2
+  mac_address: 86:00:00:98:40:6e
+  network_id: 4124728
+  network_name: foo
+  network: 10.0.0.0/16
+  subnet: 10.0.0.0/24
+  gateway: 10.0.0.1
+- ip: 10.128.0.2
+  alias_ips: []
+  interface_num: 1
+  mac_address: 86:00:00:98:40:6d
+  network_id: 4451335
+  network_name: bar
+  network: 10.128.0.0/16
+  subnet: 10.128.0.0/16
+  gateway: 10.128.0.1";
+
+        let private_networks: Vec<PrivateNetwork> = serde_yaml::from_str(body).unwrap();
+
+        assert_eq!(private_networks.len(), 2);
+        assert_eq!(private_networks[0].ip.clone().unwrap(), "10.0.0.2");
+        assert_eq!(private_networks[1].ip.clone().unwrap(), "10.128.0.2");
     }
 }
