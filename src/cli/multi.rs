@@ -21,8 +21,11 @@ pub struct CliMulti {
     #[arg(long)]
     check_in: bool,
     /// The file into which the hostname should be written
-    #[arg(long = "hostname", value_name = "path")]
+    #[arg(group = "hostname", long = "hostname", value_name = "path")]
     hostname_file: Option<String>,
+    /// Parse the hostname retrieved from metadata as a short hostname
+    #[arg(long = "short", requires = "hostname")]
+    short_hostname: bool,
     /// The directory into which network units are written
     #[arg(long = "network-units", value_name = "path")]
     network_units_dir: Option<String>,
@@ -68,7 +71,7 @@ impl CliMulti {
 
         // write hostname if configured to do so
         self.hostname_file
-            .map_or(Ok(()), |x| metadata.write_hostname(x))
+            .map_or(Ok(()), |x| metadata.write_hostname(x, self.short_hostname))
             .context("writing hostname")?;
 
         // write network units if configured to do so
