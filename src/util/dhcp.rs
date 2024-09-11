@@ -20,7 +20,7 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::path::Path;
 use std::time::Duration;
-use zbus::{dbus_proxy, zvariant};
+use zbus::{proxy, zvariant};
 
 use super::key_lookup;
 use crate::retry;
@@ -138,30 +138,30 @@ impl DhcpOption {
     }
 }
 
-#[dbus_proxy(
+#[proxy(
     default_service = "org.freedesktop.NetworkManager",
     default_path = "/org/freedesktop/NetworkManager",
     interface = "org.freedesktop.NetworkManager"
 )]
 trait NetworkManager {
-    #[dbus_proxy(property)]
+    #[zbus(property)]
     fn active_connections(&self) -> zbus::Result<Vec<zvariant::ObjectPath>>;
 }
 
-#[dbus_proxy(
+#[proxy(
     default_service = "org.freedesktop.NetworkManager",
     interface = "org.freedesktop.NetworkManager.Connection.Active"
 )]
 trait NMActiveConnection {
-    #[dbus_proxy(property)]
+    #[zbus(property)]
     fn dhcp4_config(&self) -> zbus::Result<zvariant::ObjectPath>;
 }
 
-#[dbus_proxy(
+#[proxy(
     default_service = "org.freedesktop.NetworkManager",
     interface = "org.freedesktop.NetworkManager.DHCP4Config"
 )]
 trait NMDhcp4Config {
-    #[dbus_proxy(property)]
+    #[zbus(property)]
     fn options(&self) -> Result<HashMap<String, zvariant::Value>>;
 }
