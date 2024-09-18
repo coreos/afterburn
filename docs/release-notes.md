@@ -4,7 +4,15 @@ nav_order: 8
 
 # Release notes
 
-## Upcoming Afterburn 5.7.0 (unreleased)
+## Upcoming Afterburn 5.8.0 (unreleased)
+
+Major changes:
+
+Minor changes:
+
+Packaging changes:
+
+## Upcoming Afterburn 5.7.0
 
 Major changes:
 
@@ -15,9 +23,6 @@ Minor changes:
 - Hetzner: fix duplicate attribute prefix
 - Hetzner: Return private IPv4 addresses in attributes
 - Fix Azure SSH key fetching when no key provisioned
-
-Packaging changes:
-
 
 ## Afterburn 5.6.0
 
