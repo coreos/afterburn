@@ -12,7 +12,7 @@ Minor changes:
 
 Packaging changes:
 
-## Upcoming Afterburn 5.7.0
+## Afterburn 5.7.0
 
 Major changes:
 
