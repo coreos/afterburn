@@ -21,7 +21,7 @@ pub struct NoopProvider {}
 
 impl NoopProvider {
     pub fn try_new() -> Result<NoopProvider> {
-        Ok(Self { })
+        Ok(Self {})
     }
 }
 

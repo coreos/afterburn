@@ -12,6 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use crate::providers;
+use crate::providers::noop::NoopProvider;
+use anyhow::Result;
+use slog_scope::warn;
+
 mod configdrive;
 pub use configdrive::*;
 
@@ -20,3 +25,13 @@ pub use cloudconfig::*;
 
 #[cfg(test)]
 mod tests;
+
+pub fn try_config_drive_else_leave() -> Result<Box<dyn providers::MetadataProvider>> {
+    match ProxmoxVEConfigDrive::try_new() {
+        Ok(config_drive) => Ok(Box::new(config_drive)),
+        Err(_) => {
+            warn!("failed to locate config-drive - aborting ProxmoxVE provider");
+            Ok(Box::new(NoopProvider::try_new()?))
+        }
+    }
+}
