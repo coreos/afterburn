@@ -101,13 +101,19 @@ impl OpenstackConfigDrive {
     }
 
     /// The metadata is stored as key:value pair in ec2/latest/meta-data.json file
-    fn read_metadata_ec2(&self) -> Result<MetadataEc2JSON> {
+    fn read_metadata_ec2(&self) -> Result<Option<MetadataEc2JSON>> {
+        use std::io::ErrorKind::NotFound;
+
         let filename = self.metadata_dir("ec2").join("meta-data.json");
-        let file =
-            File::open(&filename).with_context(|| format!("failed to open file '{filename:?}'"))?;
+        let file = match File::open(&filename) {
+            Ok(file) => file,
+            Err(e) if e.kind() == NotFound => return Ok(None),
+            Err(e) => return Err(e).with_context(|| format!("failed to open file '{filename:?}'")),
+        };
         let bufrd = BufReader::new(file);
         Self::parse_metadata_ec2(bufrd)
             .with_context(|| format!("failed to parse file '{filename:?}'"))
+            .map(Some)
     }
 
     /// The metadata is stored as key:value pair in openstack/latest/meta_data.json file
@@ -144,16 +150,19 @@ impl OpenstackConfigDrive {
 impl MetadataProvider for OpenstackConfigDrive {
     fn attributes(&self) -> Result<HashMap<String, String>> {
         let mut out = HashMap::with_capacity(6);
-        let metadata_ec2: MetadataEc2JSON = self.read_metadata_ec2()?;
         let metadata_openstack: MetadataOpenstackJSON = self.read_metadata_openstack()?;
         if let Some(hostname) = metadata_openstack.hostname {
             out.insert("OPENSTACK_HOSTNAME".to_string(), hostname);
         }
-        if let Some(instance_id) = metadata_ec2.instance_id {
-            out.insert("OPENSTACK_INSTANCE_ID".to_string(), instance_id);
-        }
         if let Some(uuid) = metadata_openstack.uuid {
             out.insert("OPENSTACK_INSTANCE_UUID".to_string(), uuid);
+        }
+
+        let Some(metadata_ec2) = self.read_metadata_ec2()? else {
+            return Ok(out);
+        };
+        if let Some(instance_id) = metadata_ec2.instance_id {
+            out.insert("OPENSTACK_INSTANCE_ID".to_string(), instance_id);
         }
         if let Some(instance_type) = metadata_ec2.instance_type {
             out.insert("OPENSTACK_INSTANCE_TYPE".to_string(), instance_type);
@@ -253,5 +262,24 @@ mod tests {
         };
 
         assert_eq!(parsed.public_keys.unwrap_or_default(), expect);
+    }
+
+    #[test]
+    fn test_attributes_openstack_without_ec2() {
+        let provider = OpenstackConfigDrive {
+            drive_path: PathBuf::from(
+                "./tests/fixtures/openstack-config-drive/openstack-config-drive2",
+            ),
+            temp_dir: None,
+        };
+        let result = provider.attributes();
+        assert!(result.is_ok(), "Expected Ok, got Err: {:?}", result.err());
+        let attributes = result.unwrap();
+        assert_eq!(
+            attributes
+                .get("OPENSTACK_INSTANCE_UUID")
+                .unwrap_or(&String::new()),
+            "b3f43d9c-9198-4cd4-ac9f-bed14960794b"
+        );
     }
 }
