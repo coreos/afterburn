@@ -10,6 +10,8 @@ Major changes:
 
 Minor changes:
 
+- ProxmoxVE: Fixed instance boot without config drive
+
 Packaging changes:
 
 ## Afterburn 5.7.0

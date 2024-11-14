@@ -1,4 +1,4 @@
-// Copyright 2017 CoreOS, Inc.
+// Copyright 2023 CoreOS, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,26 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::providers;
-use crate::providers::noop::NoopProvider;
 use anyhow::Result;
-use slog_scope::warn;
 
-mod configdrive;
-pub use configdrive::*;
+use crate::providers::MetadataProvider;
 
-mod cloudconfig;
-pub use cloudconfig::*;
+/// Noop provider
+pub struct NoopProvider {}
 
-#[cfg(test)]
-mod tests;
-
-pub fn try_config_drive_else_leave() -> Result<Box<dyn providers::MetadataProvider>> {
-    match ProxmoxVEConfigDrive::try_new() {
-        Ok(config_drive) => Ok(Box::new(config_drive)),
-        Err(_) => {
-            warn!("failed to locate config-drive - aborting ProxmoxVE provider");
-            Ok(Box::new(NoopProvider::try_new()?))
-        }
+impl NoopProvider {
+    pub fn try_new() -> Result<NoopProvider> {
+        Ok(Self {})
     }
 }
+
+impl MetadataProvider for NoopProvider {}
