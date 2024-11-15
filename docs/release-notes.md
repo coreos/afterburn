@@ -10,6 +10,8 @@ Major changes:
 
 Minor changes:
 
+- Openstack: do not fail if ec2 metadata is not found
+
 Packaging changes:
 
 ## Afterburn 5.7.0
