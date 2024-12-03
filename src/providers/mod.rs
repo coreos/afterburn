@@ -35,6 +35,7 @@ pub mod ibmcloud;
 pub mod ibmcloud_classic;
 pub mod kubevirt;
 pub mod microsoft;
+pub mod noop;
 pub mod openstack;
 pub mod packet;
 pub mod powervs;
