@@ -25,23 +25,26 @@ jobs:
     steps:
       # need to install git before checkout to get a git repo
       - name: Install packages
-        run: dnf install -y git make mock
+        run: dnf5 install -y git make mock
       - name: Check out repository
         uses: actions/checkout@v4
         # fetch tags for versioning
         with:
-          fetch-depth: 0
+          fetch-depth: 1
       # https://github.com/actions/checkout/issues/766
       - name: Mark git checkout as safe
         run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
-      - name: Check RPM version
-        run: rpm --version
       - name: Build RPMs
         run: |
+          curl -o /etc/yum.repos.d/fedora-updates-archive.repo https://src.fedoraproject.org/rpms/fedora-repos/raw/rawhide/f/fedora-updates-archive.repo 
+          dnf install -y libc-2.40-14.fc41
           mkdir rpms
           make -f .copr/Makefile srpm outdir=rpms
-          mock --rebuild --enablerepo=updates-testing rpms/*.src.rpm
+          sudo /usr/libexec/mock/mock --rebuild --enablerepo=updates-testing rpms/*.src.rpm
           find /var/lib/mock -wholename '*/result/*.rpm' | xargs mv -t rpms
+      - name: Setup tmate session
+        if: ${{ failure() }}
+        uses: mxschmitt/action-tmate@v3
       - name: Archive RPMs
         uses: actions/upload-artifact@v4
         with:
