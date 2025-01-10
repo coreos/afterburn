@@ -11,6 +11,7 @@ Major changes:
 Minor changes:
 
 - ProxmoxVE: Fixed instance boot without config drive
+- openstack: Support config drive without EC2 metadata
 
 Packaging changes:
 

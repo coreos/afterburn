@@ -144,25 +144,29 @@ impl OpenstackConfigDrive {
 impl MetadataProvider for OpenstackConfigDrive {
     fn attributes(&self) -> Result<HashMap<String, String>> {
         let mut out = HashMap::with_capacity(6);
-        let metadata_ec2: MetadataEc2JSON = self.read_metadata_ec2()?;
+
         let metadata_openstack: MetadataOpenstackJSON = self.read_metadata_openstack()?;
         if let Some(hostname) = metadata_openstack.hostname {
             out.insert("OPENSTACK_HOSTNAME".to_string(), hostname);
         }
-        if let Some(instance_id) = metadata_ec2.instance_id {
-            out.insert("OPENSTACK_INSTANCE_ID".to_string(), instance_id);
-        }
         if let Some(uuid) = metadata_openstack.uuid {
             out.insert("OPENSTACK_INSTANCE_UUID".to_string(), uuid);
         }
-        if let Some(instance_type) = metadata_ec2.instance_type {
-            out.insert("OPENSTACK_INSTANCE_TYPE".to_string(), instance_type);
-        }
-        if let Some(local_ipv4) = metadata_ec2.local_ipv4 {
-            out.insert("OPENSTACK_IPV4_LOCAL".to_string(), local_ipv4);
-        }
-        if let Some(public_ipv4) = metadata_ec2.public_ipv4 {
-            out.insert("OPENSTACK_IPV4_PUBLIC".to_string(), public_ipv4);
+
+        let ec2_result = self.read_metadata_ec2();
+        if let Ok(metadata_ec2) = ec2_result {
+            if let Some(instance_id) = metadata_ec2.instance_id {
+                out.insert("OPENSTACK_INSTANCE_ID".to_string(), instance_id);
+            }
+            if let Some(instance_type) = metadata_ec2.instance_type {
+                out.insert("OPENSTACK_INSTANCE_TYPE".to_string(), instance_type);
+            }
+            if let Some(local_ipv4) = metadata_ec2.local_ipv4 {
+                out.insert("OPENSTACK_IPV4_LOCAL".to_string(), local_ipv4);
+            }
+            if let Some(public_ipv4) = metadata_ec2.public_ipv4 {
+                out.insert("OPENSTACK_IPV4_PUBLIC".to_string(), public_ipv4);
+            }
         }
         Ok(out)
     }
@@ -253,5 +257,24 @@ mod tests {
         };
 
         assert_eq!(parsed.public_keys.unwrap_or_default(), expect);
+    }
+
+    #[test]
+    fn test_attributes_openstack_without_ec2() {
+        let provider = OpenstackConfigDrive {
+            drive_path: PathBuf::from(
+                "./tests/fixtures/openstack-config-drive/openstack-config-drive2",
+            ),
+            temp_dir: None,
+        };
+        let result = provider.attributes();
+        assert!(result.is_ok(), "Expected Ok, got Err: {:?}", result.err());
+        let attributes = result.unwrap();
+        assert_eq!(
+            attributes
+                .get("OPENSTACK_INSTANCE_UUID")
+                .unwrap_or(&String::new()),
+            "b3f43d9c-9198-4cd4-ac9f-bed14960794b"
+        );
     }
 }
