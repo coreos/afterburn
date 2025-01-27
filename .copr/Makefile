@@ -14,4 +14,4 @@ srpm:
 	sed -ie 's/^Source1/# Source1/g' rust-afterburn.spec  # we don't vendor
 	spectool -g rust-afterburn.spec  # download any remaining sources (e.g. coreos-installer-dracut)
 	rpmbuild -bs --define "_sourcedir ${PWD}" --define "_specdir ${PWD}" --define "_builddir ${PWD}" --define "_srcrpmdir ${PWD}" --define "_rpmdir ${PWD}" --define "_buildrootdir ${PWD}/.build" rust-afterburn.spec
-	mv *.src.rpm $$outdir
+	mv *.src.rpm $outdir
