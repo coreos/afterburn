@@ -33,3 +33,15 @@ install-units: $(units)
 install: install-units
 	install -D -m 644 -t ${DESTDIR}$(PREFIX)/lib/dracut/modules.d/30afterburn dracut/30afterburn/*
 	install -D -t ${DESTDIR}$(PREFIX)/bin target/${PROFILE}/afterburn
+
+.PHONY: fmt
+fmt:
+	cargo fmt -- --check -l
+
+.PHONY: lint
+lint:
+	cargo clippy --all-targets -- -D warnings
+
+.PHONY: test
+test:
+	cargo test --all-targets --release
