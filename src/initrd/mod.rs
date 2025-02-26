@@ -4,9 +4,9 @@
 //! services are configured, so it may not be able to use all usual metadata
 //! fetcher.
 
+use crate::providers::proxmoxve::ProxmoxVEConfigDrive;
 use crate::providers::vmware::VmwareProvider;
 use crate::providers::MetadataProvider;
-use crate::providers::proxmoxve::ProxmoxVEConfigDrive;
 use anyhow::{Context, Result};
 use std::fs::File;
 use std::io::Write;

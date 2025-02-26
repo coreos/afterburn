@@ -81,20 +81,26 @@ impl ProxmoxVECloudConfig {
         }
 
         if user_data.is_none() {
-            warn!("user-data does not have the expected header `#cloud-config`, ignoring this file");
+            warn!(
+                "user-data does not have the expected header `#cloud-config`, ignoring this file"
+            );
         }
 
         Ok(Self {
             user_data,
-            meta_data: serde_yaml::from_reader(File::open(path.join("meta-data"))
-                .context("failed to open meta-data file")?)
-                .context("failed to parse meta-data as YAML")?,
-            vendor_data: serde_yaml::from_reader(File::open(path.join("vendor-data"))
-                .context("failed to open vendor-data file")?)
-                .context("failed to parse vendor-data as YAML")?,
-            network_config: serde_yaml::from_reader(File::open(path.join("network-config"))
-                .context("failed to open network-config file")?)
-                .context("failed to parse network-config as YAML")?,
+            meta_data: serde_yaml::from_reader(
+                File::open(path.join("meta-data")).context("failed to open meta-data file")?,
+            )
+            .context("failed to parse meta-data as YAML")?,
+            vendor_data: serde_yaml::from_reader(
+                File::open(path.join("vendor-data")).context("failed to open vendor-data file")?,
+            )
+            .context("failed to parse vendor-data as YAML")?,
+            network_config: serde_yaml::from_reader(
+                File::open(path.join("network-config"))
+                    .context("failed to open network-config file")?,
+            )
+            .context("failed to parse network-config as YAML")?,
         })
     }
 }
@@ -187,31 +193,35 @@ impl MetadataProvider for ProxmoxVECloudConfig {
                 for addr in iface.ip_addresses {
                     match addr {
                         IpNetwork::V4(network) => {
-                            if let Some(gateway) = iface.routes.iter().find(|r| r.destination.is_ipv4() && r.destination.prefix() == 0) {
-                                kargs.push(format!("ip={}::{}:{}",
+                            if let Some(gateway) = iface
+                                .routes
+                                .iter()
+                                .find(|r| r.destination.is_ipv4() && r.destination.prefix() == 0)
+                            {
+                                kargs.push(format!(
+                                    "ip={}::{}:{}",
                                     network.ip(),
                                     gateway.gateway,
                                     network.mask()
                                 ));
                             } else {
-                                kargs.push(format!("ip={}:::{}",
-                                    network.ip(),
-                                    network.mask()
-                                ));
+                                kargs.push(format!("ip={}:::{}", network.ip(), network.mask()));
                             }
                         }
                         IpNetwork::V6(network) => {
-                            if let Some(gateway) = iface.routes.iter().find(|r| r.destination.is_ipv6() && r.destination.prefix() == 0) {
-                                kargs.push(format!("ip={}::{}:{}",
+                            if let Some(gateway) = iface
+                                .routes
+                                .iter()
+                                .find(|r| r.destination.is_ipv6() && r.destination.prefix() == 0)
+                            {
+                                kargs.push(format!(
+                                    "ip={}::{}:{}",
                                     network.ip(),
                                     gateway.gateway,
                                     network.prefix()
                                 ));
                             } else {
-                                kargs.push(format!("ip={}:::{}",
-                                    network.ip(),
-                                    network.prefix()
-                                ));
+                                kargs.push(format!("ip={}:::{}", network.ip(), network.prefix()));
                             }
                         }
                     }
@@ -228,7 +238,8 @@ impl MetadataProvider for ProxmoxVECloudConfig {
 
                 // Add nameservers
                 if !iface.nameservers.is_empty() {
-                    let nameservers = iface.nameservers
+                    let nameservers = iface
+                        .nameservers
                         .iter()
                         .map(|ns| ns.to_string())
                         .collect::<Vec<_>>()
@@ -258,8 +269,12 @@ impl MetadataProvider for ProxmoxVECloudConfig {
                 // Add DHCP settings
                 if let Some(dhcp) = iface.dhcp {
                     match dhcp {
-                        DhcpSetting::V4 => { eth_config.insert("dhcp4".into(), true.into()); }
-                        DhcpSetting::V6 => { eth_config.insert("dhcp6".into(), true.into()); }
+                        DhcpSetting::V4 => {
+                            eth_config.insert("dhcp4".into(), true.into());
+                        }
+                        DhcpSetting::V6 => {
+                            eth_config.insert("dhcp6".into(), true.into());
+                        }
                         DhcpSetting::Both => {
                             eth_config.insert("dhcp4".into(), true.into());
                             eth_config.insert("dhcp6".into(), true.into());
@@ -269,7 +284,8 @@ impl MetadataProvider for ProxmoxVECloudConfig {
 
                 // Add static addresses if any
                 if !iface.ip_addresses.is_empty() {
-                    let addresses: Vec<String> = iface.ip_addresses
+                    let addresses: Vec<String> = iface
+                        .ip_addresses
                         .iter()
                         .map(|addr| addr.to_string())
                         .collect();
@@ -278,14 +294,14 @@ impl MetadataProvider for ProxmoxVECloudConfig {
 
                 // Add nameservers if any
                 if !iface.nameservers.is_empty() {
-                    let nameservers: Vec<String> = iface.nameservers
-                        .iter()
-                        .map(|ns| ns.to_string())
-                        .collect();
-                    eth_config.insert("nameservers".into(),
-                        serde_yaml::Value::Mapping(serde_yaml::Mapping::from_iter(vec![
-                            ("addresses".into(), nameservers.into())
-                        ]))
+                    let nameservers: Vec<String> =
+                        iface.nameservers.iter().map(|ns| ns.to_string()).collect();
+                    eth_config.insert(
+                        "nameservers".into(),
+                        serde_yaml::Value::Mapping(serde_yaml::Mapping::from_iter(vec![(
+                            "addresses".into(),
+                            nameservers.into(),
+                        )])),
                     );
                 }
 

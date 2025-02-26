@@ -38,20 +38,12 @@ impl ProxmoxVEConfigDrive {
         let device_path = Self::find_cidata_device()
             .ok_or_else(|| anyhow::anyhow!("could not find cidata device"))?;
 
-        crate::util::mount_ro(
-            Path::new(&device_path),
-            mount_dir.path(),
-            TARGET_FS,
-            3,
-        )?;
+        crate::util::mount_ro(Path::new(&device_path), mount_dir.path(), TARGET_FS, 3)?;
 
         let config = ProxmoxVECloudConfig::try_new(mount_dir.path())
             .context("failed to read ProxmoxVE cloud config")?;
 
-        Ok(Self {
-            config,
-            mount_dir,
-        })
+        Ok(Self { config, mount_dir })
     }
 }
 

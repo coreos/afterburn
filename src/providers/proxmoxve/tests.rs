@@ -190,8 +190,9 @@ fn test_network_kargs_dhcp() {
 
 #[test]
 fn test_network_kargs_no_gateway() {
-    let config = ProxmoxVECloudConfig::try_new(Path::new("tests/fixtures/proxmoxve/static-no-gateway"))
-        .expect("cannot parse config");
+    let config =
+        ProxmoxVECloudConfig::try_new(Path::new("tests/fixtures/proxmoxve/static-no-gateway"))
+            .expect("cannot parse config");
 
     let kargs = config.rd_network_kargs().expect("cannot get network kargs");
     assert!(kargs.is_some());
@@ -237,8 +238,14 @@ fn test_netplan_config_static() {
 
     // Verify nameservers
     let nameservers = &eth0["nameservers"]["addresses"];
-    assert!(nameservers.as_sequence().unwrap().contains(&serde_yaml::Value::String("1.1.1.1".into())));
-    assert!(nameservers.as_sequence().unwrap().contains(&serde_yaml::Value::String("8.8.8.8".into())));
+    assert!(nameservers
+        .as_sequence()
+        .unwrap()
+        .contains(&serde_yaml::Value::String("1.1.1.1".into())));
+    assert!(nameservers
+        .as_sequence()
+        .unwrap()
+        .contains(&serde_yaml::Value::String("8.8.8.8".into())));
 }
 
 #[test]
@@ -263,6 +270,12 @@ fn test_netplan_config_dhcp() {
 
     // Verify nameservers
     let nameservers = &eth0["nameservers"]["addresses"];
-    assert!(nameservers.as_sequence().unwrap().contains(&serde_yaml::Value::String("1.1.1.1".into())));
-    assert!(nameservers.as_sequence().unwrap().contains(&serde_yaml::Value::String("8.8.8.8".into())));
+    assert!(nameservers
+        .as_sequence()
+        .unwrap()
+        .contains(&serde_yaml::Value::String("1.1.1.1".into())));
+    assert!(nameservers
+        .as_sequence()
+        .unwrap()
+        .contains(&serde_yaml::Value::String("8.8.8.8".into())));
 }
