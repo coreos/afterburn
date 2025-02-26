@@ -2,7 +2,7 @@ use crate::{
     network::{self, DhcpSetting, NetworkRoute},
     providers::MetadataProvider,
 };
-use anyhow::Result;
+use anyhow::{Context, Result};
 use ipnetwork::IpNetwork;
 use openssh_keys::PublicKey;
 use pnet_base::MacAddr;
@@ -20,6 +20,7 @@ use std::{
 pub struct ProxmoxVECloudConfig {
     pub meta_data: ProxmoxVECloudMetaData,
     pub user_data: Option<ProxmoxVECloudUserData>,
+    #[allow(dead_code)]
     pub vendor_data: ProxmoxVECloudVendorData,
     pub network_config: ProxmoxVECloudNetworkConfig,
 }
@@ -33,18 +34,8 @@ pub struct ProxmoxVECloudMetaData {
 #[derive(Debug, Deserialize)]
 pub struct ProxmoxVECloudUserData {
     pub hostname: String,
-    pub manage_etc_hosts: bool,
-    pub fqdn: String,
-    pub chpasswd: ProxmoxVECloudChpasswdConfig,
-    pub users: Vec<String>,
-    pub package_upgrade: bool,
     #[serde(default)]
     pub ssh_authorized_keys: Vec<String>,
-}
-
-#[derive(Debug, Deserialize)]
-pub struct ProxmoxVECloudChpasswdConfig {
-    pub expire: bool,
 }
 
 #[derive(Debug, Deserialize)]
@@ -52,7 +43,6 @@ pub struct ProxmoxVECloudVendorData {}
 
 #[derive(Debug, Deserialize)]
 pub struct ProxmoxVECloudNetworkConfig {
-    pub version: u32,
     pub config: Vec<ProxmoxVECloudNetworkConfigEntry>,
 }
 
@@ -64,8 +54,6 @@ pub struct ProxmoxVECloudNetworkConfigEntry {
     pub mac_address: Option<String>,
     #[serde(default)]
     pub address: Vec<String>,
-    #[serde(default)]
-    pub search: Vec<String>,
     #[serde(default)]
     pub subnets: Vec<ProxmoxVECloudNetworkConfigSubnet>,
 }
@@ -82,11 +70,13 @@ pub struct ProxmoxVECloudNetworkConfigSubnet {
 impl ProxmoxVECloudConfig {
     pub fn try_new(path: &Path) -> Result<Self> {
         let mut user_data = None;
-        let raw_user_data = std::fs::read_to_string(path.join("user-data"))?;
+        let raw_user_data = std::fs::read_to_string(path.join("user-data"))
+            .context("failed to read user-data file")?;
 
         if let Some(first_line) = raw_user_data.split('\n').next() {
             if first_line.starts_with("#cloud-config") {
-                user_data = serde_yaml::from_str(&raw_user_data)?;
+                user_data = serde_yaml::from_str(&raw_user_data)
+                    .context("failed to parse user-data as YAML")?;
             }
         }
 
@@ -98,9 +88,19 @@ impl ProxmoxVECloudConfig {
 
         Ok(Self {
             user_data,
-            meta_data: serde_yaml::from_reader(File::open(path.join("meta-data"))?)?,
-            vendor_data: serde_yaml::from_reader(File::open(path.join("vendor-data"))?)?,
-            network_config: serde_yaml::from_reader(File::open(path.join("network-config"))?)?,
+            meta_data: serde_yaml::from_reader(
+                File::open(path.join("meta-data")).context("failed to open meta-data file")?,
+            )
+            .context("failed to parse meta-data as YAML")?,
+            vendor_data: serde_yaml::from_reader(
+                File::open(path.join("vendor-data")).context("failed to open vendor-data file")?,
+            )
+            .context("failed to parse vendor-data as YAML")?,
+            network_config: serde_yaml::from_reader(
+                File::open(path.join("network-config"))
+                    .context("failed to open network-config file")?,
+            )
+            .context("failed to parse network-config as YAML")?,
         })
     }
 }
@@ -182,6 +182,141 @@ impl MetadataProvider for ProxmoxVECloudConfig {
         }
 
         Ok(interfaces)
+    }
+
+    fn rd_network_kargs(&self) -> Result<Option<String>> {
+        let mut kargs = Vec::new();
+
+        if let Ok(networks) = self.networks() {
+            for iface in networks {
+                // Add IP configuration if static
+                for addr in iface.ip_addresses {
+                    match addr {
+                        IpNetwork::V4(network) => {
+                            if let Some(gateway) = iface
+                                .routes
+                                .iter()
+                                .find(|r| r.destination.is_ipv4() && r.destination.prefix() == 0)
+                            {
+                                kargs.push(format!(
+                                    "ip={}::{}:{}",
+                                    network.ip(),
+                                    gateway.gateway,
+                                    network.mask()
+                                ));
+                            } else {
+                                kargs.push(format!("ip={}:::{}", network.ip(), network.mask()));
+                            }
+                        }
+                        IpNetwork::V6(network) => {
+                            if let Some(gateway) = iface
+                                .routes
+                                .iter()
+                                .find(|r| r.destination.is_ipv6() && r.destination.prefix() == 0)
+                            {
+                                kargs.push(format!(
+                                    "ip={}::{}:{}",
+                                    network.ip(),
+                                    gateway.gateway,
+                                    network.prefix()
+                                ));
+                            } else {
+                                kargs.push(format!("ip={}:::{}", network.ip(), network.prefix()));
+                            }
+                        }
+                    }
+                }
+
+                // Add DHCP configuration
+                if let Some(dhcp) = iface.dhcp {
+                    match dhcp {
+                        DhcpSetting::V4 => kargs.push("ip=dhcp".to_string()),
+                        DhcpSetting::V6 => kargs.push("ip=dhcp6".to_string()),
+                        DhcpSetting::Both => kargs.push("ip=dhcp,dhcp6".to_string()),
+                    }
+                }
+
+                // Add nameservers
+                if !iface.nameservers.is_empty() {
+                    let nameservers = iface
+                        .nameservers
+                        .iter()
+                        .map(|ns| ns.to_string())
+                        .collect::<Vec<_>>()
+                        .join(",");
+                    kargs.push(format!("nameserver={}", nameservers));
+                }
+            }
+        }
+
+        if kargs.is_empty() {
+            Ok(None)
+        } else {
+            Ok(Some(kargs.join(" ")))
+        }
+    }
+
+    fn netplan_config(&self) -> Result<Option<String>> {
+        // Convert network config to netplan format
+        if let Ok(networks) = self.networks() {
+            let mut netplan = serde_yaml::Mapping::new();
+            let mut network = serde_yaml::Mapping::new();
+            let mut ethernets = serde_yaml::Mapping::new();
+
+            for iface in networks {
+                let mut eth_config = serde_yaml::Mapping::new();
+
+                // Add DHCP settings
+                if let Some(dhcp) = iface.dhcp {
+                    match dhcp {
+                        DhcpSetting::V4 => {
+                            eth_config.insert("dhcp4".into(), true.into());
+                        }
+                        DhcpSetting::V6 => {
+                            eth_config.insert("dhcp6".into(), true.into());
+                        }
+                        DhcpSetting::Both => {
+                            eth_config.insert("dhcp4".into(), true.into());
+                            eth_config.insert("dhcp6".into(), true.into());
+                        }
+                    }
+                }
+
+                // Add static addresses if any
+                if !iface.ip_addresses.is_empty() {
+                    let addresses: Vec<String> = iface
+                        .ip_addresses
+                        .iter()
+                        .map(|addr| addr.to_string())
+                        .collect();
+                    eth_config.insert("addresses".into(), addresses.into());
+                }
+
+                // Add nameservers if any
+                if !iface.nameservers.is_empty() {
+                    let nameservers: Vec<String> =
+                        iface.nameservers.iter().map(|ns| ns.to_string()).collect();
+                    eth_config.insert(
+                        "nameservers".into(),
+                        serde_yaml::Value::Mapping(serde_yaml::Mapping::from_iter(vec![(
+                            "addresses".into(),
+                            nameservers.into(),
+                        )])),
+                    );
+                }
+
+                if let Some(name) = iface.name {
+                    ethernets.insert(name.into(), eth_config.into());
+                }
+            }
+
+            network.insert("ethernets".into(), ethernets.into());
+            netplan.insert("network".into(), network.into());
+
+            Ok(Some(serde_yaml::to_string(&netplan)?))
+        } else {
+            Ok(None)
+        }
     }
 }
 

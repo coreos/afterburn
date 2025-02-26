@@ -154,3 +154,128 @@ fn test_invalid_user_data() {
     assert!(config.hostname().unwrap().is_none());
     assert_eq!(config.ssh_keys().unwrap(), vec![]);
 }
+
+#[test]
+fn test_network_kargs() {
+    let config = ProxmoxVECloudConfig::try_new(Path::new("tests/fixtures/proxmoxve/static"))
+        .expect("cannot parse config");
+
+    let kargs = config.rd_network_kargs().expect("cannot get network kargs");
+    assert!(kargs.is_some());
+    let kargs = kargs.unwrap();
+
+    // Check static IP configuration with gateway
+    assert!(kargs.contains("ip=192.168.1.1::192.168.1.254:255.255.255.0"));
+    assert!(kargs.contains("ip=2001:db8:85a3::8a2e:370:0::2001:db8:85a3::8a2e:370:9999:24"));
+
+    // Check nameservers
+    assert!(kargs.contains("nameserver=1.1.1.1,8.8.8.8"));
+}
+
+#[test]
+fn test_network_kargs_dhcp() {
+    let config = ProxmoxVECloudConfig::try_new(Path::new("tests/fixtures/proxmoxve/dhcp"))
+        .expect("cannot parse config");
+
+    let kargs = config.rd_network_kargs().expect("cannot get network kargs");
+    assert!(kargs.is_some());
+    let kargs = kargs.unwrap();
+
+    // Check DHCP configuration
+    assert!(kargs.contains("ip=dhcp"));
+
+    // Check nameservers
+    assert!(kargs.contains("nameserver=1.1.1.1,8.8.8.8"));
+}
+
+#[test]
+fn test_network_kargs_no_gateway() {
+    let config =
+        ProxmoxVECloudConfig::try_new(Path::new("tests/fixtures/proxmoxve/static-no-gateway"))
+            .expect("cannot parse config");
+
+    let kargs = config.rd_network_kargs().expect("cannot get network kargs");
+    assert!(kargs.is_some());
+    let kargs = kargs.unwrap();
+
+    // Check static IP configuration without gateway
+    assert!(kargs.contains("ip=192.168.1.1:::255.255.255.0"));
+
+    // Check nameservers
+    assert!(kargs.contains("nameserver=1.1.1.1,8.8.8.8"));
+}
+
+#[test]
+fn test_netplan_config_static() {
+    let config = ProxmoxVECloudConfig::try_new(Path::new("tests/fixtures/proxmoxve/static"))
+        .expect("cannot parse config");
+
+    let netplan = config.netplan_config().expect("cannot get netplan config");
+    assert!(netplan.is_some());
+    let netplan = netplan.unwrap();
+
+    // Parse the YAML to verify its structure
+    let parsed: serde_yaml::Value = serde_yaml::from_str(&netplan).expect("invalid YAML");
+
+    // Check network configuration
+    let network = &parsed["network"];
+    assert!(network.is_mapping());
+
+    // Check ethernet interfaces
+    let ethernets = &network["ethernets"];
+    assert!(ethernets.is_mapping());
+
+    // Check eth0 configuration
+    let eth0 = &ethernets["eth0"];
+    assert!(eth0.is_mapping());
+
+    // Verify static addresses
+    let addresses = eth0["addresses"].as_sequence().unwrap();
+    assert!(addresses.contains(&serde_yaml::Value::String("192.168.1.1/24".into())));
+    assert!(addresses.contains(&serde_yaml::Value::String(
+        "2001:db8:85a3::8a2e:370:0/24".into()
+    )));
+
+    // Verify nameservers
+    let nameservers = &eth0["nameservers"]["addresses"];
+    assert!(nameservers
+        .as_sequence()
+        .unwrap()
+        .contains(&serde_yaml::Value::String("1.1.1.1".into())));
+    assert!(nameservers
+        .as_sequence()
+        .unwrap()
+        .contains(&serde_yaml::Value::String("8.8.8.8".into())));
+}
+
+#[test]
+fn test_netplan_config_dhcp() {
+    let config = ProxmoxVECloudConfig::try_new(Path::new("tests/fixtures/proxmoxve/dhcp"))
+        .expect("cannot parse config");
+
+    let netplan = config.netplan_config().expect("cannot get netplan config");
+    assert!(netplan.is_some());
+    let netplan = netplan.unwrap();
+
+    // Parse the YAML to verify its structure
+    let parsed: serde_yaml::Value = serde_yaml::from_str(&netplan).expect("invalid YAML");
+
+    // Check network configuration
+    let network = &parsed["network"];
+    let ethernets = &network["ethernets"];
+    let eth0 = &ethernets["eth0"];
+
+    // Verify DHCP configuration
+    assert_eq!(eth0["dhcp4"], serde_yaml::Value::Bool(true));
+
+    // Verify nameservers
+    let nameservers = &eth0["nameservers"]["addresses"];
+    assert!(nameservers
+        .as_sequence()
+        .unwrap()
+        .contains(&serde_yaml::Value::String("1.1.1.1".into())));
+    assert!(nameservers
+        .as_sequence()
+        .unwrap()
+        .contains(&serde_yaml::Value::String("8.8.8.8".into())));
+}
