@@ -12,6 +12,7 @@ Minor changes:
 
 - ProxmoxVE: Fixed instance boot without config drive
 - OpenStack: Support config drive without EC2 metadata
+- Bump `tempfile` dependency from 3.16.0 to 3.17.1
 
 Packaging changes:
 
