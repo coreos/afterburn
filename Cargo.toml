@@ -41,7 +41,7 @@ clap = { version = "4", "default-features" = false, "features" = ["std", "cargo"
 ipnetwork = ">= 0.17, < 0.22"
 libflate = "2.1"
 libsystemd = ">= 0.2.1, < 0.8.0"
-mailparse = ">= 0.13, < 0.16"
+mailparse = ">= 0.13, < 0.17"
 maplit = "1.0"
 nix = { version = ">= 0.19, < 0.30", "default-features" = false, "features" = [ "mount", "user"] }
 openssh-keys = ">= 0.5, < 0.7"
