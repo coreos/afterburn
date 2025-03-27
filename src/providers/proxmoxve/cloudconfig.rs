@@ -2,7 +2,7 @@ use crate::{
     network::{self, DhcpSetting, NetworkRoute},
     providers::MetadataProvider,
 };
-use anyhow::Result;
+use anyhow::{Context, Result};
 use ipnetwork::IpNetwork;
 use openssh_keys::PublicKey;
 use pnet_base::MacAddr;
@@ -20,6 +20,7 @@ use std::{
 pub struct ProxmoxVECloudConfig {
     pub meta_data: ProxmoxVECloudMetaData,
     pub user_data: Option<ProxmoxVECloudUserData>,
+    #[allow(dead_code)]
     pub vendor_data: ProxmoxVECloudVendorData,
     pub network_config: ProxmoxVECloudNetworkConfig,
 }
@@ -182,6 +183,141 @@ impl MetadataProvider for ProxmoxVECloudConfig {
         }
 
         Ok(interfaces)
+    }
+
+    fn rd_network_kargs(&self) -> Result<Option<String>> {
+        let mut kargs = Vec::new();
+
+        if let Ok(networks) = self.networks() {
+            for iface in networks {
+                // Add IP configuration if static
+                for addr in iface.ip_addresses {
+                    match addr {
+                        IpNetwork::V4(network) => {
+                            if let Some(gateway) = iface
+                                .routes
+                                .iter()
+                                .find(|r| r.destination.is_ipv4() && r.destination.prefix() == 0)
+                            {
+                                kargs.push(format!(
+                                    "ip={}::{}:{}",
+                                    network.ip(),
+                                    gateway.gateway,
+                                    network.mask()
+                                ));
+                            } else {
+                                kargs.push(format!("ip={}:::{}", network.ip(), network.mask()));
+                            }
+                        }
+                        IpNetwork::V6(network) => {
+                            if let Some(gateway) = iface
+                                .routes
+                                .iter()
+                                .find(|r| r.destination.is_ipv6() && r.destination.prefix() == 0)
+                            {
+                                kargs.push(format!(
+                                    "ip={}::{}:{}",
+                                    network.ip(),
+                                    gateway.gateway,
+                                    network.prefix()
+                                ));
+                            } else {
+                                kargs.push(format!("ip={}:::{}", network.ip(), network.prefix()));
+                            }
+                        }
+                    }
+                }
+
+                // Add DHCP configuration
+                if let Some(dhcp) = iface.dhcp {
+                    match dhcp {
+                        DhcpSetting::V4 => kargs.push("ip=dhcp".to_string()),
+                        DhcpSetting::V6 => kargs.push("ip=dhcp6".to_string()),
+                        DhcpSetting::Both => kargs.push("ip=dhcp,dhcp6".to_string()),
+                    }
+                }
+
+                // Add nameservers
+                if !iface.nameservers.is_empty() {
+                    let nameservers = iface
+                        .nameservers
+                        .iter()
+                        .map(|ns| ns.to_string())
+                        .collect::<Vec<_>>()
+                        .join(",");
+                    kargs.push(format!("nameserver={}", nameservers));
+                }
+            }
+        }
+
+        if kargs.is_empty() {
+            Ok(None)
+        } else {
+            Ok(Some(kargs.join(" ")))
+        }
+    }
+
+    fn netplan_config(&self) -> Result<Option<String>> {
+        // Convert network config to netplan format
+        if let Ok(networks) = self.networks() {
+            let mut netplan = serde_yaml::Mapping::new();
+            let mut network = serde_yaml::Mapping::new();
+            let mut ethernets = serde_yaml::Mapping::new();
+
+            for iface in networks {
+                let mut eth_config = serde_yaml::Mapping::new();
+
+                // Add DHCP settings
+                if let Some(dhcp) = iface.dhcp {
+                    match dhcp {
+                        DhcpSetting::V4 => {
+                            eth_config.insert("dhcp4".into(), true.into());
+                        }
+                        DhcpSetting::V6 => {
+                            eth_config.insert("dhcp6".into(), true.into());
+                        }
+                        DhcpSetting::Both => {
+                            eth_config.insert("dhcp4".into(), true.into());
+                            eth_config.insert("dhcp6".into(), true.into());
+                        }
+                    }
+                }
+
+                // Add static addresses if any
+                if !iface.ip_addresses.is_empty() {
+                    let addresses: Vec<String> = iface
+                        .ip_addresses
+                        .iter()
+                        .map(|addr| addr.to_string())
+                        .collect();
+                    eth_config.insert("addresses".into(), addresses.into());
+                }
+
+                // Add nameservers if any
+                if !iface.nameservers.is_empty() {
+                    let nameservers: Vec<String> =
+                        iface.nameservers.iter().map(|ns| ns.to_string()).collect();
+                    eth_config.insert(
+                        "nameservers".into(),
+                        serde_yaml::Value::Mapping(serde_yaml::Mapping::from_iter(vec![(
+                            "addresses".into(),
+                            nameservers.into(),
+                        )])),
+                    );
+                }
+
+                if let Some(name) = iface.name {
+                    ethernets.insert(name.into(), eth_config.into());
+                }
+            }
+
+            network.insert("ethernets".into(), ethernets.into());
+            netplan.insert("network".into(), network.into());
+
+            Ok(Some(serde_yaml::to_string(&netplan)?))
+        } else {
+            Ok(None)
+        }
     }
 }
 
