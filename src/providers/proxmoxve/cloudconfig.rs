@@ -34,18 +34,8 @@ pub struct ProxmoxVECloudMetaData {
 #[derive(Debug, Deserialize)]
 pub struct ProxmoxVECloudUserData {
     pub hostname: String,
-    pub manage_etc_hosts: bool,
-    pub fqdn: String,
-    pub chpasswd: ProxmoxVECloudChpasswdConfig,
-    pub users: Vec<String>,
-    pub package_upgrade: bool,
     #[serde(default)]
     pub ssh_authorized_keys: Vec<String>,
-}
-
-#[derive(Debug, Deserialize)]
-pub struct ProxmoxVECloudChpasswdConfig {
-    pub expire: bool,
 }
 
 #[derive(Debug, Deserialize)]
@@ -53,7 +43,6 @@ pub struct ProxmoxVECloudVendorData {}
 
 #[derive(Debug, Deserialize)]
 pub struct ProxmoxVECloudNetworkConfig {
-    pub version: u32,
     pub config: Vec<ProxmoxVECloudNetworkConfigEntry>,
 }
 
@@ -65,8 +54,6 @@ pub struct ProxmoxVECloudNetworkConfigEntry {
     pub mac_address: Option<String>,
     #[serde(default)]
     pub address: Vec<String>,
-    #[serde(default)]
-    pub search: Vec<String>,
     #[serde(default)]
     pub subnets: Vec<ProxmoxVECloudNetworkConfigSubnet>,
 }
