@@ -8,6 +8,8 @@ nav_order: 8
 
 Major changes:
 
+- ProxmoxVE: Add support for static IP configuration from cloud-init
+
 Minor changes:
 
 - ProxmoxVE: Fixed instance boot without config drive
@@ -162,8 +164,8 @@ Changes:
 - providers/gcp: access GCP metadata service by IP address
 - providers/packet: access metadata service over HTTPS
 - cli: don't report an error when --help or --version is specified
-- cli: correctly print version when --version specified 
-- providers: Add PowerVS 
+- cli: correctly print version when --version specified
+- providers: Add PowerVS
 - workflows: bump toolchains; restrict repository access
 
 
@@ -175,7 +177,7 @@ Changes:
 - cargo: update all dependencies
 - *: remove cl-legacy feature
 - ibmcloud: don't ignore I/O error when parsing metadata
-- providers: fix clippy::unnecessary_wraps lint on 1.50 
+- providers: fix clippy::unnecessary_wraps lint on 1.50
 - workflows: update pinned lint toolchain to 1.50.0
 - *: switch from `error-chain` to `anyhow`
 - cli: stop wrapping command-line parse errors
@@ -268,7 +270,7 @@ Changes:
 
 - sshkeys: send structured info to journald
 - ci: test a secondary arch on Travis
-- ci: rust version from 1.39.0 to 1.40.0 
+- ci: rust version from 1.39.0 to 1.40.0
 - makefile: tweak install step
 - providers: add vmware
 - util/cmdline: add helpers for detecting network kargs
@@ -280,7 +282,7 @@ Changes:
 
 Changes:
 
-- cargo: relax dependencies micro versions 
+- cargo: relax dependencies micro versions
 - cargo: switch from deprecated tempdir crate to tempfile
 - providers: add exoscale
 - providers: add ibmcloud-classic as a separate platform
@@ -363,7 +365,7 @@ Changes:
 
 Changes:
 
-- providers/azure: fetch hostname from metadata 
+- providers/azure: fetch hostname from metadata
 - add checkin service files for Azure and Packet
 - metadata: accept "ec2" provider name only in legacy mode
 - bump minimum toolchain to 1.31
@@ -386,7 +388,7 @@ Bugfixes:
 
 - providers/gce: fix panic fetching metadata
 
-Misc: 
+Misc:
 - providers/gce: add basic hostname mock-test
 - rustfmt whole project
 
@@ -493,4 +495,4 @@ and behavior for all providers should be identical to the previous golang
 version.  If it's not, please file a bug in our bug tracker,
 https://github.com/coreos/bugs (or submit a pr!).
 
-Additionally, `coreos-metadata` now supports ssh keys for azure. 
+Additionally, `coreos-metadata` now supports ssh keys for azure.
