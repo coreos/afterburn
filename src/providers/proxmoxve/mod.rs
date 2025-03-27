@@ -29,8 +29,9 @@ mod tests;
 pub fn try_config_drive_else_leave() -> Result<Box<dyn providers::MetadataProvider>> {
     match ProxmoxVEConfigDrive::try_new() {
         Ok(config_drive) => Ok(Box::new(config_drive)),
-        Err(_) => {
-            warn!("failed to locate config-drive - aborting ProxmoxVE provider");
+        Err(e) => {
+            warn!("failed to locate config-drive: {}", e);
+            warn!("aborting ProxmoxVE provider");
             Ok(Box::new(NoopProvider::try_new()?))
         }
     }

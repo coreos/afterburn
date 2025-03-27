@@ -70,11 +70,13 @@ pub struct ProxmoxVECloudNetworkConfigSubnet {
 impl ProxmoxVECloudConfig {
     pub fn try_new(path: &Path) -> Result<Self> {
         let mut user_data = None;
-        let raw_user_data = std::fs::read_to_string(path.join("user-data"))?;
+        let raw_user_data = std::fs::read_to_string(path.join("user-data"))
+            .context("failed to read user-data file")?;
 
         if let Some(first_line) = raw_user_data.split('\n').next() {
             if first_line.starts_with("#cloud-config") {
-                user_data = serde_yaml::from_str(&raw_user_data)?;
+                user_data = serde_yaml::from_str(&raw_user_data)
+                    .context("failed to parse user-data as YAML")?;
             }
         }
 
@@ -86,9 +88,19 @@ impl ProxmoxVECloudConfig {
 
         Ok(Self {
             user_data,
-            meta_data: serde_yaml::from_reader(File::open(path.join("meta-data"))?)?,
-            vendor_data: serde_yaml::from_reader(File::open(path.join("vendor-data"))?)?,
-            network_config: serde_yaml::from_reader(File::open(path.join("network-config"))?)?,
+            meta_data: serde_yaml::from_reader(
+                File::open(path.join("meta-data")).context("failed to open meta-data file")?,
+            )
+            .context("failed to parse meta-data as YAML")?,
+            vendor_data: serde_yaml::from_reader(
+                File::open(path.join("vendor-data")).context("failed to open vendor-data file")?,
+            )
+            .context("failed to parse vendor-data as YAML")?,
+            network_config: serde_yaml::from_reader(
+                File::open(path.join("network-config"))
+                    .context("failed to open network-config file")?,
+            )
+            .context("failed to parse network-config as YAML")?,
         })
     }
 }
