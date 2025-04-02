@@ -140,15 +140,13 @@ impl Azure {
         // Make sure WireServer API version is compatible with our logic.
         azure
             .is_fabric_compatible(MS_VERSION)
-            .map_err(|e| {
+            .inspect_err(|_e| {
                 let is_root = Uid::current().is_root();
                 if !is_root {
                     // Firewall rules may be blocking requests from non-root
                     // processes, see https://github.com/coreos/bugs/issues/2468.
                     warn!("unable to reach Azure endpoints, please check whether firewall rules are blocking access to them");
                 }
-
-                e
             })
             .context("failed version compatibility check")?;
 
