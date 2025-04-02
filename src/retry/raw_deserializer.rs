@@ -43,7 +43,7 @@ where
     T::deserialize(&mut deserializer).context("error deserializing")
 }
 
-impl<'de, 'a> de::Deserializer<'de> for &'a mut RawDeserializer {
+impl<'de> de::Deserializer<'de> for &mut RawDeserializer {
     type Error = de::value::Error;
 
     fn deserialize_any<V>(self, visitor: V) -> result::Result<V::Value, Self::Error>

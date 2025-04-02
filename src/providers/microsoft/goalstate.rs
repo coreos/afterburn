@@ -14,10 +14,7 @@ pub(crate) struct GoalState {
 impl GoalState {
     /// Return the certificates endpoint (if any).
     pub(crate) fn certs_endpoint(&self) -> Option<String> {
-        let role = match self.container.role_instance_list.role_instances.first() {
-            Some(r) => r,
-            None => return None,
-        };
+        let role = self.container.role_instance_list.role_instances.first()?;
 
         role.configuration.certificates.clone()
     }

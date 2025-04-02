@@ -32,7 +32,7 @@ pub(crate) fn write_network_kargs(kargs: &str) -> Result<()> {
         .write_all(kargs.as_bytes())
         .context("failed to write network arguments fragment")?;
     fragment_file
-        .write_all(&[b'\n'])
+        .write_all(b"\n")
         .context("failed to write trailing newline")?;
 
     Ok(())
