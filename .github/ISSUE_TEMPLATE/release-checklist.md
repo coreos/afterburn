@@ -127,21 +127,11 @@ Push access to the upstream repository is required in order to publish the new t
   - [ ] [submit a fast-track](https://github.com/coreos/fedora-coreos-config/actions/workflows/add-override.yml) for FCOS testing-devel
   - [ ] [submit a fast-track](https://github.com/coreos/fedora-coreos-config/actions/workflows/add-override.yml) for FCOS next-devel if it is [open](https://github.com/coreos/fedora-coreos-pipeline/blob/main/next-devel/README.md)
 
-- RHCOS packaging:
-  - [ ] update the [spec file](https://gitlab.com/redhat/rhel/rpms/rust-afterburn)
-    - bump the `Version`
-    - switch the `Release` back to `1%{?dist}`
-    - remove any patches obsoleted by the new release
-    - update changelog
-  - [ ] run `spectool -g -S rust-afterburn.spec`
-  - [ ] run `kinit your_account@IPA.REDHAT.COM`
-  - [ ] run `rhpkg new-sources $(spectool -S rust-afterburn.spec | sed 's:.*/::')`
-  - [ ] PR the changes
-  - [ ] get the PR reviewed and merge it
-  - [ ] update your local repo and run `rhpkg build`
-
 CentOS Stream 9 packaging:
   - [ ] Create a `rebase-c9s-afterburn` issue in the internal team-operations repo and follow the steps there
+
+CentOS Stream 10 packaging:
+  - [ ] Create a `rebase-c10s-afterburn` issue in the internal team-operations repo and follow the steps there
 
 [cargo-release]: https://github.com/sunng87/cargo-release
 [rustup]: https://rustup.rs/
