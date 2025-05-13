@@ -12,6 +12,12 @@ Minor changes:
 
 Packaging changes:
 
+## Afterburn 5.8.1 
+
+Major changes:
+
+- Re-release of 5.8.0 due to error when performing 5.8.0 release
+
 ## Afterburn 5.8.0 
 
 Major changes:
