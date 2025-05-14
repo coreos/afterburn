@@ -17,6 +17,8 @@ jobs:
 
 - job: propose_downstream
   trigger: release
+  manual_trigger: true
+  identifier: "propose-fedora-pr"
   packages: [afterburn-fedora]
   dist_git_branches:
     rawhide:
