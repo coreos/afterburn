@@ -12,6 +12,13 @@ Minor changes:
 
 Packaging changes:
 
+## Afterburn 5.8.2
+
+Major changes:
+
+- Add Packit support
+
+
 ## Afterburn 5.8.1 
 
 Major changes:
