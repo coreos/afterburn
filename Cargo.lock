@@ -37,7 +37,7 @@ dependencies = [
  "mailparse",
  "maplit",
  "mockito",
- "nix 0.29.0",
+ "nix 0.30.1",
  "openssh-keys",
  "openssl",
  "pnet_base",
