@@ -1,0 +1,37 @@
+# See the documentation for more information:
+# https://packit.dev/docs/configuration/
+upstream_package_name: afterburn
+upstream_tag_template: v{version}
+
+packages:
+  afterburn-fedora:
+    specfile_path: rust-afterburn.spec
+    downstream_package_name: rust-afterburn
+    actions:
+      post-upstream-clone:
+        - wget https://src.fedoraproject.org/rpms/rust-afterburn/raw/rawhide/f/rust-afterburn.spec
+      changelog-entry:
+        - bash -c 'echo "- New upstream release"'
+
+jobs:
+
+- job: propose_downstream
+  trigger: release
+  packages: [afterburn-fedora]
+  dist_git_branches:
+    rawhide:
+      fast_forward_merge_into: [fedora-latest-stable]
+
+- job: koji_build
+  trigger: commit
+  packages: [afterburn-fedora]
+  dist_git_branches:
+    - fedora-development
+    - fedora-latest-stable
+
+- job: bodhi_update
+  trigger: commit
+  packages: [afterburn-fedora]
+  dist_git_branches:
+    - fedora-development
+    - fedora-latest-stable
