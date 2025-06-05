@@ -61,6 +61,10 @@ The following platforms are supported, with a different set of features availabl
   * Features:
       - Attributes
       - SSH Keys
+* oraclecloud
+  - Attributes
+  - Hostname
+  - SSH Keys
 * packet
   - Attributes
   - First-boot check-in

@@ -37,6 +37,7 @@ pub mod kubevirt;
 pub mod microsoft;
 pub mod noop;
 pub mod openstack;
+pub mod oraclecloud;
 pub mod packet;
 pub mod powervs;
 pub mod proxmoxve;
