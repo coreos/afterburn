@@ -3,6 +3,11 @@
 # ex: ts=8 sw=4 sts=4 et filetype=sh
 
 check() {
+    # Ignore if building kdump initrd
+    if [[ $hostonly_mode == "strict" ]]; then
+        return 1
+    fi
+
     return 0
 }
 
