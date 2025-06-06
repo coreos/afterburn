@@ -3,7 +3,11 @@
 # ex: ts=8 sw=4 sts=4 et filetype=sh
 
 check() {
-    return 0
+    # Return 255 so this module is only included if some other module depends on it
+    # See: https://github.com/coreos/fedora-coreos-tracker/issues/1832
+    #
+    # This module requires integration with the rest of the initramfs, so don't include it by default.
+    return 255
 }
 
 depends() {
