@@ -29,6 +29,8 @@ use crate::retry;
 #[cfg(test)]
 mod mock_tests;
 
+const ORACLECLOUD_METADATA_BASE_URL: &str = "http://169.254.169.254/opc/v2";
+
 #[derive(Clone, Debug)]
 pub struct OracleCloudProvider {
     instance: Instance,
@@ -46,7 +48,7 @@ impl OracleCloudProvider {
     }
 
     fn endpoint_for(name: &str) -> String {
-        format!("http://169.254.169.254/opc/v2/{name}")
+        format!("{ORACLECLOUD_METADATA_BASE_URL}/{name}")
     }
 
     fn fetch_instance_metadata(client: &retry::Client) -> Result<Instance> {

@@ -8,6 +8,8 @@ nav_order: 8
 
 Major changes:
 
+- Add support for Oracle Cloud Infrastructure
+
 Minor changes:
 
 Packaging changes:
