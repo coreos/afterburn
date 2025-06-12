@@ -50,7 +50,7 @@ pnet_base = ">= 0.26, < 0.36"
 pnet_datalink = ">= 0.26, < 0.36"
 reqwest = { version = ">= 0.10, < 0.13", features = [ "blocking" ] }
 serde =  { version = "1.0", features = [ "derive" ] }
-serde-xml-rs = ">= 0.4, < 0.7"
+serde-xml-rs = ">= 0.4, < 0.9"
 serde_json = "1.0"
 serde_yaml = ">= 0.8, < 0.10"
 slog = { version = "2.7", features = ["max_level_trace", "release_max_level_info"] }
