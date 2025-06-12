@@ -9,6 +9,7 @@ nav_order: 8
 Major changes:
 
 - Add support for Oracle Cloud Infrastructure
+- dracut: don't include module by default
 
 Minor changes:
 
