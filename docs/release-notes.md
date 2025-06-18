@@ -13,6 +13,8 @@ Major changes:
 
 Minor changes:
 
+- Add TMT test structure and basic smoke test
+
 Packaging changes:
 
 ## Afterburn 5.8.2

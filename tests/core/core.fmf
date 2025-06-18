@@ -1,0 +1,7 @@
+summary: runs afterburn --version and checks return code
+tag:
+  - smoke
+test: |
+  set -x -e -o pipefail
+  source /tmp/afterburn_bin_dir
+  ${AFTERBURN_BIN_DIR}/afterburn --version

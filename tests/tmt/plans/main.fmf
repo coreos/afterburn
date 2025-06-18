@@ -1,0 +1,32 @@
+# This prepare is used to control when afterburn is installed using
+# the distribution package or when it is built from source in the test environment
+prepare:
+  - name: Set AFTERBURN_BIN_DIR when built from source
+    when: use_built_from_src is defined and use_built_from_src == true
+    how: shell
+    script: |
+      # This is a workaround script for the fact that the afterburn binary is not in the PATH
+      # when running the tests in the tmt environment when it is built from source.
+      # The afterburn binary is located in the tmt run instance directory and it needed
+      # to set a environment variable to point to the afterburn binary location.
+      set -x -e -o pipefail
+      echo "Preparing the test environment"
+      AFTERBURN_BIN_NAME="afterburn"
+      PARENT_DIR=$(dirname "${TMT_TREE}")
+      AFTERBURN_BIN_FULL_PATH=$(find "${PARENT_DIR}" -type f -name "${AFTERBURN_BIN_NAME}")
+      if [ -z "${AFTERBURN_BIN_FULL_PATH}" ]; then
+          echo "afterburn file not found."
+          exit 1
+      fi
+      AFTERBURN_BIN_DIR=$(dirname "${AFTERBURN_BIN_FULL_PATH}")
+      echo "AFTERBURN_BIN_DIR=${AFTERBURN_BIN_DIR}" > /tmp/afterburn_bin_dir
+  - name: Install afterburn package
+    when: use_built_from_src is not defined or use_built_from_src == false
+    how: install
+    package: afterburn
+  - name: Set AFTERBURN_BIN_DIR when installed package
+    when: use_built_from_src is not defined or use_built_from_src == false
+    how: shell
+    script: |
+      set -x -e -o pipefail
+      echo "AFTERBURN_BIN_DIR=/usr/bin"  > /tmp/afterburn_bin_dir
