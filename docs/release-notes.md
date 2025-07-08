@@ -4,7 +4,16 @@ nav_order: 8
 
 # Release notes
 
-## Upcoming Afterburn 5.9.0 (unreleased)
+## Upcoming Afterburn 5.10.0 (unreleased)
+
+Major changes:
+
+Minor changes:
+
+Packaging changes:
+
+
+## Afterburn 5.9.0
 
 Major changes:
 
@@ -14,8 +23,6 @@ Major changes:
 Minor changes:
 
 - Add TMT test structure and basic smoke test
-
-Packaging changes:
 
 ## Afterburn 5.8.2
 
