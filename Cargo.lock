@@ -25,19 +25,19 @@ checksum = "aae1277d39aeec15cb388266ecc24b11c80469deae6067e17a1a7aa9e5c1f234"
 
 [[package]]
 name = "afterburn"
-version = "5.8.2"
+version = "5.9.0"
 dependencies = [
  "anyhow",
  "base64 0.22.1",
  "cfg-if",
  "clap",
- "ipnetwork 0.21.1",
+ "ipnetwork",
  "libflate",
  "libsystemd",
  "mailparse",
  "maplit",
  "mockito",
- "nix 0.30.1",
+ "nix 0.29.0",
  "openssh-keys",
  "openssl",
  "pnet_base",
@@ -1093,12 +1093,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ipnetwork"
-version = "0.21.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cf370abdafd54d13e54a620e8c3e1145f28e46cc9d704bc6d94414559df41763"
-
-[[package]]
 name = "iri-string"
 version = "0.7.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1544,7 +1538,7 @@ version = "0.35.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e79e70ec0be163102a332e1d2d5586d362ad76b01cec86f830241f2b6452a7b7"
 dependencies = [
- "ipnetwork 0.20.0",
+ "ipnetwork",
  "libc",
  "pnet_base",
  "pnet_sys",
