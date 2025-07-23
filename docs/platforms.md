@@ -81,6 +81,10 @@ The following platforms are supported, with a different set of features availabl
   - Attributes
   - Boot check-in
   - SSH keys
+* upcloud
+  - Attributes
+  - Hostname
+  - SSH keys
 * vmware
   - Custom network command-line arguments
 * vultr

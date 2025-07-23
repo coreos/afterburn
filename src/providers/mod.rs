@@ -42,6 +42,7 @@ pub mod packet;
 pub mod powervs;
 pub mod proxmoxve;
 pub mod scaleway;
+pub mod upcloud;
 pub mod vmware;
 pub mod vultr;
 

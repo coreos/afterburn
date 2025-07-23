@@ -15,6 +15,7 @@ ConditionKernelCommandLine=|ignition.platform.id=kubevirt
 ConditionKernelCommandLine=|ignition.platform.id=oraclecloud
 ConditionKernelCommandLine=|ignition.platform.id=proxmoxve
 ConditionKernelCommandLine=|ignition.platform.id=scaleway
+ConditionKernelCommandLine=|ignition.platform.id=upcloud
 ConditionKernelCommandLine=|ignition.platform.id=vultr
 
 # We order this service after sysroot has been mounted

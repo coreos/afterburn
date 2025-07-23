@@ -36,6 +36,7 @@ use crate::providers::packet::PacketProvider;
 use crate::providers::powervs::PowerVSProvider;
 use crate::providers::proxmoxve;
 use crate::providers::scaleway::ScalewayProvider;
+use crate::providers::upcloud::UpCloudProvider;
 use crate::providers::vmware::VmwareProvider;
 use crate::providers::vultr::VultrProvider;
 
@@ -75,6 +76,7 @@ pub fn fetch_metadata(provider: &str) -> Result<Box<dyn providers::MetadataProvi
         "powervs" => box_result!(PowerVSProvider::try_new()?),
         "proxmoxve" => proxmoxve::try_config_drive_else_leave(),
         "scaleway" => box_result!(ScalewayProvider::try_new()?),
+        "upcloud" => box_result!(UpCloudProvider::try_new()?),
         "vmware" => box_result!(VmwareProvider::try_new()?),
         "vultr" => box_result!(VultrProvider::try_new()?),
         _ => bail!("unknown provider '{}'", provider),
