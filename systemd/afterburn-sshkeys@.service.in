@@ -21,6 +21,7 @@ ConditionKernelCommandLine=|ignition.platform.id=proxmoxve
 ConditionKernelCommandLine=|ignition.platform.id=scaleway
 ConditionKernelCommandLine=|ignition.platform.id=packet
 ConditionKernelCommandLine=|ignition.platform.id=powervs
+ConditionKernelCommandLine=|ignition.platform.id=upcloud
 ConditionKernelCommandLine=|ignition.platform.id=vultr
 
 [Service]
