@@ -120,7 +120,10 @@ fn test_network_static() {
                 mac_address: Some(MacAddr::from_str("01:23:45:67:89:99").unwrap()),
                 path: None,
                 priority: 20,
-                nameservers: vec![],
+                nameservers: vec![
+                    IpAddr::from_str("1.1.1.1").unwrap(),
+                    IpAddr::from_str("8.8.8.8").unwrap()
+                ],
                 ip_addresses: vec![
                     IpNetwork::from_str("192.168.42.1/24").unwrap(),
                     IpNetwork::from_str("2001:0db8:85a3:0000:0000:8a2e:4242:0/24").unwrap(),
@@ -238,6 +241,20 @@ fn test_netplan_config_static() {
 
     // Verify nameservers
     let nameservers = &eth0["nameservers"]["addresses"];
+    assert!(nameservers
+        .as_sequence()
+        .unwrap()
+        .contains(&serde_yaml::Value::String("1.1.1.1".into())));
+    assert!(nameservers
+        .as_sequence()
+        .unwrap()
+        .contains(&serde_yaml::Value::String("8.8.8.8".into())));
+
+
+    let eth1 = &ethernets["eth1"];
+    assert!(eth1.is_mapping());
+
+    let nameservers = &eth1["nameservers"]["addresses"];
     assert!(nameservers
         .as_sequence()
         .unwrap()
