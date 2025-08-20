@@ -14,19 +14,17 @@
 
 //! Azure provider, metadata and wireserver fetcher.
 
-use super::crypto;
 use super::goalstate;
 
 use std::collections::HashMap;
 use std::net::IpAddr;
 
-use anyhow::{anyhow, bail, Context, Result};
+use anyhow::{anyhow, Context, Result};
 use openssh_keys::PublicKey;
 use reqwest::header::{HeaderName, HeaderValue};
 use serde::Deserialize;
 use slog_scope::warn;
 
-use self::crypto::x509;
 use crate::providers::MetadataProvider;
 use crate::retry;
 use nix::unistd::Uid;
@@ -36,18 +34,9 @@ mod mock_tests;
 
 static HDR_AGENT_NAME: &str = "x-ms-agent-name";
 static HDR_VERSION: &str = "x-ms-version";
-static HDR_CIPHER_NAME: &str = "x-ms-cipher-name";
-static HDR_CERT: &str = "x-ms-guest-agent-public-x509-cert";
 
 const MS_AGENT_NAME: &str = "com.coreos.afterburn";
 const MS_VERSION: &str = "2012-11-30";
-const SMIME_HEADER: &str = "\
-MIME-Version:1.0
-Content-Disposition: attachment; filename=/home/core/encrypted-ssh-cert.pem
-Content-Type: application/x-pkcs7-mime; name=/home/core/encrypted-ssh-cert.pem
-Content-Transfer-Encoding: base64
-
-";
 
 /// This is a known working wireserver endpoint within Azure.
 /// See: https://blogs.msdn.microsoft.com/mast/2015/05/18/what-is-the-ip-address-168-63-129-16/
@@ -223,55 +212,6 @@ impl Azure {
         "http://169.254.169.254".into()
     }
 
-    // Fetch the certificate.
-    fn fetch_cert(&self, certs_endpoint: String, mangled_pem: impl AsRef<str>) -> Result<String> {
-        let certs: goalstate::CertificatesFile = self
-            .client
-            .get(retry::Xml, certs_endpoint)
-            .header(
-                HeaderName::from_static(HDR_CIPHER_NAME),
-                HeaderValue::from_static("DES_EDE3_CBC"),
-            )
-            .header(
-                HeaderName::from_static(HDR_CERT),
-                HeaderValue::from_str(mangled_pem.as_ref())?,
-            )
-            .send()
-            .context("failed to get certificates")?
-            .ok_or_else(|| anyhow!("failed to get certificates: not found"))?;
-
-        // the cms decryption expects it to have MIME information on the top
-        // since cms is really for email attachments....
-        let mut smime = String::from(SMIME_HEADER);
-        smime.push_str(&certs.data);
-
-        Ok(smime)
-    }
-
-    // put it all together
-    fn get_ssh_pubkey(&self, certs_endpoint: String) -> Result<Option<PublicKey>> {
-        // we have to generate the rsa public/private keypair and the x509 cert
-        // that we use to make the request. this is equivalent to
-        // `openssl req -x509 -nodes -subj /CN=LinuxTransport -days 365 -newkey rsa:2048 -keyout private.pem -out cert.pem`
-        let (x509, pkey) = x509::generate_cert(&x509::Config::new(2048, 365))
-            .context("failed to generate keys")?;
-
-        // mangle the pem file for the request
-        let mangled_pem = crypto::mangle_pem(&x509).context("failed to mangle pem")?;
-
-        // fetch the encrypted cms blob from the certs endpoint
-        let smime = self
-            .fetch_cert(certs_endpoint, mangled_pem)
-            .context("failed to fetch certificate")?;
-
-        // decrypt the cms blob
-        let p12 = crypto::decrypt_cms(smime.as_bytes(), &pkey, &x509)
-            .context("failed to decrypt cms blob")?;
-
-        // convert that to the OpenSSH public key format
-        crypto::p12_to_ssh_pubkey(&p12).context("failed to convert pkcs12 blob to ssh pubkey")
-    }
-
     #[cfg(test)]
     fn get_attributes(&self) -> Result<Attributes> {
         Ok(Attributes {
@@ -351,6 +291,52 @@ impl Azure {
         Ok(vmsize)
     }
 
+    /// Fetch SSH public keys from Azure Instance Metadata Service (IMDS)
+    /// https://learn.microsoft.com/en-us/azure/virtual-machines/instance-metadata-service
+    fn fetch_ssh_keys(&self) -> Result<Vec<PublicKey>> {
+        const URL: &str = "metadata/instance/compute/publicKeys?api-version=2021-02-01";
+        let url = format!("{}/{}", Self::metadata_endpoint(), URL);
+
+        let body = self
+            .client
+            .clone()
+            .header(
+                HeaderName::from_static("metadata"),
+                HeaderValue::from_static("true"),
+            )
+            .get(retry::Raw, url)
+            .send::<String>()
+            .context("failed to query IMDS for publicKeys")?
+            .ok_or_else(|| anyhow::anyhow!("IMDS did not return a publicKeys payload"))?;
+
+        #[derive(Debug, Deserialize)]
+        struct ImdsSshKey {
+            #[serde(rename = "keyData")]
+            key_data: String,
+            path: String,
+        }
+
+        let items: Vec<ImdsSshKey> =
+            serde_json::from_str(&body).context("failed to parse IMDS publicKeys JSON")?;
+
+        let keys: Vec<PublicKey> = items
+            .into_iter()
+            .map(|item| {
+                let kd = item
+                    .key_data
+                    .replace("\r\n", "")
+                    .replace('\n', "")
+                    .trim()
+                    .to_string();
+
+                PublicKey::parse(&kd)
+                    .with_context(|| format!("failed to parse IMDS key at path {}", item.path))
+            })
+            .collect::<Result<_>>()?;
+
+        Ok(keys)
+    }
+
     /// Report ready state to the WireServer.
     ///
     /// This is used to signal to the cloud platform that the VM has
@@ -394,20 +380,7 @@ impl MetadataProvider for Azure {
     }
 
     fn ssh_keys(&self) -> Result<Vec<PublicKey>> {
-        let goalstate = self.fetch_goalstate()?;
-        let certs_endpoint = match goalstate.certs_endpoint() {
-            Some(ep) => ep,
-            None => return Ok(vec![]),
-        };
-
-        if certs_endpoint.is_empty() {
-            bail!("unexpected empty certificates endpoint");
-        }
-
-        let maybe_key = self.get_ssh_pubkey(certs_endpoint)?;
-        let key: Vec<PublicKey> = maybe_key.into_iter().collect();
-
-        Ok(key)
+        self.fetch_ssh_keys()
     }
 
     fn boot_checkin(&self) -> Result<()> {
