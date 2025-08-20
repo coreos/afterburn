@@ -67,6 +67,18 @@ static GOALSTATE_BODY_NO_CERTS: &str = r#"<?xml version="1.0" encoding="utf-8"?>
 </GoalState>
 "#;
 
+/// IMDS publicKeys response body (with a valid SSH key)
+static IMDS_BODY_WITH_KEY: &str = r#"
+[
+  {
+    "keyData": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCzTI2wld1/Ib3q2N8ynJoTk+1PfanCoPdcYXxd7k8DK/T7BlvD3AHajUiqJ4Im2GfyMCloBkJGbI4/utt7qCF6y3Vb5Suxdd5/nXpAr75ocHkg43TzZdU5zSPHdgLefe2VEKXokAobU13wHAwj6d6bJaTpAJx5MkQJAb88HD1LtBFMz5C8b+wVloxB+Zusj0dX/Bc+rZFo62KW50BoaWxDzO5jN18DGuamcN34WBCkMmRvVrKGQaOru+rBVnxeQtVw+hygq7rb6zekar9zyEyW5IvaZiRkqC60QiycV7I9fIxRJfp8FvrlusiVyWpsLILL3CxK95c8Sju4qQN6AofTh52XJtFkdP8ngXKrobXqrcLS5GaEnAo6BZowUt9cpr7HdmdqJmYk3+ueJOrLiAkRE2Gguc28sbpQl/ok4vHWhXEi/GzK+FK0lrN5L7LY5D4MfJ1XZ5sZw4ulJXjiB3x/aKLT0lLFc3lNitl+UPw46Lp1PTR0dJkYNyvZvEuWLgk= core@host",
+    "path": "/home/core/.ssh/authorized_keys"
+  }
+]"#;
+
+/// IMDS publicKeys response body (with no ssh keys)
+static IMDS_BODY_NO_KEYS: &str = r#"[]"#;
+
 fn mock_fab_version(server: &mut mockito::Server) -> mockito::Mock {
     let fab_version = "/?comp=versions";
     let ver_body = r#"<?xml version="1.0" encoding="utf-8"?>
@@ -107,6 +119,20 @@ fn mock_goalstate(server: &mut mockito::Server, with_certificates: bool) -> mock
     server
         .mock("GET", fab_goalstate)
         .with_body(gs_body)
+        .with_status(200)
+        .create()
+}
+
+/// https://learn.microsoft.com/en-us/azure/virtual-machines/instance-metadata-service
+fn mock_imds_public_keys(server: &mut mockito::Server, imds_body: &str) -> mockito::Mock {
+    server
+        .mock(
+            "GET",
+            "/metadata/instance/compute/publicKeys?api-version=2021-02-01",
+        )
+        .match_header("Metadata", "true")
+        .with_header("content-type", "application/json")
+        .with_body(imds_body)
         .with_status(200)
         .create()
 }
@@ -263,4 +289,36 @@ fn test_goalstate_no_certs() {
     assert_eq!(goalstate.certs_endpoint(), None);
 
     server.reset();
+}
+
+#[test]
+fn test_imds_fetch_ssh_keys() {
+    let mut server = mockito::Server::new();
+    let _m_version = mock_fab_version(&mut server);
+    let m_imds = mock_imds_public_keys(&mut server, IMDS_BODY_WITH_KEY);
+
+    let client = retry::Client::try_new()
+        .unwrap()
+        .mock_base_url(server.url());
+    let provider = azure::Azure::with_client(Some(client)).unwrap();
+    let keys = provider.fetch_ssh_keys().unwrap();
+
+    m_imds.assert();
+    assert_eq!(keys.len(), 1);
+}
+
+#[test]
+fn test_imds_fetch_empty_ssh_keys() {
+    let mut server = mockito::Server::new();
+    let _m_version = mock_fab_version(&mut server);
+    let m_imds = mock_imds_public_keys(&mut server, IMDS_BODY_NO_KEYS);
+
+    let client = retry::Client::try_new()
+        .unwrap()
+        .mock_base_url(server.url());
+    let provider = azure::Azure::with_client(Some(client)).unwrap();
+    let keys = provider.fetch_ssh_keys().unwrap();
+
+    m_imds.assert();
+    assert!(keys.is_empty());
 }

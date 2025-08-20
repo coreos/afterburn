@@ -11,6 +11,7 @@ Major changes:
 - Add support for UpCloud
 
 Minor changes:
+- Azure: fetch SSH keys from IMDS instead of deprecated certificates endpoint.
 
 Packaging changes:
 
