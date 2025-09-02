@@ -94,6 +94,7 @@ pub(crate) struct SharedConfig {
 #[derive(Debug, Deserialize, Clone)]
 #[allow(dead_code)]
 pub(crate) struct Incarnation {
+    #[serde(rename = "@instance")]
     pub instance: String,
 }
 
@@ -107,7 +108,9 @@ pub(crate) struct Instances {
 #[derive(Debug, Deserialize, Clone)]
 #[allow(dead_code)]
 pub(crate) struct Instance {
+    #[serde(rename = "@id")]
     pub id: String,
+    #[serde(rename = "@address")]
     pub address: String,
     #[serde(rename = "InputEndpoints")]
     pub input_endpoints: InputEndpoints,
