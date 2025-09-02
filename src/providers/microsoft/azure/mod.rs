@@ -212,15 +212,6 @@ impl Azure {
         "http://169.254.169.254".into()
     }
 
-    #[cfg(test)]
-    fn get_attributes(&self) -> Result<Attributes> {
-        Ok(Attributes {
-            virtual_ipv4: Some(Azure::get_fabric_address()),
-            dynamic_ipv4: Some(Azure::get_fabric_address()),
-        })
-    }
-
-    #[cfg(not(test))]
     fn get_attributes(&self) -> Result<Attributes> {
         use std::net::SocketAddr;
 
