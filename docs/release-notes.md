@@ -12,6 +12,7 @@ Major changes:
 
 Minor changes:
 - Azure: fetch SSH keys from IMDS instead of deprecated certificates endpoint.
+- Azure: fix parsing of SharedConfig XML document with current serde-xml-rs
 
 Packaging changes:
 
