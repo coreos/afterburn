@@ -79,6 +79,25 @@ static IMDS_BODY_WITH_KEY: &str = r#"
 /// IMDS publicKeys response body (with no ssh keys)
 static IMDS_BODY_NO_KEYS: &str = r#"[]"#;
 
+/// SharedConfig response body matching the one in GOALSTATE_BODY_NO_CERTS
+static SHARED_CONFIG: &str = r#"<?xml version="1.0" encoding="utf-8"?>
+<SharedConfig version="1.0.0.0" goalStateIncarnation="42">
+  <Deployment name="f6cd1d7ef1644557b9059345e5ba890c" guid="{a511aa6d-29e7-4f53-8788-55655dfe848f}" incarnation="0" isNonCancellableTopologyChangeEnabled="false">
+    <Service name="__lars-test-1Service" guid="{00000000-0000-0000-0000-000000000000}" />
+    <ServiceInstance name="f6cd1d7ef1644557b9059345e5ba890c.0" guid="{5c5f79fd-84ef-4026-9876-5bbae5c16b36}" />
+  </Deployment>
+  <Incarnation number="42" instance="lars-test-1" guid="{fdef97af-2d10-48cf-8000-d778cc46f999}" />
+  <Role guid="{8f2866ba-9a32-e34b-0ebb-d68c961b6bb9}" name="lars-test-1" />
+  <OutputEndpoints />
+  <Instances>
+    <Instance id="lars-test-1" address="100.115.176.3">
+      <FaultDomains randomId="0" updateId="0" updateCount="0" />
+      <InputEndpoints />
+    </Instance>
+  </Instances>
+</SharedConfig>
+"#;
+
 fn mock_fab_version(server: &mut mockito::Server) -> mockito::Mock {
     let fab_version = "/?comp=versions";
     let ver_body = r#"<?xml version="1.0" encoding="utf-8"?>
@@ -133,6 +152,17 @@ fn mock_imds_public_keys(server: &mut mockito::Server, imds_body: &str) -> mocki
         .match_header("Metadata", "true")
         .with_header("content-type", "application/json")
         .with_body(imds_body)
+        .with_status(200)
+        .create()
+}
+
+fn mock_shared_config(server: &mut mockito::Server) -> mockito::Mock {
+    // This value must match the one in GOALSTATE_BODY_NO_CERTS
+    let shared_config = "/machine/a511aa6d-29e7-4f53-8788-55655dfe848f/f6cd1d7ef1644557b9059345e5ba890c.lars%2Dtest%2D1?comp=config&type=sharedConfig&incarnation=1";
+
+    server
+        .mock("GET", shared_config)
+        .with_body(SHARED_CONFIG)
         .with_status(200)
         .create()
 }
@@ -216,6 +246,8 @@ fn test_hostname() {
 fn test_vmsize() {
     let mut server = mockito::Server::new();
     let m_version = mock_fab_version(&mut server);
+    let m_goalstate = mock_goalstate(&mut server, false);
+    let m_shared_config = mock_shared_config(&mut server);
 
     let testvmsize = "testvmsize";
     let endpoint = "/metadata/instance/compute/vmSize?api-version=2017-08-01&format=text";
@@ -234,6 +266,8 @@ fn test_vmsize() {
     let r = attributes.get("AZURE_VMSIZE");
 
     m_version.assert();
+    m_goalstate.assert();
+    m_shared_config.assert();
 
     m_vmsize.assert();
     let vmsize = r.unwrap();
