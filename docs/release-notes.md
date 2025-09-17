@@ -4,7 +4,16 @@ nav_order: 8
 
 # Release notes
 
-## Upcoming Afterburn 5.10.0 (unreleased)
+## Upcoming Afterburn 5.11.0 (unreleased)
+
+Major changes:
+
+Minor changes:
+
+Packaging changes:
+
+
+## Afterburn 5.10.0
 
 Major changes:
 
@@ -13,8 +22,6 @@ Major changes:
 Minor changes:
 - Azure: fetch SSH keys from IMDS instead of deprecated certificates endpoint.
 - Azure: fix parsing of SharedConfig XML document with current serde-xml-rs
-
-Packaging changes:
 
 
 ## Afterburn 5.9.0
