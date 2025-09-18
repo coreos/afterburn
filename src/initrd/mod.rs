@@ -6,6 +6,7 @@
 
 use crate::providers::proxmoxve::ProxmoxVEConfigDrive;
 use crate::providers::vmware::VmwareProvider;
+use crate::providers::kubevirt::KubeVirtProvider;
 use crate::providers::MetadataProvider;
 use anyhow::{Context, Result};
 use std::fs::File;
@@ -19,6 +20,7 @@ pub(crate) fn fetch_network_kargs(provider: &str) -> Result<Option<String>> {
     match provider {
         "vmware" => VmwareProvider::try_new()?.rd_network_kargs(),
         "proxmoxve" => ProxmoxVEConfigDrive::try_new()?.rd_network_kargs(),
+        "kubevirt" => KubeVirtProvider::try_new()?.rd_network_kargs(),
         _ => Ok(None),
     }
 }

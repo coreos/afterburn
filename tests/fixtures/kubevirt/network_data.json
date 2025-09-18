@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "config": [
+    {
+      "type": "physical",
+      "name": "eth0",
+      "mac_address": "06:52:db:01:ff:d9",
+      "subnets": [
+        {
+          "type": "static",
+          "address": "192.168.1.10",
+          "netmask": "255.255.255.0",
+          "gateway": "192.168.1.1"
+        }
+      ]
+    },
+    {
+      "type": "physical",
+      "name": "eth1",
+      "mac_address": "06:f6:71:3b:64:01",
+      "subnets": [
+        {
+          "type": "dhcp"
+        }
+      ]
+    },
+    {
+      "type": "nameserver",
+      "address": [
+        "8.8.8.8",
+        "8.8.4.4"
+      ],
+      "search": [
+        "local.test"
+      ]
+    }
+  ]
+}

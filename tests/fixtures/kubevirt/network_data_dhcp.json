@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "config": [
+    {
+      "type": "physical",
+      "name": "eth0",
+      "mac_address": "06:52:db:01:ff:d9",
+      "subnets": [
+        {
+          "type": "dhcp"
+        }
+      ]
+    },
+    {
+      "type": "nameserver",
+      "address": [
+        "8.8.8.8",
+        "8.8.4.4"
+      ]
+    }
+  ]
+}
