@@ -23,14 +23,21 @@ pub use configdrive::*;
 mod cloudconfig;
 pub use cloudconfig::*;
 
+mod networkdata;
+
 #[cfg(test)]
 mod tests;
 
 pub fn try_config_drive_else_leave() -> Result<Box<dyn providers::MetadataProvider>> {
     match KubeVirtConfigDrive::try_new() {
-        Ok(config_drive) => Ok(Box::new(config_drive)),
+        Ok(Some(config_drive)) => Ok(Box::new(config_drive)),
+        Ok(None) => {
+            warn!("config-2 drive not found");
+            warn!("aborting KubeVirt provider");
+            Ok(Box::new(NoopProvider::try_new()?))
+        }
         Err(e) => {
-            warn!("failed to locate config-drive: {}", e);
+            warn!("failed to read config-drive: {}", e);
             warn!("aborting KubeVirt provider");
             Ok(Box::new(NoopProvider::try_new()?))
         }

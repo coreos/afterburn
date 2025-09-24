@@ -29,21 +29,23 @@ impl KubeVirtConfigDrive {
         Some(String::from_utf8_lossy(&output.stdout).trim().to_string())
     }
 
-    pub fn try_new() -> Result<Self> {
+    pub fn try_new() -> Result<Option<Self>> {
         let mount_dir = tempfile::Builder::new()
             .prefix("afterburn-")
             .tempdir()
             .context("failed to create temporary directory")?;
 
-        let device_path = Self::find_config_drive_device()
-            .ok_or_else(|| anyhow::anyhow!("could not find config-2 device"))?;
+        let device_path = match Self::find_config_drive_device() {
+            Some(path) => path,
+            None => return Ok(None),
+        };
 
         crate::util::mount_ro(Path::new(&device_path), mount_dir.path(), TARGET_FS, 3)?;
 
         let config = KubeVirtCloudConfig::try_new(mount_dir.path())
             .context("failed to read KubeVirt cloud config")?;
 
-        Ok(Self { config, mount_dir })
+        Ok(Some(Self { config, mount_dir }))
     }
 }
 
@@ -62,6 +64,10 @@ impl MetadataProvider for KubeVirtConfigDrive {
 
     fn networks(&self) -> Result<Vec<network::Interface>> {
         self.config.networks()
+    }
+
+    fn rd_network_kargs(&self) -> Result<Option<String>> {
+        self.config.rd_network_kargs()
     }
 
     fn virtual_network_devices(&self) -> Result<Vec<network::VirtualNetDev>> {
