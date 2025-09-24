@@ -1,0 +1,82 @@
+{
+  "links": [
+    {
+      "id": "eth0",
+      "type": "phy",
+      "name": "eth0"
+    },
+    {
+      "id": "eth1",
+      "type": "phy",
+      "name": "eth1"
+    },
+    {
+      "id": "eth2",
+      "type": "phy",
+      "ethernet_mac_address": "06:aa:bb:cc:dd:02"
+    }
+  ],
+  "networks": [
+    {
+      "id": "network0",
+      "type": "ipv4",
+      "link": "eth0",
+      "ip_address": "192.168.1.10",
+      "netmask": "255.255.255.0",
+      "routes": [
+        {
+          "network": "0.0.0.0",
+          "netmask": "0.0.0.0",
+          "gateway": "192.168.1.1"
+        }
+      ]
+    },
+    {
+      "id": "network0v6",
+      "type": "ipv6",
+      "link": "eth0",
+      "ip_address": "2001:db8::10",
+      "netmask": "ffff:ffff:ffff:ffff::",
+      "routes": [
+        {
+          "network": "::",
+          "netmask": "::",
+          "gateway": "2001:db8::1"
+        }
+      ]
+    },
+    {
+      "id": "network1",
+      "type": "ipv4_dhcp",
+      "link": "eth1"
+    },
+    {
+      "id": "network1v6",
+      "type": "ipv6_dhcp",
+      "link": "eth1"
+    },
+    {
+      "id": "network2",
+      "type": "ipv4_dhcp",
+      "link": "eth2"
+    }
+  ],
+  "services": [
+    {
+      "type": "dns",
+      "address": "8.8.8.8"
+    },
+    {
+      "type": "dns",
+      "address": "8.8.4.4"
+    },
+    {
+      "type": "dns",
+      "address": "2001:4860:4860::8888"
+    },
+    {
+      "type": "dns",
+      "address": "2001:4860:4860::8844"
+    }
+  ]
+}
