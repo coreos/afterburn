@@ -8,7 +8,11 @@ nav_order: 8
 
 Major changes:
 
+- KubeVirt: Add support for static IP configuration from cloud-init
+
 Minor changes:
+
+- KubeVirt: Refactor for a more integrated testing, similar to ProxmoxVE
 
 Packaging changes:
 
