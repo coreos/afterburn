@@ -11,12 +11,10 @@
 //!
 //! configdrive: https://cloudinit.readthedocs.io/en/latest/topics/datasources/configdrive.html
 
+use super::provider::NetworkConfigurationFormat;
 use crate::{
     network::{DhcpSetting, Interface, VirtualNetDev},
-    providers::{
-        kubevirt::networkdata::{network_interfaces, NetworkData},
-        MetadataProvider,
-    },
+    providers::{kubevirt::configdrive::NetworkData, MetadataProvider},
 };
 use anyhow::{bail, Context, Result};
 use ipnetwork::IpNetwork;
@@ -25,14 +23,21 @@ use serde::Deserialize;
 use slog_scope::warn;
 use std::{collections::HashMap, fs::File, io::BufReader, path::Path};
 
-/// Partial object for `meta_data.json`
+/// Partial object for `meta_data.json` (ConfigDrive) or `meta-data` (NoCloud)
 #[derive(Debug, Deserialize)]
 pub struct MetaData {
-    /// Local hostname
-    pub hostname: String,
-    /// Instance ID (UUID).
-    #[serde(rename = "uuid")]
-    pub instance_id: String,
+    /// Local hostname (ConfigDrive format)
+    #[serde(default)]
+    pub hostname: Option<String>,
+    /// Local hostname (NoCloud format)
+    #[serde(rename = "local-hostname", default)]
+    pub local_hostname: Option<String>,
+    /// Instance ID (ConfigDrive format - UUID)
+    #[serde(rename = "uuid", default)]
+    pub uuid: Option<String>,
+    /// Instance ID (NoCloud format)
+    #[serde(rename = "instance-id", default)]
+    pub instance_id: Option<String>,
     /// Instance type.
     pub instance_type: Option<String>,
     /// SSH public keys.
@@ -42,34 +47,43 @@ pub struct MetaData {
 #[derive(Debug)]
 pub struct KubeVirtCloudConfig {
     pub meta_data: MetaData,
-    pub network_data: Option<NetworkData>,
+    pub configdrive_network_data: Option<super::configdrive::NetworkData>,
+    pub nocloud_network_config: Option<super::nocloud::NetworkConfig>,
 }
 
 impl KubeVirtCloudConfig {
-    pub fn try_new(path: &Path) -> Result<Self> {
-        let meta_data = match Self::read_cloud_config_file(path, "meta_data.json")? {
-            Some(reader) => Self::parse_metadata(reader)?,
-            None => bail!("meta_data.json file not found"),
+    pub fn try_new(path: &Path, format: NetworkConfigurationFormat) -> Result<Self> {
+        let meta_data = match format {
+            NetworkConfigurationFormat::ConfigDrive => {
+                match super::configdrive::read_config_file(path, "meta_data.json")? {
+                    Some(reader) => Self::parse_metadata(reader)?,
+                    None => bail!("meta_data.json file not found"),
+                }
+            }
+            NetworkConfigurationFormat::NoCloud => {
+                match super::nocloud::read_config_file(path, "meta-data")? {
+                    Some(reader) => Self::parse_metadata(reader)?,
+                    None => bail!("meta-data file not found"),
+                }
+            }
         };
 
-        let network_data = Self::read_cloud_config_file(path, "network_data.json")?
-            .map(Self::parse_network_data)
-            .transpose()?;
+        let (configdrive_network_data, nocloud_network_config) = match format {
+            NetworkConfigurationFormat::ConfigDrive => {
+                let config_drive_network_data = super::cloudconfig::NetworkData::from_file(path)?;
+                (config_drive_network_data, None)
+            }
+            NetworkConfigurationFormat::NoCloud => {
+                let nocloud_network_config = super::nocloud::NetworkConfig::from_file(path)?;
+                (None, nocloud_network_config)
+            }
+        };
 
         Ok(Self {
             meta_data,
-            network_data,
+            configdrive_network_data,
+            nocloud_network_config,
         })
-    }
-    pub fn read_cloud_config_file(path: &Path, file: &str) -> Result<Option<BufReader<File>>> {
-        let cloudconfig_dir = path.join("openstack").join("latest");
-        let filename = cloudconfig_dir.join(file);
-        if !filename.exists() {
-            return Ok(None);
-        }
-        let file =
-            File::open(&filename).with_context(|| format!("failed to open file '{filename:?}'"))?;
-        Ok(Some(BufReader::new(file)))
     }
 
     /// Parse metadata attributes.
@@ -77,14 +91,6 @@ impl KubeVirtCloudConfig {
     /// Metadata file contains a JSON or YAML object, corresponding to `MetaDataJSON`.
     pub fn parse_metadata(input: BufReader<File>) -> Result<MetaData> {
         serde_yaml::from_reader(input).context("failed to parse metadata")
-    }
-
-    /// Parse network configuration.
-    ///
-    /// Network configuration file contains a JSON object in OpenStack network metadata format.
-    /// This format uses links, networks, and services sections to describe network configuration.
-    fn parse_network_data(input: BufReader<File>) -> Result<NetworkData> {
-        serde_json::from_reader(input).context("failed to parse JSON network data")
     }
 }
 
@@ -94,17 +100,25 @@ impl MetadataProvider for KubeVirtCloudConfig {
     /// The `AFTERBURN_` prefix is added later on, so it is not part of the
     /// key-labels here.
     fn attributes(&self) -> Result<HashMap<String, String>> {
-        if self.meta_data.instance_id.is_empty() {
-            bail!("empty instance ID");
-        }
+        // Get instance ID from either format
+        let instance_id = self
+            .meta_data
+            .instance_id
+            .as_ref()
+            .or(self.meta_data.uuid.as_ref())
+            .ok_or_else(|| anyhow::anyhow!("missing instance ID"))?;
 
-        if self.meta_data.hostname.is_empty() {
-            bail!("empty local hostname");
-        }
+        // Get hostname from either format (prioritize ConfigDrive format for backwards compatibility)
+        let hostname_value = self
+            .meta_data
+            .hostname
+            .as_ref()
+            .or(self.meta_data.local_hostname.as_ref())
+            .ok_or_else(|| anyhow::anyhow!("missing hostname"))?;
 
         let mut attrs = maplit::hashmap! {
-            "KUBEVIRT_INSTANCE_ID".to_string() => self.meta_data.instance_id.clone(),
-            "KUBEVIRT_HOSTNAME".to_string() => self.meta_data.hostname.clone(),
+            "KUBEVIRT_INSTANCE_ID".to_string() => instance_id.clone(),
+            "KUBEVIRT_HOSTNAME".to_string() => hostname_value.clone(),
         };
 
         if let Some(instance_type) = &self.meta_data.instance_type {
@@ -137,12 +151,12 @@ impl MetadataProvider for KubeVirtCloudConfig {
     }
 
     fn hostname(&self) -> Result<Option<String>> {
-        let hostname = if self.meta_data.hostname.is_empty() {
-            None
-        } else {
-            Some(self.meta_data.hostname.clone())
-        };
-        Ok(hostname)
+        // Prefer ConfigDrive format hostname, fall back to NoCloud format
+        Ok(self
+            .meta_data
+            .hostname
+            .clone()
+            .or_else(|| self.meta_data.local_hostname.clone()))
     }
 
     /// The public key is stored as key:value pair in openstack/latest/meta_data.json file
@@ -156,10 +170,15 @@ impl MetadataProvider for KubeVirtCloudConfig {
     }
 
     fn networks(&self) -> Result<Vec<Interface>> {
-        match &self.network_data {
-            Some(network_data) => network_interfaces(network_data),
-            None => Ok(Vec::<Interface>::new()),
+        if let Some(configdrive_network_data) = &self.configdrive_network_data {
+            return configdrive_network_data.to_interfaces();
         }
+
+        if let Some(nocloud_config) = &self.nocloud_network_config {
+            return nocloud_config.to_interfaces();
+        }
+
+        Ok(Vec::<Interface>::new())
     }
 
     fn rd_network_kargs(&self) -> Result<Option<String>> {

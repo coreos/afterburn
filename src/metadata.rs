@@ -68,7 +68,7 @@ pub fn fetch_metadata(provider: &str) -> Result<Box<dyn providers::MetadataProvi
         "ibmcloud" => box_result!(IBMGen2Provider::try_new()?),
         // IBM Cloud - Classic infrastructure.
         "ibmcloud-classic" => box_result!(IBMClassicProvider::try_new()?),
-        "kubevirt" => kubevirt::try_config_drive_else_leave(),
+        "kubevirt" => kubevirt::try_new_provider_else_noop(),
         "openstack" => openstack::try_config_drive_else_network(),
         "openstack-metadata" => box_result!(OpenstackProviderNetwork::try_new()?),
         "oraclecloud" => box_result!(OracleCloudProvider::try_new()?),

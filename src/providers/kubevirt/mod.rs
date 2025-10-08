@@ -17,27 +17,29 @@ use crate::providers::noop::NoopProvider;
 use anyhow::Result;
 use slog_scope::warn;
 
-mod configdrive;
-pub use configdrive::*;
+mod provider;
+pub use provider::*;
 
 mod cloudconfig;
 pub use cloudconfig::*;
 
-mod networkdata;
+mod configdrive;
+
+mod nocloud;
 
 #[cfg(test)]
 mod tests;
 
-pub fn try_config_drive_else_leave() -> Result<Box<dyn providers::MetadataProvider>> {
-    match KubeVirtConfigDrive::try_new() {
-        Ok(Some(config_drive)) => Ok(Box::new(config_drive)),
+pub fn try_new_provider_else_noop() -> Result<Box<dyn providers::MetadataProvider>> {
+    match KubeVirtProvider::try_new() {
+        Ok(Some(provider)) => Ok(Box::new(provider)),
         Ok(None) => {
-            warn!("config-2 drive not found");
+            warn!("config device not found");
             warn!("aborting KubeVirt provider");
             Ok(Box::new(NoopProvider::try_new()?))
         }
         Err(e) => {
-            warn!("failed to read config-drive: {}", e);
+            warn!("failed to read config device: {}", e);
             warn!("aborting KubeVirt provider");
             Ok(Box::new(NoopProvider::try_new()?))
         }

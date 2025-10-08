@@ -20,7 +20,7 @@ pub(crate) fn fetch_network_kargs(provider: &str) -> Result<Option<String>> {
     match provider {
         "vmware" => VmwareProvider::try_new()?.rd_network_kargs(),
         "proxmoxve" => ProxmoxVEConfigDrive::try_new()?.rd_network_kargs(),
-        "kubevirt" => kubevirt::try_config_drive_else_leave()?.rd_network_kargs(),
+        "kubevirt" => kubevirt::try_new_provider_else_noop()?.rd_network_kargs(),
         _ => Ok(None),
     }
 }
