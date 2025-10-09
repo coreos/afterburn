@@ -1,0 +1,28 @@
+version: 1
+config:
+  - type: physical
+    name: eth0
+    subnets:
+      - type: static
+        address: 192.168.1.10
+        netmask: 255.255.255.0
+        gateway: 192.168.1.1
+      - type: static6
+        address: 2001:db8::10
+        netmask: "ffff:ffff:ffff:ffff::"
+        gateway: 2001:db8::1
+  - type: physical
+    name: eth1
+    subnets:
+      - type: dhcp
+      - type: dhcp6
+  - type: physical
+    mac_address: "06:aa:bb:cc:dd:02"
+    subnets:
+      - type: dhcp
+  - type: nameserver
+    address:
+      - 8.8.8.8
+      - 8.8.4.4
+      - 2001:4860:4860::8888
+      - 2001:4860:4860::8844
