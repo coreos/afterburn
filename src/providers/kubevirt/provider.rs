@@ -57,6 +57,10 @@ impl KubeVirtProvider {
             .tempdir()
             .context("failed to create temporary directory")?;
 
+        // Best-effort: ensure virtio_blk is available so config devices are visible early
+        // Ignore errors; not all environments require or provide this module
+        let _ = Command::new("modprobe").arg("virtio_blk").status();
+
         let (device_path, format) = match Self::find_config_device() {
             Some(result) => result,
             None => return Ok(None),

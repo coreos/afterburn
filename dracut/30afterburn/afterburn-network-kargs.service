@@ -14,8 +14,6 @@ OnFailureJobMode=isolate
 
 [Service]
 Environment=AFTERBURN_OPT_PROVIDER=--cmdline
-# To read config drive at kubevirt provider
-ExecStartPre=modprobe virtio_blk
 # AFTERBURN_NETWORK_KARGS_DEFAULT must be set externally by distributions.
 # If unset, variable expansion results in a missing argument and service
 # hard-failure, on purpose.
