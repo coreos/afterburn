@@ -39,7 +39,7 @@ base64 = "0.22"
 cfg-if = "1.0"
 clap = { version = "4", "default-features" = false, "features" = ["std", "cargo", "derive", "error-context", "help", "suggestions", "usage", "wrap_help"] }
 ipnetwork = ">= 0.17, < 0.22"
-libflate = "2.1"
+libflate = "2.2"
 libsystemd = ">= 0.2.1, < 0.8.0"
 mailparse = ">= 0.13, < 0.17"
 maplit = "1.0"
@@ -53,7 +53,7 @@ serde =  { version = "1.0", features = [ "derive" ] }
 serde-xml-rs = ">= 0.4, < 0.9"
 serde_json = "1.0"
 serde_yaml = ">= 0.8, < 0.10"
-slog = { version = "2.7", features = ["max_level_trace", "release_max_level_info"] }
+slog = { version = "2.8", features = ["max_level_trace", "release_max_level_info"] }
 slog-async = ">= 2.5, < 3"
 slog-scope = "4.3"
 slog-term = ">= 2.6, < 3"
