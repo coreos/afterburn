@@ -1,0 +1,48 @@
+{
+  "links": [
+    {
+      "id": "eth0",
+      "type": "phy",
+      "name": "eth0"
+    }
+  ],
+  "networks": [
+    {
+      "id": "network0",
+      "type": "ipv4_dhcp",
+      "link": "eth0",
+      "accept_dhcp_option": [
+        "subnet_mask"
+      ],
+      "routes": [
+        {
+          "network": "0.0.0.0",
+          "netmask": "0.0.0.0",
+          "gateway": "192.168.1.1"
+        }
+      ]
+    },
+    {
+      "id": "network0v6",
+      "type": "ipv6_dhcp",
+      "link": "eth0",
+      "routes": [
+        {
+          "network": "::",
+          "netmask": "::",
+          "gateway": "2001:db8::1"
+        }
+      ]
+    }
+  ],
+  "services": [
+    {
+      "type": "dns",
+      "address": "8.8.8.8"
+    },
+    {
+      "type": "dns",
+      "address": "8.8.4.4"
+    }
+  ]
+}
