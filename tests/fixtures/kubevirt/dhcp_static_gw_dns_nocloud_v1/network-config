@@ -1,0 +1,18 @@
+version: 1
+config:
+  - type: physical
+    name: eth0
+    subnets:
+      - type: dhcp4          # Gets IP address via DHCP
+      - type: dhcp6          # Gets IPv6 address via DHCP
+      - type: static         # Static configuration for DNS/gateway (no address)
+        dns_nameservers:
+          - 8.8.8.8
+          - 8.8.4.4
+        routes:
+          - gateway: 192.168.1.1  # Static IPv4 gateway
+            netmask: 0.0.0.0
+            network: 0.0.0.0
+          - gateway: "2001:db8::1"  # Static IPv6 gateway
+            netmask: "::"
+            network: "::"
