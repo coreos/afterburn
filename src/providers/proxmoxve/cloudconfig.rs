@@ -171,7 +171,7 @@ impl MetadataProvider for ProxmoxVECloudConfig {
             .map(|entry| entry.to_interface())
             .collect::<Result<Vec<_>, _>>()?;
 
-        if let Some(iface) = interfaces.first_mut() {
+        for iface in interfaces.iter_mut() {
             if let Some(nameserver) = nameservers.first() {
                 iface.nameservers = nameserver
                     .address
