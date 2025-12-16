@@ -194,8 +194,8 @@ fn test_network_data() {
         let kargs_parts: Vec<&str> = kargs.split_whitespace().collect();
         assert_eq!(
         kargs_parts.len(),
-        8,
-        "Expected kargs to have 8 parts (3 ip configs + 4 nameservers + 1 dhcp), got {} parts: {:?}",
+        10,
+        "Expected kargs to have 10 parts (2 static ip configs + 2 rd.route + 2 dhcp + 4 nameservers), got {} parts: {:?}",
         kargs_parts.len(),
         kargs_parts
     );
@@ -219,6 +219,17 @@ fn test_network_data() {
         "Expected kargs to contain 'ip=2001:db8::10::2001:db8::1:64::eth0:static', but got: {:?}",
         kargs
     );
+        // Check that rd.route entries are included for static IP configurations
+        assert!(
+            kargs.contains("rd.route=0.0.0.0/0:192.168.1.1"),
+            "Expected kargs to contain 'rd.route=0.0.0.0/0:192.168.1.1', but got: {:?}",
+            kargs
+        );
+        assert!(
+            kargs.contains("rd.route=::/0:2001:db8::1"),
+            "Expected kargs to contain 'rd.route=::/0:2001:db8::1', but got: {:?}",
+            kargs
+        );
         // Check that nameservers are included as separate arguments
         assert!(
             kargs.contains("nameserver=8.8.8.8"),
@@ -256,4 +267,378 @@ fn test_network_data() {
             attrs.get("KUBEVIRT_IPV6")
         );
     }
+}
+
+#[test]
+fn test_dhcp_with_static_gateway_and_dns() {
+    let fixture_path = "./tests/fixtures/kubevirt/dhcp_static_gw_dns";
+    let config = KubeVirtCloudConfig::try_new(
+        Path::new(fixture_path),
+        NetworkConfigurationFormat::ConfigDrive,
+    )
+    .expect("cannot parse config");
+
+    let interfaces = config.networks().expect("cannot get interfaces");
+    assert_eq!(
+        interfaces.len(),
+        1,
+        "Expected 1 interface, got {} interfaces: {:?}",
+        interfaces.len(),
+        interfaces
+    );
+
+    let eth0 = &interfaces[0];
+    assert_eq!(
+        eth0.name,
+        Some("eth0".to_string()),
+        "Expected eth0.name to be {:?}, got {:?}",
+        Some("eth0".to_string()),
+        eth0.name
+    );
+    assert_eq!(
+        eth0.dhcp,
+        Some(DhcpSetting::Both),
+        "Expected eth0.dhcp to be {:?}, got {:?}",
+        Some(DhcpSetting::Both),
+        eth0.dhcp
+    );
+    assert_eq!(
+        eth0.ip_addresses.len(),
+        0,
+        "Expected eth0 to have 0 static IP addresses (using DHCP), got {} addresses: {:?}",
+        eth0.ip_addresses.len(),
+        eth0.ip_addresses
+    );
+    assert_eq!(
+        eth0.routes.len(),
+        2,
+        "Expected eth0 to have 2 static routes (IPv4 and IPv6 default gateways), got {} routes: {:?}",
+        eth0.routes.len(),
+        eth0.routes
+    );
+    assert!(
+        eth0.routes
+            .iter()
+            .any(|r| r.gateway == IpAddr::from_str("192.168.1.1").unwrap()),
+        "Expected eth0.routes to contain gateway 192.168.1.1, but got routes: {:?}",
+        eth0.routes
+    );
+    assert!(
+        eth0.routes
+            .iter()
+            .any(|r| r.gateway == IpAddr::from_str("2001:db8::1").unwrap()),
+        "Expected eth0.routes to contain gateway 2001:db8::1, but got routes: {:?}",
+        eth0.routes
+    );
+    assert_eq!(
+        eth0.nameservers.len(),
+        2,
+        "Expected eth0 to have 2 nameservers, got {} nameservers: {:?}",
+        eth0.nameservers.len(),
+        eth0.nameservers
+    );
+    assert!(
+        eth0.nameservers
+            .contains(&IpAddr::from_str("8.8.8.8").unwrap()),
+        "Expected eth0.nameservers to contain 8.8.8.8, but got: {:?}",
+        eth0.nameservers
+    );
+    assert!(
+        eth0.nameservers
+            .contains(&IpAddr::from_str("8.8.4.4").unwrap()),
+        "Expected eth0.nameservers to contain 8.8.4.4, but got: {:?}",
+        eth0.nameservers
+    );
+
+    // Test the kernel arguments generation
+    let kargs = config.rd_network_kargs().unwrap().unwrap();
+    let kargs_parts: Vec<&str> = kargs.split_whitespace().collect();
+
+    // Expected parts:
+    // 1. ip=eth0:dhcp,dhcp6
+    // 2. rd.route=0.0.0.0/0:192.168.1.1
+    // 3. rd.route=::/0:2001:db8::1
+    // 4. nameserver=8.8.8.8
+    // 5. nameserver=8.8.4.4
+    assert_eq!(
+        kargs_parts.len(),
+        5,
+        "Expected kargs to have 5 parts (1 dhcp + 2 routes + 2 nameservers), got {} parts: {:?}",
+        kargs_parts.len(),
+        kargs_parts
+    );
+
+    assert!(
+        kargs.contains("ip=eth0:dhcp,dhcp6"),
+        "Expected kargs to contain 'ip=eth0:dhcp,dhcp6', but got: {:?}",
+        kargs
+    );
+    assert!(
+        kargs.contains("rd.route=0.0.0.0/0:192.168.1.1"),
+        "Expected kargs to contain 'rd.route=0.0.0.0/0:192.168.1.1', but got: {:?}",
+        kargs
+    );
+    assert!(
+        kargs.contains("rd.route=::/0:2001:db8::1"),
+        "Expected kargs to contain 'rd.route=::/0:2001:db8::1', but got: {:?}",
+        kargs
+    );
+    assert!(
+        kargs.contains("nameserver=8.8.8.8"),
+        "Expected kargs to contain 'nameserver=8.8.8.8', but got: {:?}",
+        kargs
+    );
+    assert!(
+        kargs.contains("nameserver=8.8.4.4"),
+        "Expected kargs to contain 'nameserver=8.8.4.4', but got: {:?}",
+        kargs
+    );
+}
+
+#[test]
+fn test_dhcp_with_static_gateway_and_dns_nocloud_v1() {
+    let fixture_path = "./tests/fixtures/kubevirt/dhcp_static_gw_dns_nocloud_v1";
+    let config =
+        KubeVirtCloudConfig::try_new(Path::new(fixture_path), NetworkConfigurationFormat::NoCloud)
+            .expect("cannot parse config");
+
+    let interfaces = config.networks().expect("cannot get interfaces");
+    assert_eq!(
+        interfaces.len(),
+        1,
+        "Expected 1 interface, got {} interfaces: {:?}",
+        interfaces.len(),
+        interfaces
+    );
+
+    let eth0 = &interfaces[0];
+    assert_eq!(
+        eth0.name,
+        Some("eth0".to_string()),
+        "Expected eth0.name to be {:?}, got {:?}",
+        Some("eth0".to_string()),
+        eth0.name
+    );
+    assert_eq!(
+        eth0.dhcp,
+        Some(DhcpSetting::Both),
+        "Expected eth0.dhcp to be {:?}, got {:?}",
+        Some(DhcpSetting::Both),
+        eth0.dhcp
+    );
+    assert_eq!(
+        eth0.ip_addresses.len(),
+        0,
+        "Expected eth0 to have 0 static IP addresses (using DHCP), got {} addresses: {:?}",
+        eth0.ip_addresses.len(),
+        eth0.ip_addresses
+    );
+    assert_eq!(
+        eth0.routes.len(),
+        2,
+        "Expected eth0 to have 2 static routes (IPv4 and IPv6 default gateways), got {} routes: {:?}",
+        eth0.routes.len(),
+        eth0.routes
+    );
+    assert!(
+        eth0.routes
+            .iter()
+            .any(|r| r.gateway == IpAddr::from_str("192.168.1.1").unwrap()),
+        "Expected eth0.routes to contain gateway 192.168.1.1, but got routes: {:?}",
+        eth0.routes
+    );
+    assert!(
+        eth0.routes
+            .iter()
+            .any(|r| r.gateway == IpAddr::from_str("2001:db8::1").unwrap()),
+        "Expected eth0.routes to contain gateway 2001:db8::1, but got routes: {:?}",
+        eth0.routes
+    );
+    assert_eq!(
+        eth0.nameservers.len(),
+        2,
+        "Expected eth0 to have 2 nameservers, got {} nameservers: {:?}",
+        eth0.nameservers.len(),
+        eth0.nameservers
+    );
+    assert!(
+        eth0.nameservers
+            .contains(&IpAddr::from_str("8.8.8.8").unwrap()),
+        "Expected eth0.nameservers to contain 8.8.8.8, but got: {:?}",
+        eth0.nameservers
+    );
+    assert!(
+        eth0.nameservers
+            .contains(&IpAddr::from_str("8.8.4.4").unwrap()),
+        "Expected eth0.nameservers to contain 8.8.4.4, but got: {:?}",
+        eth0.nameservers
+    );
+
+    // Test the kernel arguments generation
+    let kargs = config.rd_network_kargs().unwrap().unwrap();
+    let kargs_parts: Vec<&str> = kargs.split_whitespace().collect();
+
+    // Expected parts:
+    // 1. ip=eth0:dhcp,dhcp6
+    // 2. rd.route=0.0.0.0/0:192.168.1.1
+    // 3. rd.route=::/0:2001:db8::1
+    // 4. nameserver=8.8.8.8
+    // 5. nameserver=8.8.4.4
+    assert_eq!(
+        kargs_parts.len(),
+        5,
+        "Expected kargs to have 5 parts (1 dhcp + 2 routes + 2 nameservers), got {} parts: {:?}",
+        kargs_parts.len(),
+        kargs_parts
+    );
+
+    assert!(
+        kargs.contains("ip=eth0:dhcp,dhcp6"),
+        "Expected kargs to contain 'ip=eth0:dhcp,dhcp6', but got: {:?}",
+        kargs
+    );
+    assert!(
+        kargs.contains("rd.route=0.0.0.0/0:192.168.1.1"),
+        "Expected kargs to contain 'rd.route=0.0.0.0/0:192.168.1.1', but got: {:?}",
+        kargs
+    );
+    assert!(
+        kargs.contains("rd.route=::/0:2001:db8::1"),
+        "Expected kargs to contain 'rd.route=::/0:2001:db8::1', but got: {:?}",
+        kargs
+    );
+    assert!(
+        kargs.contains("nameserver=8.8.8.8"),
+        "Expected kargs to contain 'nameserver=8.8.8.8', but got: {:?}",
+        kargs
+    );
+    assert!(
+        kargs.contains("nameserver=8.8.4.4"),
+        "Expected kargs to contain 'nameserver=8.8.4.4', but got: {:?}",
+        kargs
+    );
+}
+
+#[test]
+fn test_dhcp_with_static_gateway_and_dns_nocloud_v2() {
+    let fixture_path = "./tests/fixtures/kubevirt/dhcp_static_gw_dns_nocloud_v2";
+    let config =
+        KubeVirtCloudConfig::try_new(Path::new(fixture_path), NetworkConfigurationFormat::NoCloud)
+            .expect("cannot parse config");
+
+    let interfaces = config.networks().expect("cannot get interfaces");
+    assert_eq!(
+        interfaces.len(),
+        1,
+        "Expected 1 interface, got {} interfaces: {:?}",
+        interfaces.len(),
+        interfaces
+    );
+
+    let eth0 = &interfaces[0];
+    assert_eq!(
+        eth0.name,
+        Some("eth0".to_string()),
+        "Expected eth0.name to be {:?}, got {:?}",
+        Some("eth0".to_string()),
+        eth0.name
+    );
+    assert_eq!(
+        eth0.dhcp,
+        Some(DhcpSetting::Both),
+        "Expected eth0.dhcp to be {:?}, got {:?}",
+        Some(DhcpSetting::Both),
+        eth0.dhcp
+    );
+    assert_eq!(
+        eth0.ip_addresses.len(),
+        0,
+        "Expected eth0 to have 0 static IP addresses (using DHCP), got {} addresses: {:?}",
+        eth0.ip_addresses.len(),
+        eth0.ip_addresses
+    );
+    assert_eq!(
+        eth0.routes.len(),
+        2,
+        "Expected eth0 to have 2 static routes (IPv4 and IPv6 default gateways), got {} routes: {:?}",
+        eth0.routes.len(),
+        eth0.routes
+    );
+    assert!(
+        eth0.routes
+            .iter()
+            .any(|r| r.gateway == IpAddr::from_str("192.168.1.1").unwrap()),
+        "Expected eth0.routes to contain gateway 192.168.1.1, but got routes: {:?}",
+        eth0.routes
+    );
+    assert!(
+        eth0.routes
+            .iter()
+            .any(|r| r.gateway == IpAddr::from_str("2001:db8::1").unwrap()),
+        "Expected eth0.routes to contain gateway 2001:db8::1, but got routes: {:?}",
+        eth0.routes
+    );
+    assert_eq!(
+        eth0.nameservers.len(),
+        2,
+        "Expected eth0 to have 2 nameservers, got {} nameservers: {:?}",
+        eth0.nameservers.len(),
+        eth0.nameservers
+    );
+    assert!(
+        eth0.nameservers
+            .contains(&IpAddr::from_str("8.8.8.8").unwrap()),
+        "Expected eth0.nameservers to contain 8.8.8.8, but got: {:?}",
+        eth0.nameservers
+    );
+    assert!(
+        eth0.nameservers
+            .contains(&IpAddr::from_str("8.8.4.4").unwrap()),
+        "Expected eth0.nameservers to contain 8.8.4.4, but got: {:?}",
+        eth0.nameservers
+    );
+
+    // Test the kernel arguments generation
+    let kargs = config.rd_network_kargs().unwrap().unwrap();
+    let kargs_parts: Vec<&str> = kargs.split_whitespace().collect();
+
+    // Expected parts:
+    // 1. ip=eth0:dhcp,dhcp6
+    // 2. rd.route=0.0.0.0/0:192.168.1.1
+    // 3. rd.route=::/0:2001:db8::1
+    // 4. nameserver=8.8.8.8
+    // 5. nameserver=8.8.4.4
+    assert_eq!(
+        kargs_parts.len(),
+        5,
+        "Expected kargs to have 5 parts (1 dhcp + 2 routes + 2 nameservers), got {} parts: {:?}",
+        kargs_parts.len(),
+        kargs_parts
+    );
+
+    assert!(
+        kargs.contains("ip=eth0:dhcp,dhcp6"),
+        "Expected kargs to contain 'ip=eth0:dhcp,dhcp6', but got: {:?}",
+        kargs
+    );
+    assert!(
+        kargs.contains("rd.route=0.0.0.0/0:192.168.1.1"),
+        "Expected kargs to contain 'rd.route=0.0.0.0/0:192.168.1.1', but got: {:?}",
+        kargs
+    );
+    assert!(
+        kargs.contains("rd.route=::/0:2001:db8::1"),
+        "Expected kargs to contain 'rd.route=::/0:2001:db8::1', but got: {:?}",
+        kargs
+    );
+    assert!(
+        kargs.contains("nameserver=8.8.8.8"),
+        "Expected kargs to contain 'nameserver=8.8.8.8', but got: {:?}",
+        kargs
+    );
+    assert!(
+        kargs.contains("nameserver=8.8.4.4"),
+        "Expected kargs to contain 'nameserver=8.8.4.4', but got: {:?}",
+        kargs
+    );
 }

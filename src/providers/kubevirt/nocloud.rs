@@ -65,6 +65,17 @@ pub struct NetworkConfigV1Entry {
     pub subnets: Vec<NetworkConfigV1Subnet>,
 }
 
+/// Route configuration in v1 format
+#[derive(Debug, Deserialize)]
+pub struct RouteConfigV1 {
+    /// Destination network
+    pub network: String,
+    /// Netmask for the destination network
+    pub netmask: String,
+    /// Gateway address
+    pub gateway: String,
+}
+
 /// Network Config v1 subnet
 #[derive(Debug, Deserialize)]
 pub struct NetworkConfigV1Subnet {
@@ -80,6 +91,9 @@ pub struct NetworkConfigV1Subnet {
     /// DNS nameservers
     #[serde(default)]
     pub dns_nameservers: Vec<String>,
+    /// Routes (for static configuration)
+    #[serde(default)]
+    pub routes: Vec<RouteConfigV1>,
 }
 
 /// Network Config v2 format
@@ -98,6 +112,30 @@ pub struct NetworkConfigV2 {
     pub nameservers: Option<NameserversConfig>,
 }
 
+/// DHCP overrides configuration
+#[derive(Debug, Deserialize)]
+#[allow(dead_code)]
+pub struct DhcpOverrides {
+    /// Ignore DNS from DHCP
+    #[serde(rename = "use-dns", default)]
+    pub use_dns: Option<bool>,
+    /// Ignore routes from DHCP
+    #[serde(rename = "use-routes", default)]
+    pub use_routes: Option<bool>,
+    /// Ignore domain settings from DHCP
+    #[serde(rename = "use-domains", default)]
+    pub use_domains: Option<bool>,
+    /// Ignore hostname from DHCP
+    #[serde(rename = "use-hostname", default)]
+    pub use_hostname: Option<bool>,
+    /// Ignore NTP from DHCP
+    #[serde(rename = "use-ntp", default)]
+    pub use_ntp: Option<bool>,
+    /// Override route metric
+    #[serde(rename = "route-metric", default)]
+    pub route_metric: Option<u32>,
+}
+
 /// Ethernet interface configuration in v2 format
 #[derive(Debug, Deserialize)]
 pub struct EthernetConfigV2 {
@@ -107,6 +145,14 @@ pub struct EthernetConfigV2 {
     /// DHCP for IPv6
     #[serde(default)]
     pub dhcp6: bool,
+    /// DHCP overrides for IPv4
+    #[serde(rename = "dhcp4-overrides")]
+    #[allow(dead_code)]
+    pub dhcp4_overrides: Option<DhcpOverrides>,
+    /// DHCP overrides for IPv6
+    #[serde(rename = "dhcp6-overrides")]
+    #[allow(dead_code)]
+    pub dhcp6_overrides: Option<DhcpOverrides>,
     /// Static IP addresses in CIDR notation
     #[serde(default)]
     pub addresses: Vec<String>,
@@ -258,65 +304,74 @@ impl NetworkConfigV1Entry {
 
             // Handle static configuration
             if subnet.subnet_type.contains("static") {
-                if subnet.address.is_none() {
-                    return Err(anyhow::anyhow!(
-                        "cannot convert static subnet to interface: missing address"
-                    ));
-                }
-
-                if let Some(netmask) = &subnet.netmask {
-                    let ip_addr = IpAddr::from_str(subnet.address.as_ref().unwrap())?;
-                    // Try to parse netmask as IP address first, then as prefix length
-                    let ip_network = if let Ok(netmask_addr) = IpAddr::from_str(netmask) {
-                        IpNetwork::with_netmask(ip_addr, netmask_addr)?
-                    } else if let Ok(prefix_len) = netmask.parse::<u8>() {
-                        IpNetwork::new(ip_addr, prefix_len)?
+                // Static subnet may have an IP address, or just routes/DNS configuration
+                if let Some(address) = &subnet.address {
+                    if let Some(netmask) = &subnet.netmask {
+                        let ip_addr = IpAddr::from_str(address)?;
+                        // Try to parse netmask as IP address first, then as prefix length
+                        let ip_network = if let Ok(netmask_addr) = IpAddr::from_str(netmask) {
+                            IpNetwork::with_netmask(ip_addr, netmask_addr)?
+                        } else if let Ok(prefix_len) = netmask.parse::<u8>() {
+                            IpNetwork::new(ip_addr, prefix_len)?
+                        } else {
+                            return Err(anyhow::anyhow!(
+                                "Invalid netmask format: {}. Expected IP address or prefix length.",
+                                netmask
+                            ));
+                        };
+                        iface.ip_addresses.push(ip_network);
                     } else {
-                        return Err(anyhow::anyhow!(
-                            "Invalid netmask format: {}. Expected IP address or prefix length.",
-                            netmask
-                        ));
-                    };
-                    iface.ip_addresses.push(ip_network);
-                } else {
-                    iface
-                        .ip_addresses
-                        .push(IpNetwork::from_str(subnet.address.as_ref().unwrap())?);
+                        iface.ip_addresses.push(IpNetwork::from_str(address)?);
+                    }
                 }
-
-                if let Some(gateway) = &subnet.gateway {
-                    let gateway = IpAddr::from_str(gateway)?;
-
-                    let destination = if gateway.is_ipv6() {
-                        IpNetwork::from_str("::/0")?
-                    } else {
-                        IpNetwork::from_str("0.0.0.0/0")?
-                    };
-
-                    iface.routes.push(NetworkRoute {
-                        destination,
-                        gateway,
-                    });
-                } else {
-                    warn!("found subnet type \"static\" without gateway");
-                }
-            }
-
-            // Handle DHCP configuration
-            if subnet.subnet_type == "dhcp" || subnet.subnet_type == "dhcp4" {
+            } else if subnet.subnet_type == "dhcp" || subnet.subnet_type == "dhcp4" {
                 iface.dhcp = match iface.dhcp {
                     Some(DhcpSetting::V6) => Some(DhcpSetting::Both),
                     _ => Some(DhcpSetting::V4),
                 };
-            }
-            if subnet.subnet_type == "dhcp6" {
+            } else if subnet.subnet_type == "dhcp6" {
                 iface.dhcp = match iface.dhcp {
                     Some(DhcpSetting::V4) => Some(DhcpSetting::Both),
                     _ => Some(DhcpSetting::V6),
                 };
+            } else {
+                warn!(
+                    "subnet type \"{}\" not supported, ignoring",
+                    subnet.subnet_type
+                );
             }
-            if subnet.subnet_type == "ipv6_slaac" {
-                warn!("subnet type \"ipv6_slaac\" not supported, ignoring");
+
+            // Handle routes from subnet
+            // First, process any routes defined in the subnet's routes array
+            for route in &subnet.routes {
+                let gateway = IpAddr::from_str(&route.gateway)?;
+
+                // Parse the destination network
+                let network = IpAddr::from_str(&route.network)?;
+                let netmask = IpAddr::from_str(&route.netmask)?;
+
+                let destination = IpNetwork::with_netmask(network, netmask)?;
+
+                iface.routes.push(NetworkRoute {
+                    destination,
+                    gateway,
+                });
+            }
+
+            // Then, handle legacy gateway field (for backwards compatibility)
+            if let Some(gateway) = &subnet.gateway {
+                let gateway = IpAddr::from_str(gateway)?;
+
+                let destination = if gateway.is_ipv6() {
+                    IpNetwork::from_str("::/0")?
+                } else {
+                    IpNetwork::from_str("0.0.0.0/0")?
+                };
+
+                iface.routes.push(NetworkRoute {
+                    destination,
+                    gateway,
+                });
             }
         }
 

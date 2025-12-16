@@ -79,6 +79,12 @@ pub struct NetworkConfig {
     /// Network ID in OpenStack
     #[allow(dead_code)]
     pub network_id: Option<String>,
+    /// List of DHCP options to accept from the DHCP server
+    /// Common values: "subnet_mask", "router", "domain_name_server", etc.
+    /// Used for scenarios where DHCP is used for address allocation but
+    /// static configuration is preferred for gateway and/or DNS
+    #[serde(default)]
+    pub accept_dhcp_option: Vec<String>,
 }
 
 /// Network service configuration
@@ -215,6 +221,8 @@ impl NetworkData {
         let mut has_dhcp4 = false;
         let mut has_dhcp6 = false;
         let mut all_nameservers = Vec::new();
+        let mut should_configure_static_dns = false;
+        let mut should_configure_static_routes = false;
 
         // Process each network configuration for this link
         for network in networks {
@@ -256,16 +264,40 @@ impl NetworkData {
                 }
                 "ipv4_dhcp" => {
                     has_dhcp4 = true;
+                    // If accept_dhcp_option is specified (not empty), check what options to accept
+                    if !network.accept_dhcp_option.is_empty() {
+                        // If it does not include "router", configure routes statically
+                        if !network.accept_dhcp_option.contains(&"router".to_string()) {
+                            should_configure_static_routes = true;
+                        }
+                        // If it does not include "domain_name_server", configure DNS statically
+                        if !network
+                            .accept_dhcp_option
+                            .contains(&"domain_name_server".to_string())
+                        {
+                            should_configure_static_dns = true;
+                        }
+                    } else {
+                        // If accept_dhcp_option is not specified, use legacy behavior:
+                        // include global DNS servers for backwards compatibility
+                        should_configure_static_dns = true;
+                    }
                 }
                 "ipv6_dhcp" => {
                     has_dhcp6 = true;
+                    // For IPv6 DHCP, configure DNS statically for backwards compatibility
+                    should_configure_static_dns = true;
+                    // If routes are provided, configure them statically
+                    if !network.routes.is_empty() {
+                        should_configure_static_routes = true;
+                    }
                 }
                 _ => {
                     warn!("Unsupported network type: {}", network.network_type);
                 }
             }
 
-            // Collect nameservers
+            // Collect nameservers from network-specific DNS configuration
             for ns in &network.dns_nameservers {
                 let nameserver = IpAddr::from_str(ns)?;
                 if !all_nameservers.contains(&nameserver) {
@@ -274,38 +306,47 @@ impl NetworkData {
             }
 
             // Process routes
-            for route in &network.routes {
-                // Handle network and netmask according to OpenStack schema
-                let destination = if route.network == "0.0.0.0" && route.netmask == "0.0.0.0" {
-                    // Default IPv4 route
-                    IpNetwork::from_str("0.0.0.0/0")?
-                } else if route.network == "::" && route.netmask == "::" {
-                    // Default IPv6 route
-                    IpNetwork::from_str("::/0")?
-                } else {
-                    // Calculate prefix length from netmask for proper CIDR notation
-                    let network_addr = IpAddr::from_str(&route.network)?;
-                    if let Ok(netmask_addr) = IpAddr::from_str(&route.netmask) {
-                        IpNetwork::with_netmask(network_addr, netmask_addr)?
-                    } else if let Ok(prefix_len) = route.netmask.parse::<u8>() {
-                        IpNetwork::new(network_addr, prefix_len)?
+            // For DHCP networks, only add routes if we should configure them statically
+            // For static networks, always add routes
+            let should_add_routes = match network.network_type.as_str() {
+                "ipv4_dhcp" | "ipv6_dhcp" => should_configure_static_routes,
+                _ => true, // Static networks always get their routes configured
+            };
+
+            if should_add_routes {
+                for route in &network.routes {
+                    // Handle network and netmask according to OpenStack schema
+                    let destination = if route.network == "0.0.0.0" && route.netmask == "0.0.0.0" {
+                        // Default IPv4 route
+                        IpNetwork::from_str("0.0.0.0/0")?
+                    } else if route.network == "::" && route.netmask == "::" {
+                        // Default IPv6 route
+                        IpNetwork::from_str("::/0")?
                     } else {
-                        // For IPv6, netmask might be in full format like "ffff:ffff:ffff:ffff::"
-                        if network_addr.is_ipv6() && route.netmask == "ffff:ffff:ffff:ffff::" {
-                            IpNetwork::new(network_addr, 64)?
+                        // Calculate prefix length from netmask for proper CIDR notation
+                        let network_addr = IpAddr::from_str(&route.network)?;
+                        if let Ok(netmask_addr) = IpAddr::from_str(&route.netmask) {
+                            IpNetwork::with_netmask(network_addr, netmask_addr)?
+                        } else if let Ok(prefix_len) = route.netmask.parse::<u8>() {
+                            IpNetwork::new(network_addr, prefix_len)?
                         } else {
-                            return Err(anyhow::anyhow!(
-                                "Invalid netmask format: {}. Expected IP address or prefix length.",
-                                route.netmask
-                            ));
+                            // For IPv6, netmask might be in full format like "ffff:ffff:ffff:ffff::"
+                            if network_addr.is_ipv6() && route.netmask == "ffff:ffff:ffff:ffff::" {
+                                IpNetwork::new(network_addr, 64)?
+                            } else {
+                                return Err(anyhow::anyhow!(
+                                    "Invalid netmask format: {}. Expected IP address or prefix length.",
+                                    route.netmask
+                                ));
+                            }
                         }
-                    }
-                };
-                let gateway = IpAddr::from_str(&route.gateway)?;
-                iface.routes.push(NetworkRoute {
-                    destination,
-                    gateway,
-                });
+                    };
+                    let gateway = IpAddr::from_str(&route.gateway)?;
+                    iface.routes.push(NetworkRoute {
+                        destination,
+                        gateway,
+                    });
+                }
             }
         }
 
@@ -318,11 +359,14 @@ impl NetworkData {
         };
 
         // Add global DNS servers from services (per OpenStack schema)
-        for service in &self.services {
-            if service.service_type == "dns" {
-                let nameserver = IpAddr::from_str(&service.address)?;
-                if !all_nameservers.contains(&nameserver) {
-                    all_nameservers.push(nameserver);
+        // Only add them if we should configure DNS statically or if we're not using DHCP
+        if should_configure_static_dns || iface.dhcp.is_none() {
+            for service in &self.services {
+                if service.service_type == "dns" {
+                    let nameserver = IpAddr::from_str(&service.address)?;
+                    if !all_nameservers.contains(&nameserver) {
+                        all_nameservers.push(nameserver);
+                    }
                 }
             }
         }

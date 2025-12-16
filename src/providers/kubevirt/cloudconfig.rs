@@ -227,6 +227,15 @@ impl MetadataProvider for KubeVirtCloudConfig {
                 }
             }
 
+            // Add static routes for the interface (including DHCP interfaces)
+            // This allows DHCP interfaces to have static gateway configuration
+            for route in &iface.routes {
+                // Only add routes with prefix 0 (default routes)
+                if route.destination.prefix() == 0 {
+                    kargs.push(format!("rd.route={}:{}", route.destination, route.gateway));
+                }
+            }
+
             // Collect nameservers from all interfaces
             for nameserver in &iface.nameservers {
                 if !all_nameservers.contains(nameserver) {

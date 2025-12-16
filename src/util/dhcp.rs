@@ -145,7 +145,7 @@ impl DhcpOption {
 )]
 trait NetworkManager {
     #[zbus(property)]
-    fn active_connections(&self) -> zbus::Result<Vec<zvariant::ObjectPath>>;
+    fn active_connections(&self) -> zbus::Result<Vec<zvariant::ObjectPath<'_>>>;
 }
 
 #[proxy(
@@ -154,7 +154,7 @@ trait NetworkManager {
 )]
 trait NMActiveConnection {
     #[zbus(property)]
-    fn dhcp4_config(&self) -> zbus::Result<zvariant::ObjectPath>;
+    fn dhcp4_config(&self) -> zbus::Result<zvariant::ObjectPath<'_>>;
 }
 
 #[proxy(
@@ -163,5 +163,5 @@ trait NMActiveConnection {
 )]
 trait NMDhcp4Config {
     #[zbus(property)]
-    fn options(&self) -> Result<HashMap<String, zvariant::Value>>;
+    fn options(&self) -> Result<HashMap<String, zvariant::Value<'_>>>;
 }

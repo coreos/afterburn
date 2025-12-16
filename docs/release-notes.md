@@ -8,7 +8,7 @@ nav_order: 8
 
 Major changes:
 
-- KubeVirt: Add support for static IP configuration from cloud-init
+- KubeVirt: Add support for static and dynamic IP configuration from cloud-init
 
 Minor changes:
 

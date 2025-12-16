@@ -1,0 +1,20 @@
+version: 2
+ethernets:
+  eth0:
+    dhcp4: true
+    dhcp6: true
+    dhcp4-overrides:
+      use-dns: false       # Ignore DNS from DHCP
+      use-routes: false    # Ignore routes from DHCP
+    dhcp6-overrides:
+      use-dns: false       # Ignore DNS from DHCP
+      use-routes: false    # Ignore routes from DHCP
+    nameservers:
+      addresses:
+        - 8.8.8.8
+        - 8.8.4.4
+    routes:
+      - to: 0.0.0.0/0
+        via: 192.168.1.1   # Static IPv4 gateway
+      - to: ::/0
+        via: 2001:db8::1   # Static IPv6 gateway
