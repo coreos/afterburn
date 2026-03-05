@@ -10,6 +10,7 @@ packages:
     actions:
       post-upstream-clone:
         - wget https://src.fedoraproject.org/rpms/rust-afterburn/raw/rawhide/f/rust-afterburn.spec
+        - wget https://src.fedoraproject.org/rpms/rust-afterburn/raw/rawhide/f/90-afterburn-authorized-keys-file.conf
       changelog-entry:
         - bash -c 'echo "- New upstream release"'
 
