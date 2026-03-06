@@ -7,6 +7,7 @@ srpm:
 	# similar to https://github.com/actions/checkout/issues/760, but for COPR
 	git config --global --add safe.directory '*'
 	curl -LOf https://src.fedoraproject.org/rpms/rust-afterburn/raw/rawhide/f/rust-afterburn.spec
+	curl -LOf https://src.fedoraproject.org/rpms/rust-afterburn/raw/rawhide/f/90-afterburn-authorized-keys-file.conf
 	version=$$(git describe --always --tags | sed -e 's,-,\.,g' -e 's,^v,,'); \
 	git archive --format=tar --prefix=afterburn-$$version/ HEAD | gzip > afterburn-$$version.crate; \
 	sed -ie "s,^Version:.*,Version: $$version," rust-afterburn.spec
