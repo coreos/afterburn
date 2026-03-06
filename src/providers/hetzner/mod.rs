@@ -69,15 +69,15 @@ impl MetadataProvider for HetznerProvider {
     fn attributes(&self) -> Result<HashMap<String, String>> {
         let metadata: Metadata = self
             .client
-            .get(retry::Yaml, HETZNER_METADATA_BASE_URL.to_string())
+            .get(retry::Yaml, HETZNER_METADATA_BASE_URL.to_owned())
             .send()?
-            .unwrap();
+            .expect("return_on_404 should be disabled");
 
         let private_networks: Vec<PrivateNetwork> = self
             .client
             .get(retry::Yaml, Self::endpoint_for("private-networks"))
             .send()?
-            .unwrap();
+            .expect("return_on_404 should be disabled");
 
         Ok(Attributes {
             metadata,
@@ -120,7 +120,7 @@ impl MetadataProvider for HetznerProvider {
             .client
             .get(retry::Yaml, Self::endpoint_for("network-config"))
             .send()?
-            .unwrap_or_default();
+            .expect("return_on_404 should be disabled");
 
         network_config
             .config
@@ -239,6 +239,29 @@ struct Metadata {
 struct NetworkConfig {
     #[serde(default)]
     config: Vec<NetworkConfigEntry>,
+}
+
+impl NetworkConfig {
+    /// Helper method to extract the first available public IPv6 address.
+    fn get_public_ipv6(&self) -> Option<String> {
+        let addr_str = self
+            .config
+            .iter()
+            .find(|n| n.network_type == "physical")?
+            .subnets
+            .iter()
+            .find(|sub| sub.ipv6.is_some_and(|b| b))?
+            .address
+            .as_ref()?;
+
+        match IpNetwork::from_str(addr_str).ok()? {
+            IpNetwork::V4(_) => {
+                error!("Expected IPv6 but found IPv4 {addr_str}");
+                None
+            }
+            IpNetwork::V6(network) => Some(network.ip().to_string()),
+        }
+    }
 }
 
 #[derive(Debug, Deserialize)]
@@ -383,6 +406,14 @@ impl From<Attributes> for HashMap<String, String> {
             &mut out,
             "HETZNER_PUBLIC_IPV4",
             attributes.metadata.public_ipv4,
+        );
+        add_value(
+            &mut out,
+            "HETZNER_PUBLIC_IPV6",
+            attributes
+                .metadata
+                .network_config
+                .and_then(|n| n.get_public_ipv6()),
         );
         add_value(&mut out, "HETZNER_REGION", attributes.metadata.region);
 

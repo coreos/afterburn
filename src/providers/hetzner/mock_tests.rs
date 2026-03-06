@@ -22,13 +22,14 @@ fn setup() -> (mockito::ServerGuard, HetznerProvider) {
 #[test]
 fn test_attributes() {
     let endpoint_metadata = "/hetzner/v1/metadata";
-    let endpoint_networks = "/hetzner/v1/metadata/private-networks";
+    let endpoint_private_networks = "/hetzner/v1/metadata/private-networks";
     let (mut server, provider) = setup();
 
     let availability_zone = "fsn1-dc14";
     let hostname = "some-hostname";
     let instance_id = "12345678";
     let public_ipv4 = "192.0.2.10";
+    let public_ipv6 = "1a00:1a0:a000:a000::1";
     let region = "eu-central";
 
     let body_metadata = format!(
@@ -39,26 +40,45 @@ public-ipv4: {public_ipv4}
 region: {region}
 local-ipv4: ''
 public-keys: []
-vendor_data: "blah blah blah""#
+vendor_data: "blah blah blah"
+network-config:
+     version: 1
+     config:
+         - type: physical
+           name: eth0
+           mac_address: "11:11:11:11:11:11"
+           subnets:
+             - type: dhcp
+               ipv4: true
+             - type: static
+               address: {public_ipv6}/64
+               ipv6: true
+               gateway: aa11::1
+               dns_nameservers:
+                 - 0a01:0ff:ff00::add:2
+                 - 0a01:0ff:ff00::add:1"#
     );
 
     let ip_0 = "10.0.0.2";
     let ip_1 = "10.128.0.2";
-
-    let body_networks = format!(
+    let body_private_networks = format!(
         r#"- ip: {ip_0}
 - ip: {ip_1}"#
     );
 
-    let expected = maplit::hashmap! {
-        "HETZNER_AVAILABILITY_ZONE".to_string() => availability_zone.to_string(),
-        "HETZNER_HOSTNAME".to_string() => hostname.to_string(),
-        "HETZNER_INSTANCE_ID".to_string() => instance_id.to_string(),
-        "HETZNER_PUBLIC_IPV4".to_string() => public_ipv4.to_string(),
-        "HETZNER_REGION".to_string() => region.to_string(),
-        "HETZNER_PRIVATE_IPV4_0".to_string() => ip_0.to_string(),
-        "HETZNER_PRIVATE_IPV4_1".to_string() => ip_1.to_string(),
-    };
+    let expected = HashMap::from([
+        (
+            "HETZNER_AVAILABILITY_ZONE".to_owned(),
+            availability_zone.to_owned(),
+        ),
+        ("HETZNER_HOSTNAME".to_owned(), hostname.to_owned()),
+        ("HETZNER_INSTANCE_ID".to_owned(), instance_id.to_owned()),
+        ("HETZNER_PUBLIC_IPV4".to_owned(), public_ipv4.to_owned()),
+        ("HETZNER_PUBLIC_IPV6".to_owned(), public_ipv6.to_owned()),
+        ("HETZNER_REGION".to_owned(), region.to_owned()),
+        ("HETZNER_PRIVATE_IPV4_0".to_owned(), ip_0.to_owned()),
+        ("HETZNER_PRIVATE_IPV4_1".to_owned(), ip_1.to_owned()),
+    ]);
 
     // Fail on not found
     provider.attributes().unwrap_err();
@@ -79,23 +99,23 @@ vendor_data: "blah blah blah""#
         .create();
 
     // Fail on internal server errors (networks endpoint)
-    let mock_networks = server
-        .mock("GET", endpoint_networks)
+    let mock_private_networks = server
+        .mock("GET", endpoint_private_networks)
         .with_status(503)
         .create();
     provider.attributes().unwrap_err();
-    mock_networks.assert();
+    mock_private_networks.assert();
 
     // Fetch metadata
-    let mock_networks = server
-        .mock("GET", endpoint_networks)
+    let mock_private_networks = server
+        .mock("GET", endpoint_private_networks)
         .with_status(200)
-        .with_body(body_networks)
+        .with_body(body_private_networks)
         .create();
 
     let actual = provider.attributes().unwrap();
     mock_metadata.assert();
-    mock_networks.assert();
+    mock_private_networks.assert();
     assert_eq!(actual, expected);
 }
 
