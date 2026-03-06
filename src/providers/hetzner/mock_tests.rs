@@ -1,7 +1,14 @@
+use std::{collections::HashMap, fs, net::IpAddr, str::FromStr};
+
+use ipnetwork::IpNetwork;
 use mockito;
 use openssh_keys::Data;
+use pnet_base::MacAddr;
 
-use crate::providers::MetadataProvider;
+use crate::{
+    network::{Interface, NetworkRoute},
+    providers::MetadataProvider,
+};
 
 use super::HetznerProvider;
 
@@ -177,4 +184,105 @@ fn test_pubkeys() {
         .create();
     let keys = provider.ssh_keys().unwrap();
     assert_eq!(keys.len(), 2);
+}
+
+#[test]
+fn test_networks() {
+    let endpoint_network_config = "/hetzner/v1/metadata/network-config";
+    let (mut server, provider) = setup();
+
+    let name = "interface_name";
+    let mac_addr = "11:11:11:11:11:11";
+    let ipv6_network = "2a01:4f9:c013:f7c7::1/64";
+    let gateway = "fa11::1";
+    let dns_nameserver_1 = "1a01:0ff:ff00::add:1";
+    let dns_nameserver_2 = "1a01:0ff:ff00::add:2";
+
+    let body_network_config = format!(
+        r#"version: 1
+config:
+  - type: physical
+    name: {name}
+    mac_address: {mac_addr}
+    subnets:
+      - type: dhcp
+        ipv4: true
+      - type: static
+        address: {ipv6_network}
+        ipv6: true
+        gateway: {gateway}
+        dns_nameservers:
+          - {dns_nameserver_1}
+          - {dns_nameserver_2}"#
+    );
+
+    let expected = vec![Interface {
+        name: Some(name.into()),
+        mac_address: Some(MacAddr::from_str(mac_addr).unwrap()),
+        nameservers: vec![
+            IpAddr::from_str(dns_nameserver_1).unwrap(),
+            IpAddr::from_str(dns_nameserver_2).unwrap(),
+        ],
+        ip_addresses: vec![IpNetwork::from_str(ipv6_network).unwrap()],
+        dhcp: Some(crate::network::DhcpSetting::V4),
+        routes: vec![NetworkRoute {
+            destination: IpNetwork::from_str("::/0").unwrap(),
+            gateway: IpAddr::from_str(gateway).unwrap(),
+        }],
+        unmanaged: false,
+        priority: 20,
+        bond: None,
+        required_for_online: None,
+        path: None,
+    }];
+
+    assert!(provider.networks().is_err(), "Should fail on not found");
+
+    let mock_metadata = server
+        .mock("GET", endpoint_network_config)
+        .with_status(503)
+        .create();
+    assert!(
+        provider.networks().is_err(),
+        "Should fail on internal server error"
+    );
+    mock_metadata.assert();
+
+    let mock_metadata = server
+        .mock("GET", endpoint_network_config)
+        .with_status(200)
+        .with_body(body_network_config)
+        .expect(1)
+        .create();
+
+    let actual = provider.networks().unwrap();
+    mock_metadata.assert();
+
+    assert_eq!(actual, expected);
+}
+
+#[test]
+fn test_netplan_config() {
+    let endpoint_network_config = "/hetzner/v1/metadata/network-config";
+    let (mut server, provider) = setup();
+
+    let body = fs::read("./tests/fixtures/hetzner/network-config.yaml")
+        .expect("Unable to read network-config fixture");
+    let expected = String::from_utf8(
+        fs::read("./tests/fixtures/hetzner/netplan-config.yaml")
+            .expect("Unable to read network-config fixture"),
+    )
+    .unwrap();
+
+    let mock_metadata = server
+        .mock("GET", endpoint_network_config)
+        .with_status(200)
+        .with_body(body)
+        .expect(1)
+        .create();
+
+    let actual = provider.netplan_config().unwrap().unwrap();
+    mock_metadata.assert();
+
+    assert_eq!(actual, expected);
 }

@@ -1,0 +1,24 @@
+availability-zone: hel1-dc2
+hostname: my-server
+instance-id: 42
+local-ipv4: ''
+network-config:
+    version: 1
+    config:
+        - type: physical
+          name: eth0
+          mac_address: 00:00:00:00:00:00
+          subnets:
+            - type: dhcp
+              ipv4: true
+            - type: static
+              address: 0a00:0a0:a000:a000::1/64
+              ipv6: true
+              gateway: aa11::1
+              dns_nameservers:
+                - 0a01:0ff:ff00::add:2
+                - 0a01:0ff:ff00::add:1
+public-ipv4: 1.2.3.4
+public-keys:
+    - ssh-ed25519 AAAAA3AAAA1AAAA1AAA5AAAAAA6AAAAAA3AAAAAAA/A4AAAAAA+AAAAA8A3AAA3AA8AA
+region: eu-central
