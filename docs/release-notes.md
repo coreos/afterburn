@@ -14,6 +14,7 @@ Minor changes:
 
 - KubeVirt: Refactor for a more integrated testing, similar to ProxmoxVE
 - Makefile: download `90-afterburn-authorized-keys-file.conf` for rpm building
+- ProxmoxVE: Define DNS entries for every interface, not just the first
 
 Packaging changes:
 
