@@ -1,0 +1,22 @@
+[Unit]
+Description=Afterburn Ignition Config Fragment Generator
+Documentation=https://coreos.github.io/afterburn/
+
+# Only run on platforms that support ignition fragment generation.
+ConditionKernelCommandLine=|ignition.platform.id=azure
+
+# Run after networking is available (needed for IMDS) and after
+# ignition-fetch has retrieved the base config, but before
+# ignition-kargs so the fragment is merged in time.
+Wants=network-online.target
+After=network-online.target
+After=ignition-fetch.service
+Before=ignition-kargs.service
+
+OnFailure=emergency.target
+OnFailureJobMode=isolate
+
+[Service]
+ExecStart=/usr/bin/afterburn ignition-fragment
+Type=oneshot
+RemainAfterExit=yes

@@ -14,6 +14,8 @@
 
 //! Azure provider, metadata and wireserver fetcher.
 
+pub(crate) mod config;
+
 use super::goalstate;
 
 use std::collections::HashMap;
@@ -87,6 +89,57 @@ pub struct Azure {
 struct Attributes {
     pub virtual_ipv4: Option<IpAddr>,
     pub dynamic_ipv4: Option<IpAddr>,
+}
+
+#[derive(Debug, Deserialize)]
+struct ImdsSshKey {
+    #[serde(rename = "keyData")]
+    key_data: String,
+    #[serde(default)]
+    path: String,
+}
+
+fn imds_key_path_context(path: &str) -> String {
+    let value = path.trim();
+    if value.is_empty() {
+        String::new()
+    } else {
+        format!(" (path: {value})")
+    }
+}
+
+pub(crate) fn parse_imds_public_keys(body: &str) -> Result<Vec<PublicKey>> {
+    let items: Vec<ImdsSshKey> =
+        serde_json::from_str(body).context("failed to parse IMDS publicKeys JSON")?;
+
+    items
+        .into_iter()
+        .enumerate()
+        .map(|(index, item)| {
+            let key_data = item
+                .key_data
+                .replace("\r\n", "")
+                .replace('\n', "")
+                .trim()
+                .to_string();
+
+            if key_data.is_empty() {
+                anyhow::bail!(
+                    "IMDS publicKeys entry at index {}{} has empty keyData",
+                    index,
+                    imds_key_path_context(&item.path),
+                );
+            }
+
+            PublicKey::parse(&key_data).with_context(|| {
+                format!(
+                    "failed to parse IMDS public key at index {}{}",
+                    index,
+                    imds_key_path_context(&item.path)
+                )
+            })
+        })
+        .collect()
 }
 
 impl Azure {
@@ -282,8 +335,6 @@ impl Azure {
         Ok(vmsize)
     }
 
-    /// Fetch SSH public keys from Azure Instance Metadata Service (IMDS)
-    /// https://learn.microsoft.com/en-us/azure/virtual-machines/instance-metadata-service
     fn fetch_ssh_keys(&self) -> Result<Vec<PublicKey>> {
         const URL: &str = "metadata/instance/compute/publicKeys?api-version=2021-02-01";
         let url = format!("{}/{}", Self::metadata_endpoint(), URL);
@@ -300,32 +351,7 @@ impl Azure {
             .context("failed to query IMDS for publicKeys")?
             .ok_or_else(|| anyhow::anyhow!("IMDS did not return a publicKeys payload"))?;
 
-        #[derive(Debug, Deserialize)]
-        struct ImdsSshKey {
-            #[serde(rename = "keyData")]
-            key_data: String,
-            path: String,
-        }
-
-        let items: Vec<ImdsSshKey> =
-            serde_json::from_str(&body).context("failed to parse IMDS publicKeys JSON")?;
-
-        let keys: Vec<PublicKey> = items
-            .into_iter()
-            .map(|item| {
-                let kd = item
-                    .key_data
-                    .replace("\r\n", "")
-                    .replace('\n', "")
-                    .trim()
-                    .to_string();
-
-                PublicKey::parse(&kd)
-                    .with_context(|| format!("failed to parse IMDS key at path {}", item.path))
-            })
-            .collect::<Result<_>>()?;
-
-        Ok(keys)
+        parse_imds_public_keys(&body)
     }
 
     /// Report ready state to the WireServer.

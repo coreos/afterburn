@@ -19,6 +19,8 @@ pub(crate) enum CliConfig {
     Multi(multi::CliMulti),
     #[clap(subcommand)]
     Exp(exp::CliExp),
+    /// Generate an Azure Ignition config fragment.
+    IgnitionFragment,
 }
 
 impl CliConfig {
@@ -27,6 +29,7 @@ impl CliConfig {
         match self {
             CliConfig::Multi(cmd) => cmd.run(),
             CliConfig::Exp(cmd) => cmd.run(),
+            CliConfig::IgnitionFragment => crate::providers::microsoft::azure::config::generate(),
         }
     }
 }
@@ -230,5 +233,19 @@ mod tests {
         .collect();
 
         parse_args(t3).unwrap();
+    }
+
+    #[test]
+    fn test_ignition_fragment_cmd() {
+        let args: Vec<_> = ["afterburn", "ignition-fragment"]
+            .iter()
+            .map(ToString::to_string)
+            .collect();
+
+        let cmd = parse_args(args).unwrap();
+        match cmd {
+            CliConfig::IgnitionFragment => {}
+            x => panic!("unexpected cmd: {x:?}"),
+        };
     }
 }
