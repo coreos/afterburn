@@ -5,12 +5,11 @@ Documentation=https://coreos.github.io/afterburn/
 # Only run on platforms that support ignition fragment generation.
 ConditionKernelCommandLine=|ignition.platform.id=azure
 
-# Run after networking is available (needed for IMDS) and after
-# ignition-fetch has retrieved the base config, but before
-# ignition-kargs so the fragment is merged in time.
+# Run after networking is available (needed for IMDS), and in parallel
+# with ignition-fetch so this path can emit its own diagnostics while
+# still completing before ignition-kargs merge processing.
 Wants=network-online.target
 After=network-online.target
-After=ignition-fetch.service
 Before=ignition-kargs.service
 
 OnFailure=emergency.target
