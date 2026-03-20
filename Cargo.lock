@@ -40,6 +40,7 @@ dependencies = [
  "nix 0.29.0",
  "openssh-keys",
  "openssl",
+ "percent-encoding",
  "pnet_base",
  "pnet_datalink",
  "reqwest",

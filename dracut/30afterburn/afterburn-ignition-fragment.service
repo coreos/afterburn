@@ -16,6 +16,6 @@ OnFailure=emergency.target
 OnFailureJobMode=isolate
 
 [Service]
-ExecStart=/usr/bin/afterburn ignition-fragment
+ExecStart=/usr/bin/afterburn render-ignition --cmdline --render-ignition-dir /usr/lib/ignition/base.platform.d/azure/ --platform-extensions
 Type=oneshot
 RemainAfterExit=yes
