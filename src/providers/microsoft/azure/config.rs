@@ -14,8 +14,8 @@
 
 //! Ignition config fragment generation for Azure.
 //!
-//! Reads username and SSH keys from IMDS and writes a JSON Ignition fragment to
-//! `/usr/lib/ignition/base.platform.d/azure/extensions.ign`.
+//! Generates per-feature `.ign` fragment files (hostname, user) into a
+//! directory specified by `--render-ignition-dir`.
 //! OVF data is only consulted for `adminPassword` policy checks.
 
 use anyhow::{anyhow, Context, Result};
@@ -29,9 +29,7 @@ use std::path::Path;
 use crate::retry;
 use crate::util;
 
-const OUTPUT_DIR: &str = "/usr/lib/ignition/base.platform.d/azure";
-const OUTPUT_FILE: &str = "/usr/lib/ignition/base.platform.d/azure/extensions.ign";
-const IGNITION_VERSION: &str = "3.4.0";
+const IGNITION_VERSION: &str = "3.0.0";
 const IMDS_ENDPOINT: &str = "http://169.254.169.254";
 
 const MOUNT_DEVICE: &str = "/dev/sr0";
@@ -40,20 +38,40 @@ const CDROM_FS_TYPES: &[&str] = &["udf", "iso9660"];
 const MOUNT_RETRIES: u8 = 3;
 
 #[derive(Debug, Serialize)]
-struct IgnitionConfig {
-    ignition: IgnitionMeta,
+pub(crate) struct IgnitionConfig {
+    pub ignition: IgnitionMeta,
     #[serde(skip_serializing_if = "Option::is_none")]
-    passwd: Option<Passwd>,
+    pub storage: Option<Storage>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub passwd: Option<Passwd>,
 }
 
 #[derive(Debug, Serialize)]
-struct IgnitionMeta {
-    version: String,
+pub(crate) struct IgnitionMeta {
+    pub version: String,
 }
 
 #[derive(Debug, Serialize)]
-struct Passwd {
-    users: Vec<PasswdUser>,
+pub(crate) struct Storage {
+    pub files: Vec<StorageFile>,
+}
+
+#[derive(Debug, Serialize)]
+pub(crate) struct StorageFile {
+    pub path: String,
+    pub mode: u32,
+    pub overwrite: bool,
+    pub contents: FileContents,
+}
+
+#[derive(Debug, Serialize)]
+pub(crate) struct FileContents {
+    pub source: String,
+}
+
+#[derive(Debug, Serialize)]
+pub(crate) struct Passwd {
+    pub users: Vec<PasswdUser>,
 }
 
 #[derive(Debug, Serialize)]
@@ -61,7 +79,7 @@ struct Passwd {
 struct PasswdUser {
     name: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    ssh_authorized_keys: Option<Vec<String>>,
+    pub ssh_authorized_keys: Option<Vec<String>>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -124,29 +142,89 @@ fn fetch_imds_ssh_keys(client: &retry::Client) -> Result<Vec<String>> {
     Ok(keys.into_iter().map(|k| k.to_key_format()).collect())
 }
 
-fn write_fragment_file(config: &IgnitionConfig, output_dir: &str, output_file: &str) -> Result<()> {
-    fs::create_dir_all(output_dir).with_context(|| format!("failed to create {output_dir}"))?;
+pub(crate) fn hostname_data_uri(hostname: &str) -> String {
+    let encoded =
+        percent_encoding::utf8_percent_encode(hostname, percent_encoding::NON_ALPHANUMERIC)
+            .to_string();
+    format!("data:,{encoded}")
+}
+
+pub(crate) fn write_fragment(config: &IgnitionConfig, path: &Path) -> Result<()> {
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent)
+            .with_context(|| format!("failed to create directory {}", parent.display()))?;
+    }
     let json =
         serde_json::to_string_pretty(config).context("failed to serialize ignition config")?;
-    fs::write(output_file, json.as_bytes())
-        .with_context(|| format!("failed to write {output_file}"))?;
-    fs::set_permissions(Path::new(output_file), fs::Permissions::from_mode(0o644))
-        .with_context(|| format!("failed to set permissions on {output_file}"))?;
+    fs::write(path, json.as_bytes())
+        .with_context(|| format!("failed to write {}", path.display()))?;
+    fs::set_permissions(path, fs::Permissions::from_mode(0o644))
+        .with_context(|| format!("failed to set permissions on {}", path.display()))?;
     Ok(())
 }
 
-/// Generate and write an Azure Ignition config fragment.
-pub(crate) fn generate() -> Result<()> {
-    let imds = imds_client().context("failed to initialize IMDS client")?;
-    let username = fetch_os_profile_username(&imds)?;
-    let ssh_keys = fetch_imds_ssh_keys(&imds)?;
-
-    validate_ovf_admin_password_policy()?;
+pub(crate) fn generate_hostname_fragment(
+    provider: &dyn crate::providers::MetadataProvider,
+    output_dir: &str,
+) -> Result<()> {
+    let hostname = match provider.hostname()? {
+        Some(h) => h,
+        None => {
+            warn!("hostname requested, but not available from this provider");
+            return Ok(());
+        }
+    };
 
     let config = IgnitionConfig {
         ignition: IgnitionMeta {
             version: IGNITION_VERSION.to_string(),
         },
+        storage: Some(Storage {
+            files: vec![StorageFile {
+                path: "/etc/hostname".into(),
+                mode: 420,
+                overwrite: true,
+                contents: FileContents {
+                    source: hostname_data_uri(&hostname),
+                },
+            }],
+        }),
+        passwd: None,
+    };
+
+    let path = Path::new(output_dir).join("hostname.ign");
+    write_fragment(&config, &path)?;
+    info!("wrote hostname ignition fragment"; "path" => path.display().to_string());
+    Ok(())
+}
+
+pub(crate) fn generate_user_fragment(
+    provider_id: &str,
+    _provider: &dyn crate::providers::MetadataProvider,
+    output_dir: &str,
+) -> Result<()> {
+    let (username, ssh_keys) = match provider_id {
+        "azure" | "azurestack" => {
+            let imds = imds_client().context("failed to initialize IMDS client")?;
+            let username = fetch_os_profile_username(&imds)?;
+            let keys = fetch_imds_ssh_keys(&imds)?;
+            validate_ovf_admin_password_policy()?;
+            (username, keys)
+        }
+        _ => {
+            warn!(
+                "platform-user requested, but not supported for provider '{}'",
+                provider_id
+            );
+            return Ok(());
+        }
+    };
+
+    let config = IgnitionConfig {
+        ignition: IgnitionMeta {
+            version: IGNITION_VERSION.to_string(),
+        },
+        storage: None,
         passwd: Some(Passwd {
             users: vec![PasswdUser {
                 name: username,
@@ -159,8 +237,9 @@ pub(crate) fn generate() -> Result<()> {
         }),
     };
 
-    write_fragment_file(&config, OUTPUT_DIR, OUTPUT_FILE)?;
-    info!("wrote ignition fragment"; "path" => OUTPUT_FILE);
+    let path = Path::new(output_dir).join("user.ign");
+    write_fragment(&config, &path)?;
+    info!("wrote platform-user ignition fragment"; "path" => path.display().to_string());
     Ok(())
 }
 
@@ -228,8 +307,9 @@ mod tests {
     fn test_ignition_json_with_keys() {
         let cfg = IgnitionConfig {
             ignition: IgnitionMeta {
-                version: "3.4.0".into(),
+                version: "3.0.0".into(),
             },
+            storage: None,
             passwd: Some(Passwd {
                 users: vec![PasswdUser {
                     name: "testuser".into(),
@@ -239,7 +319,7 @@ mod tests {
         };
         let v: serde_json::Value =
             serde_json::from_str(&serde_json::to_string_pretty(&cfg).unwrap()).unwrap();
-        assert_eq!(v["ignition"]["version"], "3.4.0");
+        assert_eq!(v["ignition"]["version"], "3.0.0");
         assert_eq!(v["passwd"]["users"][0]["name"], "testuser");
         assert_eq!(
             v["passwd"]["users"][0]["sshAuthorizedKeys"][0],
@@ -251,8 +331,9 @@ mod tests {
     fn test_ignition_json_no_keys() {
         let cfg = IgnitionConfig {
             ignition: IgnitionMeta {
-                version: "3.4.0".into(),
+                version: "3.0.0".into(),
             },
+            storage: None,
             passwd: Some(Passwd {
                 users: vec![PasswdUser {
                     name: "azureuser".into(),
@@ -346,15 +427,15 @@ mod tests {
     }
 
     #[test]
-    fn test_write_fragment_file_emits_valid_json_and_permissions() {
+    fn test_write_fragment_emits_valid_json_and_permissions() {
         let tmp = tempfile::tempdir().unwrap();
-        let out_dir = tmp.path().join("base.platform.d/azure");
-        let out_file = out_dir.join("extensions.ign");
+        let out_file = tmp.path().join("base.platform.d/azure/extensions.ign");
 
         let cfg = IgnitionConfig {
             ignition: IgnitionMeta {
-                version: "3.4.0".into(),
+                version: "3.0.0".into(),
             },
+            storage: None,
             passwd: Some(Passwd {
                 users: vec![PasswdUser {
                     name: "core".into(),
@@ -365,16 +446,70 @@ mod tests {
             }),
         };
 
-        write_fragment_file(&cfg, out_dir.to_str().unwrap(), out_file.to_str().unwrap()).unwrap();
+        write_fragment(&cfg, &out_file).unwrap();
 
         assert!(out_file.exists());
 
         let raw = fs::read_to_string(&out_file).unwrap();
         let json: serde_json::Value = serde_json::from_str(&raw).unwrap();
-        assert_eq!(json["ignition"]["version"], "3.4.0");
+        assert_eq!(json["ignition"]["version"], "3.0.0");
         assert_eq!(json["passwd"]["users"][0]["name"], "core");
 
         let mode = fs::metadata(&out_file).unwrap().permissions().mode() & 0o777;
         assert_eq!(mode, 0o644);
+    }
+
+    #[test]
+    fn test_hostname_data_uri() {
+        assert_eq!(hostname_data_uri("core1"), "data:,core1");
+        assert_eq!(
+            hostname_data_uri("my-vm.internal"),
+            "data:,my%2Dvm%2Einternal"
+        );
+    }
+
+    #[test]
+    fn test_hostname_storage_fragment_serialization() {
+        let cfg = IgnitionConfig {
+            ignition: IgnitionMeta {
+                version: "3.0.0".into(),
+            },
+            storage: Some(Storage {
+                files: vec![StorageFile {
+                    path: "/etc/hostname".into(),
+                    mode: 420,
+                    overwrite: true,
+                    contents: FileContents {
+                        source: hostname_data_uri("myvm"),
+                    },
+                }],
+            }),
+            passwd: None,
+        };
+
+        let v: serde_json::Value =
+            serde_json::from_str(&serde_json::to_string_pretty(&cfg).unwrap()).unwrap();
+        assert_eq!(v["ignition"]["version"], "3.0.0");
+        assert_eq!(v["storage"]["files"][0]["path"], "/etc/hostname");
+        assert_eq!(v["storage"]["files"][0]["mode"], 420);
+        assert_eq!(v["storage"]["files"][0]["overwrite"], true);
+        assert_eq!(v["storage"]["files"][0]["contents"]["source"], "data:,myvm");
+        assert!(v.get("passwd").is_none());
+    }
+
+    #[test]
+    fn test_storage_none_omitted_from_json() {
+        let cfg = IgnitionConfig {
+            ignition: IgnitionMeta {
+                version: "3.0.0".into(),
+            },
+            storage: None,
+            passwd: None,
+        };
+
+        let v: serde_json::Value =
+            serde_json::from_str(&serde_json::to_string_pretty(&cfg).unwrap()).unwrap();
+        assert!(v.get("storage").is_none());
+        assert!(v.get("passwd").is_none());
     }
 }
