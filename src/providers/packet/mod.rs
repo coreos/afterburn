@@ -287,7 +287,7 @@ impl PacketProvider {
             return Ok((interfaces, vec![]));
         }
 
-        let mut attrs = vec![
+        let mut sd_attrs = vec![
             ("TransmitHashPolicy".to_owned(), "layer3+4".to_owned()),
             ("MIIMonitorSec".to_owned(), ".1".to_owned()),
             ("UpDelaySec".to_owned(), ".2".to_owned()),
@@ -297,8 +297,21 @@ impl PacketProvider {
                 network::bonding_mode_to_string(netinfo.bonding.mode)?,
             ),
         ];
+
+        let mut nm_attrs = vec![
+            ("xmit_hash_policy".to_owned(), "layer3+4".to_owned()),
+            ("miimon".to_owned(), "100".to_owned()),
+            ("updelay".to_owned(), "200".to_owned()),
+            ("downdelay".to_owned(), "200".to_owned()),
+            (
+                "mode".to_owned(),
+                network::bonding_mode_to_string(netinfo.bonding.mode)?,
+            ),
+        ];
+
         if netinfo.bonding.mode == network::BONDING_MODE_LACP {
-            attrs.push(("LACPTransmitRate".to_owned(), "fast".to_owned()));
+            sd_attrs.push(("LACPTransmitRate".to_owned(), "fast".to_owned()));
+            nm_attrs.push(("lacp_rate".to_owned(), "fast".to_owned()));
         }
 
         let mut network_devices = Vec::with_capacity(bonds.len());
@@ -314,7 +327,11 @@ impl PacketProvider {
                 priority: Some(5),
                 sd_netdev_sections: vec![network::SdSection {
                     name: "Bond".to_owned(),
-                    attributes: attrs.clone(),
+                    attributes: sd_attrs.clone(),
+                }],
+                nm_sections: vec![network::NmSection {
+                    name: "bond".to_owned(),
+                    attributes: nm_attrs.clone(),
                 }],
             };
             network_devices.push(bond_netdev);

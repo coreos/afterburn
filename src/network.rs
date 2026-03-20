@@ -115,11 +115,27 @@ pub struct VirtualNetDev {
     pub mac_address: MacAddr,
     pub priority: Option<u32>,
     pub sd_netdev_sections: Vec<SdSection>,
+    pub nm_sections: Vec<NmSection>,
 }
 
 /// A free-form `systemd.netdev` section.
+///
+/// Visit the [systemd documentation](docs) to learn more.
+///
+/// docs: https://www.freedesktop.org/software/systemd/man/latest/systemd.netdev.html
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SdSection {
+    pub name: String,
+    pub attributes: Vec<(String, String)>,
+}
+
+/// A free-form `NetworkManager` section.
+///
+/// Visit the [NetworkManager documentation](docs) to learn more.
+///
+/// docs: https://www.networkmanager.dev/docs/api/latest/ref-settings.html
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct NmSection {
     pub name: String,
     pub attributes: Vec<(String, String)>,
 }
@@ -441,9 +457,8 @@ impl VirtualNetDev {
             )?;
         }
 
-        // Convert netdev [Bond] or [VLAN] sections to the corresponding NetworkManager sections
+        // Bond and VLAN specific configurations
         // See:
-        // - https://www.freedesktop.org/software/systemd/man/latest/systemd.netdev.html
         // - https://www.networkmanager.dev/docs/api/latest/settings-vlan.html
         // - https://www.networkmanager.dev/docs/api/latest/settings-bond.html
         // - https://www.kernel.org/doc/html/v5.9/networking/bonding.html
@@ -451,63 +466,11 @@ impl VirtualNetDev {
             NetDevKind::Bond => {
                 writeln!(config, "\n[bond]")?;
 
-                for section in &self.sd_netdev_sections {
-                    if section.name != "Bond" {
-                        continue;
-                    }
-
+                if let Some(section) = self.nm_sections.iter().find(|s| s.name == "bond") {
                     for (key, value) in &section.attributes {
-                        let sec_to_ms = |value: &str| -> Result<u32> {
-                            let secs = value.parse::<f32>()?;
-                            Ok((secs * 1000.0) as u32)
-                        };
-
-                        match key.as_str() {
-                            "Mode" => writeln!(config, "mode={}", value)?,
-
-                            // Seconds to milliseconds
-                            "MIIMonitorSec" => writeln!(config, "miimon={}", sec_to_ms(value)?)?,
-                            "UpDelaySec" => writeln!(config, "updelay={}", sec_to_ms(value)?)?,
-                            "DownDelaySec" => writeln!(config, "downdelay={}", sec_to_ms(value)?)?,
-                            "ARPIntervalSec" => {
-                                writeln!(config, "arp_interval={}", sec_to_ms(value)?)?
-                            }
-                            "PeerNotifyDelaySec" => {
-                                writeln!(config, "peer_notif_delay={}", sec_to_ms(value)?)?
-                            }
-                            // Already accepts seconds
-                            "LearnPacketIntervalSec" => writeln!(config, "lp_interval={}", value)?,
-
-                            "TransmitHashPolicy" => writeln!(config, "xmit_hash_policy={}", value)?,
-                            "LACPTransmitRate" => writeln!(config, "lacp_rate={}", value)?,
-                            "AdSelect" => writeln!(config, "ad_select={}", value)?,
-                            "AdActorSystemPriority" => {
-                                writeln!(config, "ad_actor_sys_prio={}", value)?
-                            }
-                            "AdUserPortKey" => writeln!(config, "ad_user_port_key={}", value)?,
-                            "AdActorSystem" => writeln!(config, "ad_actor_system={}", value)?,
-                            "FailOverMACPolicy" => writeln!(config, "fail_over_mac={}", value)?,
-                            "ARPValidate" => writeln!(config, "arp_validate={}", value)?,
-                            "ARPIPTargets" => writeln!(config, "arp_ip_target={}", value)?,
-                            "ARPAllTargets" => writeln!(config, "arp_all_targets={}", value)?,
-                            "PrimaryReselectPolicy" => {
-                                writeln!(config, "primary_reselect={}", value)?
-                            }
-                            "ResendIGMP" => writeln!(config, "resend_igmp={}", value)?,
-                            "PacketsPerSlave" => writeln!(config, "packets_per_slave={}", value)?,
-                            "GratuitousARP" => writeln!(config, "gratuitous_arp={}", value)?,
-                            "AllSlavesActive" => writeln!(config, "all_slaves_active={}", value)?,
-                            "DynamicTransmitLoadBalancing" => {
-                                writeln!(config, "tlb_dynamic_lb={}", value)?
-                            }
-                            "MinLinks" => writeln!(config, "min_links={}", value)?,
-                            "ARPMissedMax" => writeln!(config, "arp_missed_max={}", value)?,
-
-                            // Pass through remaining options with lowercase keys
-                            _ => writeln!(config, "{}={}", key.to_lowercase(), value)?,
-                        }
+                        writeln!(config, "{}={}", key, value)?;
                     }
-                }
+                };
 
                 // WARN: does not set mac address when creating the device, only when reloading the configuration
                 writeln!(config, "\n[ethernet]")?;
@@ -519,53 +482,22 @@ impl VirtualNetDev {
             }
             NetDevKind::Vlan => {
                 writeln!(config, "\n[vlan]")?;
-                let mut flags: u32 = 0;
-                let mut set_flags = false;
+                let mut has_parent = false;
 
-                for section in &self.sd_netdev_sections {
-                    if section.name != "VLAN" {
-                        continue;
-                    }
-
+                if let Some(section) = self.nm_sections.iter().find(|s| s.name == "vlan") {
                     for (key, value) in &section.attributes {
-                        match key.as_str() {
-                            "ReorderHeader" | "GVRP" | "LooseBinding" | "MVRP" => {
-                                set_flags = true;
-                                if value != "1" {
-                                    continue;
-                                }
-
-                                match key.as_str() {
-                                    "ReorderHeader" => flags += 0x1,
-                                    "GVRP" => flags += 0x2,
-                                    "LooseBinding" => flags += 0x4,
-                                    "MVRP" => flags += 0x8,
-                                    _ => unreachable!(),
-                                }
-                            }
-
-                            "IngressQOSMaps" => writeln!(
-                                config,
-                                "ingress-priority-map={}",
-                                value.replace('-', ":")
-                            )?,
-                            "EgressQOSMaps" => {
-                                writeln!(config, "egress-priority-map={}", value.replace('-', ":"))?
-                            }
-
-                            // Pass through remaining options with lowercase keys
-                            s => writeln!(config, "{}={}", s.to_lowercase(), value)?,
-                        };
+                        if key == "parent" {
+                            has_parent = true;
+                        }
+                        writeln!(config, "{}={}", key, value)?;
                     }
-
-                    if set_flags {
-                        writeln!(config, "flags={flags}")?
-                    }
-                }
+                };
 
                 // Match parent based on mac-address
-                writeln!(config, "\n[ethernet]")?;
-                writeln!(config, "mac-address={}", self.mac_address)?;
+                if !has_parent {
+                    writeln!(config, "\n[ethernet]")?;
+                    writeln!(config, "mac-address={}", self.mac_address)?;
+                }
             }
         }
 
@@ -704,6 +636,7 @@ mod tests {
                     mac_address: MacAddr(0, 0, 0, 0, 0, 0),
                     priority: Some(20),
                     sd_netdev_sections: vec![],
+                    nm_sections: vec![],
                 },
                 "20-vlan0.netdev",
             ),
@@ -714,6 +647,7 @@ mod tests {
                     mac_address: MacAddr(0, 0, 0, 0, 0, 0),
                     priority: None,
                     sd_netdev_sections: vec![],
+                    nm_sections: vec![],
                 },
                 "10-vlan0.netdev",
             ),
@@ -895,6 +829,7 @@ DHCP=ipv4
                             attributes: vec![],
                         },
                     ],
+                    nm_sections: vec![],
                 },
                 "[NetDev]
 Name=vlan0
@@ -915,6 +850,7 @@ oingo=boingo
                     mac_address: MacAddr(0, 0, 0, 0, 0, 0),
                     priority: Some(20),
                     sd_netdev_sections: vec![],
+                    nm_sections: vec![],
                 },
                 "[NetDev]
 Name=vlan0
@@ -1004,18 +940,19 @@ dns=2a01:4ff:ff00::add:2;2a01:4ff:ff00::add:1;
                     kind: NetDevKind::Bond,
                     mac_address: MacAddr(0, 0, 0, 0, 0, 0),
                     priority: Some(20),
-                    sd_netdev_sections: vec![SdSection {
-                        name: String::from("Bond"),
+                    sd_netdev_sections: vec![],
+                    nm_sections: vec![NmSection {
+                        name: String::from("bond"),
                         attributes: vec![
                             (
-                                String::from("Mode"),
+                                String::from("mode"),
                                 bonding_mode_to_string(BONDING_MODE_BALANCE_RR).unwrap(),
                             ),
-                            (String::from("MIIMonitorSec"), String::from("0.1")),
-                            (String::from("LearnPacketIntervalSec"), String::from("2")),
-                            (String::from("ARPValidate"), String::from("backup")),
-                            (String::from("AllSlavesActive"), String::from("1")),
-                            (String::from("TransmitHashPolicy"), String::from("layer2")),
+                            (String::from("miimon"), String::from("100")),
+                            (String::from("lp_interval"), String::from("2")),
+                            (String::from("arp_validate"), String::from("backup")),
+                            (String::from("all_slaves_active"), String::from("1")),
+                            (String::from("xmit_hash_policy"), String::from("layer2")),
                         ],
                     }],
                 },
@@ -1051,14 +988,14 @@ method=disabled
                     kind: NetDevKind::Vlan,
                     mac_address: MacAddr(0, 0, 0, 0, 0, 0),
                     priority: Some(20),
-                    sd_netdev_sections: vec![SdSection {
-                        name: String::from("VLAN"),
+                    sd_netdev_sections: vec![],
+                    nm_sections: vec![NmSection {
+                        name: String::from("vlan"),
                         attributes: vec![
-                            (String::from("Id"), String::from("100")),
-                            (String::from("IngressQOSMaps"), String::from("25-5")),
-                            (String::from("Protocol"), String::from("802.1ad")),
-                            (String::from("GVRP"), String::from("1")),
-                            (String::from("LooseBinding"), String::from("1")),
+                            (String::from("id"), String::from("100")),
+                            (String::from("ingress-priority-map"), String::from("25:5")),
+                            (String::from("protocol"), String::from("802.1ad")),
+                            (String::from("flags"), String::from("6")),
                         ],
                     }],
                 },
