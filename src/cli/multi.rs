@@ -29,6 +29,9 @@ pub struct CliMulti {
     /// The directory into which a netplan config is written
     #[arg(long = "netplan-config", value_name = "path")]
     netplan_config_dir: Option<String>,
+    /// The directory into which NetworkManager connection profiles are written
+    #[arg(long = "networkmanager-profiles", value_name = "path")]
+    networkmanager_profiles_dir: Option<String>,
     /// Update SSH keys for the given user
     #[arg(long = "ssh-keys", value_name = "username")]
     ssh_keys_user: Option<String>,
@@ -45,6 +48,7 @@ impl CliMulti {
         if self.attributes_file.is_none()
             && self.network_units_dir.is_none()
             && self.netplan_config_dir.is_none()
+            && self.networkmanager_profiles_dir.is_none()
             && !self.check_in
             && self.ssh_keys_user.is_none()
             && self.hostname_file.is_none()
@@ -80,6 +84,11 @@ impl CliMulti {
         self.netplan_config_dir
             .map_or(Ok(()), |x| metadata.write_netplan_config(x))
             .context("writing netplan config")?;
+
+        // write NetworkManager profile if configured to do so
+        self.networkmanager_profiles_dir
+            .map_or(Ok(()), |x| metadata.write_nm_profiles(x))
+            .context("writing NetworkManager profile")?;
 
         // perform boot check-in.
         if self.check_in {

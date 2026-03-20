@@ -19,6 +19,7 @@
 use anyhow::{anyhow, bail, Context, Result};
 use ipnetwork::IpNetwork;
 use pnet_base::MacAddr;
+use slog_scope::warn;
 use std::fmt::Write;
 use std::net::IpAddr;
 use std::string::String;
@@ -174,19 +175,24 @@ impl DhcpSetting {
 }
 
 impl Interface {
-    /// Return a deterministic `systemd.network` unit name for this device.
-    pub fn sd_network_unit_name(&self) -> Result<String> {
-        let iface_name = match (&self.name, &self.mac_address, &self.path) {
-            (Some(ref name), _, _) => name.clone(),
+    /// Return a deterministic name for this device
+    pub fn name(&self) -> Result<String> {
+        Ok(match (&self.name, &self.mac_address, &self.path) {
+            (Some(ref name), _, _) => name.to_owned(),
             (None, Some(ref addr), _) => addr.to_string(),
-            (None, None, Some(ref path)) => path.to_string(),
+            (None, None, Some(ref path)) => path.to_owned(),
             (None, None, None) => bail!("network interface without name, MAC address, or path"),
-        };
-        let unit_name = format!("{:02}-{}.network", self.priority, iface_name);
-        Ok(unit_name)
+        })
     }
 
-    pub fn config(&self) -> String {
+    /// Return a deterministic `systemd.networkd` unit name for this device.
+    pub fn sd_unit_name(&self) -> Result<String> {
+        let iface_name = self.name()?;
+        Ok(format!("{:02}-{iface_name}.network", self.priority))
+    }
+
+    /// Return the `systemd.networkd` configuration for this device.
+    pub fn sd_config(&self) -> String {
         let mut config = String::new();
 
         // [Match] section
@@ -241,6 +247,148 @@ impl Interface {
 
         config
     }
+
+    /// Return the `NetworkManager` connection profile configuration for this device.
+    pub fn nm_config(&self) -> Result<String> {
+        let mut config = String::new();
+
+        // [connection] section
+        writeln!(config, "[connection]")?;
+        let iface_name = self.name()?;
+        writeln!(config, "id={}", iface_name)?;
+        writeln!(config, "type=ethernet")?;
+        // NOTE: Only write interface name if there is no mac address to match against.
+        // This is to avoid issues with modern systems which use predictable interface names.
+        // e.g. Hetzner's network-config names the primary interface eth0, but on FCOS the
+        // interface is instead given a predictable name (enp1s0) and hence won't be matched.
+        // See: https://www.freedesktop.org/wiki/Software/systemd/PredictableNetworkInterfaceNames
+        if self.mac_address.is_none() {
+            if let Some(name) = &self.name {
+                writeln!(config, "interface-name={}", name)?;
+            }
+        }
+        writeln!(config, "autoconnect=true")?;
+        writeln!(
+            config,
+            "autoconnect-priority={}",
+            // Lower number means higher priority for systemd, but it's the opposite for NM
+            100 - (self.priority as u16)
+        )?;
+
+        if let Some(ref bond) = self.bond {
+            writeln!(config, "master={bond}")?;
+            writeln!(config, "slave-type=bond")?;
+        }
+
+        // [ethernet] section
+        if let Some(ref mac) = self.mac_address {
+            writeln!(config, "\n[ethernet]")?;
+            writeln!(config, "mac-address={}", mac)?;
+        }
+
+        // [ipv4] and [ipv6] sections
+        self.write_nm_config_common(&mut config)?;
+
+        Ok(config)
+    }
+
+    /// Write NetworkManager configuration that is common to bond masters and other devices to the
+    /// given string.
+    fn write_nm_config_common(&self, config: &mut String) -> Result<()> {
+        // [ipv4] section
+        writeln!(config, "\n[ipv4]")?;
+
+        let ipv4_addresses: Vec<_> = self.ip_addresses.iter().filter(|a| a.is_ipv4()).collect();
+        if matches!(self.dhcp, Some(DhcpSetting::V4 | DhcpSetting::Both)) {
+            writeln!(config, "method=auto")?;
+        } else if ipv4_addresses.is_empty() {
+            writeln!(config, "method=disabled")?;
+        } else {
+            writeln!(config, "method=manual")?;
+            for (i, addr) in ipv4_addresses.iter().enumerate() {
+                writeln!(config, "address{}={}", i + 1, addr)?;
+            }
+
+            // IPv4 gateway
+            let (default_route, ipv4_routes): (Vec<NetworkRoute>, Vec<NetworkRoute>) = self
+                .routes
+                .iter()
+                .filter(|r| r.destination.is_ipv4())
+                .partition(|r| r.destination.prefix() == 0);
+            if let Some(default_route) = default_route.first() {
+                writeln!(config, "gateway={}", default_route.gateway)?;
+            }
+
+            // IPv4 routes (non-default)
+            for (i, route) in ipv4_routes.iter().enumerate() {
+                writeln!(
+                    config,
+                    "route{}={},{},0",
+                    i + 1,
+                    route.destination,
+                    route.gateway
+                )?;
+            }
+        }
+
+        // IPv4 DNS servers
+        let ipv4_dns: Vec<_> = self.nameservers.iter().filter(|n| n.is_ipv4()).collect();
+        if !ipv4_dns.is_empty() {
+            let dns_list: Vec<_> = ipv4_dns
+                .iter()
+                .map(std::string::ToString::to_string)
+                .collect();
+            writeln!(config, "dns={};", dns_list.join(";"))?;
+        }
+
+        // [ipv6] section
+        writeln!(config, "\n[ipv6]")?;
+
+        let ipv6_addresses: Vec<_> = self.ip_addresses.iter().filter(|a| a.is_ipv6()).collect();
+        if matches!(self.dhcp, Some(DhcpSetting::V6 | DhcpSetting::Both)) {
+            writeln!(config, "method=auto")?;
+        } else if ipv6_addresses.is_empty() {
+            writeln!(config, "method=disabled")?;
+        } else {
+            writeln!(config, "method=manual")?;
+            for (i, addr) in ipv6_addresses.iter().enumerate() {
+                writeln!(config, "address{}={}", i + 1, addr)?;
+            }
+
+            // IPv6 gateway
+            let (default_route, ipv6_routes): (Vec<NetworkRoute>, Vec<NetworkRoute>) = self
+                .routes
+                .iter()
+                .filter(|r| r.destination.is_ipv6())
+                .partition(|r| r.destination.prefix() == 0);
+            if let Some(default_route) = default_route.first() {
+                writeln!(config, "gateway={}", default_route.gateway)?;
+            }
+
+            // IPv6 routes (non-default)
+            for (i, route) in ipv6_routes.iter().enumerate() {
+                writeln!(
+                    config,
+                    "route{}={},{},0",
+                    i + 1,
+                    route.destination,
+                    route.gateway
+                )?;
+            }
+        }
+
+        // IPv6 DNS servers
+        let ipv6_dns: Vec<_> = self.nameservers.iter().filter(|n| n.is_ipv6()).collect();
+        if !ipv6_dns.is_empty() {
+            let dns_list: Vec<_> = ipv6_dns
+                .iter()
+                .map(std::string::ToString::to_string)
+                .collect();
+            writeln!(config, "dns={};", dns_list.join(";"))?;
+        }
+
+        Ok(())
+    }
 }
 
 impl VirtualNetDev {
@@ -268,6 +416,160 @@ impl VirtualNetDev {
         }
 
         config
+    }
+
+    /// Return the `NetworkManager` connection profile configuration for this virtual device.
+    /// Optionally takes a physical interface, which is used for bond network configuration.
+    pub fn nm_config(&self, physical_interface: Option<&Interface>) -> Result<String> {
+        let mut config = String::new();
+        if self.kind == NetDevKind::Bond && physical_interface.is_none() {
+            warn!("writing bond configuration without networking information",);
+        };
+
+        writeln!(config, "[connection]")?;
+        writeln!(config, "id={}", self.name)?;
+        writeln!(config, "type={}", self.kind.sd_netdev_kind())?;
+        // Unlike in the `Interface` implementation, we don't need to worry about
+        // predictable names, as these devices will be created by NetworkManager.
+        writeln!(config, "interface-name={}", self.name)?;
+        writeln!(config, "autoconnect=true")?;
+        if let Some(priority) = self.priority {
+            writeln!(
+                config,
+                "autoconnect-priority={}",
+                100i32.saturating_sub_unsigned(priority)
+            )?;
+        }
+
+        // Convert netdev [Bond] or [VLAN] sections to the corresponding NetworkManager sections
+        // See:
+        // - https://www.freedesktop.org/software/systemd/man/latest/systemd.netdev.html
+        // - https://www.networkmanager.dev/docs/api/latest/settings-vlan.html
+        // - https://www.networkmanager.dev/docs/api/latest/settings-bond.html
+        // - https://www.kernel.org/doc/html/v5.9/networking/bonding.html
+        match self.kind {
+            NetDevKind::Bond => {
+                writeln!(config, "\n[bond]")?;
+
+                for section in &self.sd_netdev_sections {
+                    if section.name != "Bond" {
+                        continue;
+                    }
+
+                    for (key, value) in &section.attributes {
+                        let sec_to_ms = |value: &str| -> Result<u32> {
+                            let secs = value.parse::<f32>()?;
+                            Ok((secs * 1000.0) as u32)
+                        };
+
+                        match key.as_str() {
+                            "Mode" => writeln!(config, "mode={}", value)?,
+
+                            // Seconds to milliseconds
+                            "MIIMonitorSec" => writeln!(config, "miimon={}", sec_to_ms(value)?)?,
+                            "UpDelaySec" => writeln!(config, "updelay={}", sec_to_ms(value)?)?,
+                            "DownDelaySec" => writeln!(config, "downdelay={}", sec_to_ms(value)?)?,
+                            "ARPIntervalSec" => {
+                                writeln!(config, "arp_interval={}", sec_to_ms(value)?)?
+                            }
+                            "PeerNotifyDelaySec" => {
+                                writeln!(config, "peer_notif_delay={}", sec_to_ms(value)?)?
+                            }
+                            // Already accepts seconds
+                            "LearnPacketIntervalSec" => writeln!(config, "lp_interval={}", value)?,
+
+                            "TransmitHashPolicy" => writeln!(config, "xmit_hash_policy={}", value)?,
+                            "LACPTransmitRate" => writeln!(config, "lacp_rate={}", value)?,
+                            "AdSelect" => writeln!(config, "ad_select={}", value)?,
+                            "AdActorSystemPriority" => {
+                                writeln!(config, "ad_actor_sys_prio={}", value)?
+                            }
+                            "AdUserPortKey" => writeln!(config, "ad_user_port_key={}", value)?,
+                            "AdActorSystem" => writeln!(config, "ad_actor_system={}", value)?,
+                            "FailOverMACPolicy" => writeln!(config, "fail_over_mac={}", value)?,
+                            "ARPValidate" => writeln!(config, "arp_validate={}", value)?,
+                            "ARPIPTargets" => writeln!(config, "arp_ip_target={}", value)?,
+                            "ARPAllTargets" => writeln!(config, "arp_all_targets={}", value)?,
+                            "PrimaryReselectPolicy" => {
+                                writeln!(config, "primary_reselect={}", value)?
+                            }
+                            "ResendIGMP" => writeln!(config, "resend_igmp={}", value)?,
+                            "PacketsPerSlave" => writeln!(config, "packets_per_slave={}", value)?,
+                            "GratuitousARP" => writeln!(config, "gratuitous_arp={}", value)?,
+                            "AllSlavesActive" => writeln!(config, "all_slaves_active={}", value)?,
+                            "DynamicTransmitLoadBalancing" => {
+                                writeln!(config, "tlb_dynamic_lb={}", value)?
+                            }
+                            "MinLinks" => writeln!(config, "min_links={}", value)?,
+                            "ARPMissedMax" => writeln!(config, "arp_missed_max={}", value)?,
+
+                            // Pass through remaining options with lowercase keys
+                            _ => writeln!(config, "{}={}", key.to_lowercase(), value)?,
+                        }
+                    }
+                }
+
+                // WARN: does not set mac address when creating the device, only when reloading the configuration
+                writeln!(config, "\n[ethernet]")?;
+                writeln!(config, "cloned-mac-address={}", self.mac_address)?;
+
+                if let Some(interface) = physical_interface {
+                    interface.write_nm_config_common(&mut config)?;
+                }
+            }
+            NetDevKind::Vlan => {
+                writeln!(config, "\n[vlan]")?;
+                let mut flags: u32 = 0;
+                let mut set_flags = false;
+
+                for section in &self.sd_netdev_sections {
+                    if section.name != "VLAN" {
+                        continue;
+                    }
+
+                    for (key, value) in &section.attributes {
+                        match key.as_str() {
+                            "ReorderHeader" | "GVRP" | "LooseBinding" | "MVRP" => {
+                                set_flags = true;
+                                if value != "1" {
+                                    continue;
+                                }
+
+                                match key.as_str() {
+                                    "ReorderHeader" => flags += 0x1,
+                                    "GVRP" => flags += 0x2,
+                                    "LooseBinding" => flags += 0x4,
+                                    "MVRP" => flags += 0x8,
+                                    _ => unreachable!(),
+                                }
+                            }
+
+                            "IngressQOSMaps" => writeln!(
+                                config,
+                                "ingress-priority-map={}",
+                                value.replace('-', ":")
+                            )?,
+                            "EgressQOSMaps" => {
+                                writeln!(config, "egress-priority-map={}", value.replace('-', ":"))?
+                            }
+
+                            // Pass through remaining options with lowercase keys
+                            s => writeln!(config, "{}={}", s.to_lowercase(), value)?,
+                        };
+                    }
+
+                    if set_flags {
+                        writeln!(config, "flags={flags}")?
+                    }
+                }
+
+                // Match parent based on mac-address
+                writeln!(config, "\n[ethernet]")?;
+                writeln!(config, "mac-address={}", self.mac_address)?;
+            }
+        }
+
+        Ok(config)
     }
 }
 
@@ -369,7 +671,7 @@ mod tests {
         ];
 
         for (iface, expected) in cases {
-            let unit_name = iface.sd_network_unit_name().unwrap();
+            let unit_name = iface.sd_unit_name().unwrap();
             assert_eq!(unit_name, expected);
         }
     }
@@ -389,7 +691,7 @@ mod tests {
             unmanaged: false,
             required_for_online: None,
         };
-        i.sd_network_unit_name().unwrap_err();
+        i.sd_unit_name().unwrap_err();
     }
 
     #[test]
@@ -423,7 +725,7 @@ mod tests {
     }
 
     #[test]
-    fn interface_config() {
+    fn interface_sd_config() {
         let is = vec![
             (
                 Interface {
@@ -473,7 +775,7 @@ Gateway=127.0.0.1
 ",
             ),
             // this isn't really a valid interface object, but it's testing
-            // the minimum possible configuration for all peices at the same
+            // the minimum possible configuration for all pieces at the same
             // time, so I'll allow it. (sdemos)
             (
                 Interface {
@@ -567,12 +869,12 @@ DHCP=ipv4
         ];
 
         for (i, s) in is {
-            assert_eq!(i.config(), s);
+            assert_eq!(i.sd_config(), s);
         }
     }
 
     #[test]
-    fn virtual_netdev_config() {
+    fn virtual_netdev_sd_config() {
         let ds = vec![
             (
                 VirtualNetDev {
@@ -624,6 +926,164 @@ MACAddress=00:00:00:00:00:00
 
         for (d, s) in ds {
             assert_eq!(d.sd_netdev_config(), s);
+        }
+    }
+
+    #[test]
+    fn interface_nm_config() {
+        let ds = vec![(
+            Interface {
+                name: Some(String::from("eth0")),
+                mac_address: Some(MacAddr(0, 0, 0, 0, 0, 0)),
+                path: None,
+                priority: 0,
+                nameservers: vec![
+                    IpAddr::V6(Ipv6Addr::new(0x2a01, 0x4ff, 0xff00, 0, 0, 0, 0x0add, 2)),
+                    IpAddr::V6(Ipv6Addr::new(0x2a01, 0x4ff, 0xff00, 0, 0, 0, 0x0add, 1)),
+                ],
+                ip_addresses: vec![IpNetwork::V6(
+                    Ipv6Network::new(Ipv6Addr::new(0x2a01, 0x4f9, 0xc014, 0x6d3b, 0, 0, 0, 1), 64)
+                        .unwrap(),
+                )],
+                dhcp: Some(DhcpSetting::V4),
+                routes: vec![NetworkRoute {
+                    destination: IpNetwork::V6(
+                        Ipv6Network::new(Ipv6Addr::new(0, 0, 0, 0, 0, 0, 0, 0), 0).unwrap(),
+                    ),
+                    gateway: IpAddr::V6(Ipv6Addr::new(0xfe80, 0, 0, 0, 0, 0, 0, 1)),
+                }],
+                bond: None,
+                unmanaged: false,
+                required_for_online: None,
+            },
+            "[connection]
+id=eth0
+type=ethernet
+autoconnect=true
+autoconnect-priority=100
+
+[ethernet]
+mac-address=00:00:00:00:00:00
+
+[ipv4]
+method=auto
+
+[ipv6]
+method=manual
+address1=2a01:4f9:c014:6d3b::1/64
+gateway=fe80::1
+dns=2a01:4ff:ff00::add:2;2a01:4ff:ff00::add:1;
+",
+        )];
+
+        for (d, s) in ds {
+            assert_eq!(d.nm_config().unwrap(), s);
+        }
+    }
+
+    #[test]
+    fn virtual_netdev_nm_config() {
+        let interface = Interface {
+            name: Some(String::from("bond0")),
+            mac_address: Some(MacAddr(0, 0, 0, 0, 0, 0)),
+            path: None,
+            priority: 0,
+            nameservers: vec![],
+            ip_addresses: vec![],
+            dhcp: Some(DhcpSetting::V4),
+            routes: vec![],
+            bond: None,
+            unmanaged: false,
+            required_for_online: None,
+        };
+
+        let dis = vec![
+            (
+                VirtualNetDev {
+                    name: String::from("bond0"),
+                    kind: NetDevKind::Bond,
+                    mac_address: MacAddr(0, 0, 0, 0, 0, 0),
+                    priority: Some(20),
+                    sd_netdev_sections: vec![SdSection {
+                        name: String::from("Bond"),
+                        attributes: vec![
+                            (
+                                String::from("Mode"),
+                                bonding_mode_to_string(BONDING_MODE_BALANCE_RR).unwrap(),
+                            ),
+                            (String::from("MIIMonitorSec"), String::from("0.1")),
+                            (String::from("LearnPacketIntervalSec"), String::from("2")),
+                            (String::from("ARPValidate"), String::from("backup")),
+                            (String::from("AllSlavesActive"), String::from("1")),
+                            (String::from("TransmitHashPolicy"), String::from("layer2")),
+                        ],
+                    }],
+                },
+                Some(&interface),
+                "[connection]
+id=bond0
+type=bond
+interface-name=bond0
+autoconnect=true
+autoconnect-priority=80
+
+[bond]
+mode=balance-rr
+miimon=100
+lp_interval=2
+arp_validate=backup
+all_slaves_active=1
+xmit_hash_policy=layer2
+
+[ethernet]
+cloned-mac-address=00:00:00:00:00:00
+
+[ipv4]
+method=auto
+
+[ipv6]
+method=disabled
+",
+            ),
+            (
+                VirtualNetDev {
+                    name: String::from("vlan0"),
+                    kind: NetDevKind::Vlan,
+                    mac_address: MacAddr(0, 0, 0, 0, 0, 0),
+                    priority: Some(20),
+                    sd_netdev_sections: vec![SdSection {
+                        name: String::from("VLAN"),
+                        attributes: vec![
+                            (String::from("Id"), String::from("100")),
+                            (String::from("IngressQOSMaps"), String::from("25-5")),
+                            (String::from("Protocol"), String::from("802.1ad")),
+                            (String::from("GVRP"), String::from("1")),
+                            (String::from("LooseBinding"), String::from("1")),
+                        ],
+                    }],
+                },
+                None,
+                "[connection]
+id=vlan0
+type=vlan
+interface-name=vlan0
+autoconnect=true
+autoconnect-priority=80
+
+[vlan]
+id=100
+ingress-priority-map=25:5
+protocol=802.1ad
+flags=6
+
+[ethernet]
+mac-address=00:00:00:00:00:00
+",
+            ),
+        ];
+
+        for (d, i, s) in dis {
+            assert_eq!(d.nm_config(i).unwrap(), s);
         }
     }
 }
