@@ -20,6 +20,7 @@
       "id": "network_142213448",
       "link": "interface_58965010",
       "type": "ipv4",
+      "network_id": "network_142213448",
       "ip_address": "10.135.202.146",
       "netmask": "255.255.255.192",
       "routes": [
@@ -44,6 +45,7 @@
       "id": "network_142211974",
       "link": "interface_58965014",
       "type": "ipv4",
+      "network_id": "network_142211974",
       "ip_address": "133.133.209.229",
       "netmask": "255.255.255.240",
       "routes": [
