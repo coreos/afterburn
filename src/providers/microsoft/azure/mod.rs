@@ -375,6 +375,28 @@ impl Azure {
         Ok(vmsize)
     }
 
+    fn fetch_admin_username(&self) -> Result<Option<String>> {
+        const URL: &str =
+            "metadata/instance/compute/osProfile/adminUsername?api-version=2021-02-01&format=text";
+        let url = format!("{}/{}", Self::metadata_endpoint(), URL);
+
+        let username = self
+            .client
+            .clone()
+            .header(
+                HeaderName::from_static("metadata"),
+                HeaderValue::from_static("true"),
+            )
+            .get(retry::Raw, url)
+            .send::<String>()
+            .context("failed to query IMDS for adminUsername")?;
+
+        match username {
+            Some(u) if !u.trim().is_empty() => Ok(Some(u.trim().to_string())),
+            _ => Ok(None),
+        }
+    }
+
     fn fetch_ssh_keys(&self) -> Result<Vec<PublicKey>> {
         const URL: &str = "metadata/instance/compute/publicKeys?api-version=2021-02-01";
         let url = format!("{}/{}", Self::metadata_endpoint(), URL);
@@ -434,6 +456,10 @@ impl MetadataProvider for Azure {
 
     fn hostname(&self) -> Result<Option<String>> {
         self.fetch_hostname()
+    }
+
+    fn admin_username(&self) -> Result<Option<String>> {
+        self.fetch_admin_username()
     }
 
     fn ssh_keys(&self) -> Result<Vec<PublicKey>> {
