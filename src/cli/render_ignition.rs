@@ -4,7 +4,7 @@
 //! Each enabled feature writes its own `.ign` file; Ignition merges them
 //! natively from `base.platform.d/<platform>/`.
 
-use anyhow::{Context, Result};
+use anyhow::{bail, Context, Result};
 use clap::{ArgGroup, Parser};
 
 /// Render Ignition config fragments from cloud provider metadata
@@ -32,9 +32,18 @@ pub struct CliRenderIgnition {
 }
 
 impl CliRenderIgnition {
-    /// Run the `render-ignition` sub-command.
+    const SUPPORTED_PROVIDERS: &[&str] = &["azure"];
+
     pub(crate) fn run(self) -> Result<()> {
         let provider_id = super::get_provider(self.provider.as_deref())?;
+
+        if !Self::SUPPORTED_PROVIDERS.contains(&provider_id.as_str()) {
+            bail!(
+                "render-ignition is only supported for providers {:?}, got '{}'",
+                Self::SUPPORTED_PROVIDERS,
+                provider_id,
+            );
+        }
 
         let hostname = self.hostname || self.platform_extensions;
         let platform_user = self.platform_user || self.platform_extensions;
@@ -57,7 +66,6 @@ impl CliRenderIgnition {
 
         if platform_user {
             crate::providers::microsoft::azure::config::generate_user_fragment(
-                &provider_id,
                 metadata.as_ref(),
                 &self.render_ignition_dir,
             )

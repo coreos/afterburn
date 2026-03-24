@@ -18,19 +18,16 @@
 //! directory specified by `--render-ignition-dir`.
 //! OVF data is only consulted for `adminPassword` policy checks.
 
-use anyhow::{anyhow, Context, Result};
-use reqwest::header::{HeaderName, HeaderValue};
+use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use slog_scope::{info, warn};
 use std::fs;
 use std::os::unix::fs::PermissionsExt;
 use std::path::Path;
 
-use crate::retry;
 use crate::util;
 
 const IGNITION_VERSION: &str = "3.0.0";
-const IMDS_ENDPOINT: &str = "http://169.254.169.254";
 
 const MOUNT_DEVICE: &str = "/dev/sr0";
 const MOUNT_POINT: &str = "/run/afterburn/media/";
@@ -101,47 +98,6 @@ struct LinuxProvisioningConfigurationSet {
     admin_password: String,
 }
 
-fn imds_client() -> Result<retry::Client> {
-    retry::Client::try_new().map(|client| {
-        client.header(
-            HeaderName::from_static("metadata"),
-            HeaderValue::from_static("true"),
-        )
-    })
-}
-
-fn fetch_os_profile_username(client: &retry::Client) -> Result<String> {
-    const URL: &str =
-        "metadata/instance/compute/osProfile/adminUsername?api-version=2021-02-01&format=text";
-    let url = format!("{IMDS_ENDPOINT}/{URL}");
-
-    let username = client
-        .get(retry::Raw, url)
-        .send::<String>()
-        .context("failed to query IMDS for adminUsername")?
-        .ok_or_else(|| anyhow!("IMDS did not return adminUsername"))?;
-
-    let username = username.trim();
-    if username.is_empty() {
-        anyhow::bail!("IMDS returned an empty adminUsername");
-    }
-    Ok(username.to_string())
-}
-
-fn fetch_imds_ssh_keys(client: &retry::Client) -> Result<Vec<String>> {
-    const URL: &str = "metadata/instance/compute/publicKeys?api-version=2021-02-01";
-    let url = format!("{IMDS_ENDPOINT}/{URL}");
-
-    let body = client
-        .get(retry::Raw, url)
-        .send::<String>()
-        .context("failed to query IMDS for publicKeys")?
-        .ok_or_else(|| anyhow!("IMDS did not return a publicKeys payload"))?;
-
-    let keys = super::parse_imds_public_keys(&body)?;
-    Ok(keys.into_iter().map(|k| k.to_key_format()).collect())
-}
-
 pub(crate) fn hostname_data_uri(hostname: &str) -> String {
     let encoded =
         percent_encoding::utf8_percent_encode(hostname, percent_encoding::NON_ALPHANUMERIC)
@@ -199,26 +155,28 @@ pub(crate) fn generate_hostname_fragment(
 }
 
 pub(crate) fn generate_user_fragment(
-    provider_id: &str,
-    _provider: &dyn crate::providers::MetadataProvider,
+    provider: &dyn crate::providers::MetadataProvider,
     output_dir: &str,
 ) -> Result<()> {
-    let (username, ssh_keys) = match provider_id {
-        "azure" | "azurestack" => {
-            let imds = imds_client().context("failed to initialize IMDS client")?;
-            let username = fetch_os_profile_username(&imds)?;
-            let keys = fetch_imds_ssh_keys(&imds)?;
-            validate_ovf_admin_password_policy()?;
-            (username, keys)
-        }
-        _ => {
-            warn!(
-                "platform-user requested, but not supported for provider '{}'",
-                provider_id
-            );
+    let username = provider
+        .admin_username()
+        .context("failed to query admin username from provider")?;
+    let username = match username {
+        Some(u) => u,
+        None => {
+            warn!("platform-user requested, but admin username not available from this provider");
             return Ok(());
         }
     };
+
+    let ssh_keys: Vec<String> = provider
+        .ssh_keys()
+        .context("failed to query SSH keys from provider")?
+        .into_iter()
+        .map(|k| k.to_key_format())
+        .collect();
+
+    validate_ovf_admin_password_policy()?;
 
     let config = IgnitionConfig {
         ignition: IgnitionMeta {
