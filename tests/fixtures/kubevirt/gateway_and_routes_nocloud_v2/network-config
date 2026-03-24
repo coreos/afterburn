@@ -1,0 +1,16 @@
+version: 2
+ethernets:
+  eth0:
+    dhcp4: true
+    dhcp6: true
+    gateway4: 192.168.1.2
+    gateway6: "2001:db8::2"
+    routes:
+      - to: 0.0.0.0/0
+        via: 192.168.1.1
+      - to: "::/0"
+        via: "2001:db8::1"
+    nameservers:
+      addresses:
+        - 8.8.8.8
+        - 8.8.4.4

@@ -13,7 +13,7 @@
 
 use super::provider::NetworkConfigurationFormat;
 use crate::{
-    network::{DhcpSetting, Interface, VirtualNetDev},
+    network::{dracut_addr, dracut_network, DhcpSetting, Interface, VirtualNetDev},
     providers::{kubevirt::configdrive::NetworkData, MetadataProvider},
 };
 use anyhow::{bail, Context, Result};
@@ -201,21 +201,9 @@ impl MetadataProvider for KubeVirtCloudConfig {
             for addr in iface.ip_addresses {
                 let (ip, netmask_or_prefix) = match addr {
                     IpNetwork::V4(n) => (n.ip().to_string(), n.mask().to_string()),
-                    IpNetwork::V6(n) => (n.ip().to_string(), n.prefix().to_string()),
+                    IpNetwork::V6(n) => (dracut_addr(&n.ip().into()), n.prefix().to_string()),
                 };
-
-                let gateway = iface.routes.iter().find(|r| {
-                    r.destination.prefix() == 0 && r.destination.is_ipv4() == addr.is_ipv4()
-                });
-
-                if let Some(gateway) = gateway {
-                    kargs.push(format!(
-                        "ip={}::{}:{}::{}:static",
-                        ip, gateway.gateway, netmask_or_prefix, id,
-                    ));
-                } else {
-                    kargs.push(format!("ip={}:::{}::{}:static", ip, netmask_or_prefix, id));
-                }
+                kargs.push(format!("ip={}:::{}::{}:static", ip, netmask_or_prefix, id));
             }
 
             // Add DHCP configuration
@@ -224,6 +212,19 @@ impl MetadataProvider for KubeVirtCloudConfig {
                     DhcpSetting::V4 => kargs.push(format!("ip={}:dhcp", id)),
                     DhcpSetting::V6 => kargs.push(format!("ip={}:dhcp6", id)),
                     DhcpSetting::Both => kargs.push(format!("ip={}:dhcp,dhcp6", id)),
+                }
+            }
+
+            // Add static routes for the interface (including DHCP interfaces)
+            // This allows DHCP interfaces to have static gateway configuration
+            for route in &iface.routes {
+                // Only add routes with prefix 0 (default routes)
+                if route.destination.prefix() == 0 {
+                    kargs.push(format!(
+                        "rd.route={}:{}",
+                        dracut_network(&route.destination),
+                        dracut_addr(&route.gateway)
+                    ));
                 }
             }
 
@@ -237,7 +238,7 @@ impl MetadataProvider for KubeVirtCloudConfig {
 
         // Add nameservers as separate arguments
         for nameserver in &all_nameservers {
-            kargs.push(format!("nameserver={}", nameserver));
+            kargs.push(format!("nameserver={}", dracut_addr(nameserver)));
         }
 
         if kargs.is_empty() {

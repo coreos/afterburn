@@ -1,0 +1,18 @@
+version: 1
+config:
+  - type: physical
+    name: eth0
+    subnets:
+      - type: dhcp4
+        gateway: 192.168.1.2
+        dns_nameservers:
+          - 8.8.8.8
+          - 8.8.4.4
+        routes:
+          - destination: 0.0.0.0/0
+            gateway: 192.168.1.1
+      - type: dhcp6
+        gateway: "2001:db8::2"
+        routes:
+          - destination: "::/0"
+            gateway: "2001:db8::1"

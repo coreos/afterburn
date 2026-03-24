@@ -45,3 +45,7 @@ lint:
 .PHONY: test
 test:
 	cargo test --all-targets --release
+
+.PHONY: validate-fixtures
+validate-fixtures:
+	python3 tests/fixtures/validate.py

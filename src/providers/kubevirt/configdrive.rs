@@ -265,7 +265,7 @@ impl NetworkData {
                 }
             }
 
-            // Collect nameservers
+            // Collect nameservers from network-specific DNS configuration
             for ns in &network.dns_nameservers {
                 let nameserver = IpAddr::from_str(ns)?;
                 if !all_nameservers.contains(&nameserver) {
@@ -273,39 +273,43 @@ impl NetworkData {
                 }
             }
 
-            // Process routes
-            for route in &network.routes {
-                // Handle network and netmask according to OpenStack schema
-                let destination = if route.network == "0.0.0.0" && route.netmask == "0.0.0.0" {
-                    // Default IPv4 route
-                    IpNetwork::from_str("0.0.0.0/0")?
-                } else if route.network == "::" && route.netmask == "::" {
-                    // Default IPv6 route
-                    IpNetwork::from_str("::/0")?
-                } else {
-                    // Calculate prefix length from netmask for proper CIDR notation
-                    let network_addr = IpAddr::from_str(&route.network)?;
-                    if let Ok(netmask_addr) = IpAddr::from_str(&route.netmask) {
-                        IpNetwork::with_netmask(network_addr, netmask_addr)?
-                    } else if let Ok(prefix_len) = route.netmask.parse::<u8>() {
-                        IpNetwork::new(network_addr, prefix_len)?
+            // Process routes — always add routes when present, regardless of network type.
+            // Per the OpenStack schema, routes are valid on any network type including
+            // ipv4_dhcp/ipv6_dhcp, allowing static gateway configuration with DHCP addresses.
+            {
+                for route in &network.routes {
+                    // Handle network and netmask according to OpenStack schema
+                    let destination = if route.network == "0.0.0.0" && route.netmask == "0.0.0.0" {
+                        // Default IPv4 route
+                        IpNetwork::from_str("0.0.0.0/0")?
+                    } else if route.network == "::" && route.netmask == "::" {
+                        // Default IPv6 route
+                        IpNetwork::from_str("::/0")?
                     } else {
-                        // For IPv6, netmask might be in full format like "ffff:ffff:ffff:ffff::"
-                        if network_addr.is_ipv6() && route.netmask == "ffff:ffff:ffff:ffff::" {
-                            IpNetwork::new(network_addr, 64)?
+                        // Calculate prefix length from netmask for proper CIDR notation
+                        let network_addr = IpAddr::from_str(&route.network)?;
+                        if let Ok(netmask_addr) = IpAddr::from_str(&route.netmask) {
+                            IpNetwork::with_netmask(network_addr, netmask_addr)?
+                        } else if let Ok(prefix_len) = route.netmask.parse::<u8>() {
+                            IpNetwork::new(network_addr, prefix_len)?
                         } else {
-                            return Err(anyhow::anyhow!(
-                                "Invalid netmask format: {}. Expected IP address or prefix length.",
-                                route.netmask
-                            ));
+                            // For IPv6, netmask might be in full format like "ffff:ffff:ffff:ffff::"
+                            if network_addr.is_ipv6() && route.netmask == "ffff:ffff:ffff:ffff::" {
+                                IpNetwork::new(network_addr, 64)?
+                            } else {
+                                return Err(anyhow::anyhow!(
+                                    "Invalid netmask format: {}. Expected IP address or prefix length.",
+                                    route.netmask
+                                ));
+                            }
                         }
-                    }
-                };
-                let gateway = IpAddr::from_str(&route.gateway)?;
-                iface.routes.push(NetworkRoute {
-                    destination,
-                    gateway,
-                });
+                    };
+                    let gateway = IpAddr::from_str(&route.gateway)?;
+                    iface.routes.push(NetworkRoute {
+                        destination,
+                        gateway,
+                    });
+                }
             }
         }
 
