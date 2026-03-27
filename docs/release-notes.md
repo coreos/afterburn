@@ -9,6 +9,7 @@ nav_order: 8
 Major changes:
 
 - KubeVirt: Add support for static IP configuration from cloud-init
+- Azure: Add `render-ignition` subcommand to generate Ignition config fragments from IMDS metadata
 
 Minor changes:
 
