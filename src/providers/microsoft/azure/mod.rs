@@ -14,6 +14,8 @@
 
 //! Azure provider, metadata and wireserver fetcher.
 
+pub(crate) mod config;
+
 use super::goalstate;
 
 use std::collections::HashMap;
@@ -87,6 +89,57 @@ pub struct Azure {
 struct Attributes {
     pub virtual_ipv4: Option<IpAddr>,
     pub dynamic_ipv4: Option<IpAddr>,
+}
+
+#[derive(Debug, Deserialize)]
+struct ImdsSshKey {
+    #[serde(rename = "keyData")]
+    key_data: String,
+    #[serde(default)]
+    path: String,
+}
+
+fn imds_key_path_context(path: &str) -> String {
+    let value = path.trim();
+    if value.is_empty() {
+        String::new()
+    } else {
+        format!(" (path: {value})")
+    }
+}
+
+pub(crate) fn parse_imds_public_keys(body: &str) -> Result<Vec<PublicKey>> {
+    let items: Vec<ImdsSshKey> =
+        serde_json::from_str(body).context("failed to parse IMDS publicKeys JSON")?;
+
+    items
+        .into_iter()
+        .enumerate()
+        .map(|(index, item)| {
+            let key_data = item
+                .key_data
+                .replace("\r\n", "")
+                .replace('\n', "")
+                .trim()
+                .to_string();
+
+            if key_data.is_empty() {
+                anyhow::bail!(
+                    "IMDS publicKeys entry at index {}{} has empty keyData",
+                    index,
+                    imds_key_path_context(&item.path),
+                );
+            }
+
+            PublicKey::parse(&key_data).with_context(|| {
+                format!(
+                    "failed to parse IMDS public key at index {}{}",
+                    index,
+                    imds_key_path_context(&item.path)
+                )
+            })
+        })
+        .collect()
 }
 
 impl Azure {
@@ -282,8 +335,28 @@ impl Azure {
         Ok(vmsize)
     }
 
-    /// Fetch SSH public keys from Azure Instance Metadata Service (IMDS)
-    /// https://learn.microsoft.com/en-us/azure/virtual-machines/instance-metadata-service
+    fn fetch_admin_username(&self) -> Result<Option<String>> {
+        const URL: &str =
+            "metadata/instance/compute/osProfile/adminUsername?api-version=2021-02-01&format=text";
+        let url = format!("{}/{}", Self::metadata_endpoint(), URL);
+
+        let username = self
+            .client
+            .clone()
+            .header(
+                HeaderName::from_static("metadata"),
+                HeaderValue::from_static("true"),
+            )
+            .get(retry::Raw, url)
+            .send::<String>()
+            .context("failed to query IMDS for adminUsername")?;
+
+        match username {
+            Some(u) if !u.trim().is_empty() => Ok(Some(u.trim().to_string())),
+            _ => Ok(None),
+        }
+    }
+
     fn fetch_ssh_keys(&self) -> Result<Vec<PublicKey>> {
         const URL: &str = "metadata/instance/compute/publicKeys?api-version=2021-02-01";
         let url = format!("{}/{}", Self::metadata_endpoint(), URL);
@@ -300,32 +373,7 @@ impl Azure {
             .context("failed to query IMDS for publicKeys")?
             .ok_or_else(|| anyhow::anyhow!("IMDS did not return a publicKeys payload"))?;
 
-        #[derive(Debug, Deserialize)]
-        struct ImdsSshKey {
-            #[serde(rename = "keyData")]
-            key_data: String,
-            path: String,
-        }
-
-        let items: Vec<ImdsSshKey> =
-            serde_json::from_str(&body).context("failed to parse IMDS publicKeys JSON")?;
-
-        let keys: Vec<PublicKey> = items
-            .into_iter()
-            .map(|item| {
-                let kd = item
-                    .key_data
-                    .replace("\r\n", "")
-                    .replace('\n', "")
-                    .trim()
-                    .to_string();
-
-                PublicKey::parse(&kd)
-                    .with_context(|| format!("failed to parse IMDS key at path {}", item.path))
-            })
-            .collect::<Result<_>>()?;
-
-        Ok(keys)
+        parse_imds_public_keys(&body)
     }
 
     /// Report ready state to the WireServer.
@@ -370,6 +418,10 @@ impl MetadataProvider for Azure {
         self.fetch_hostname()
     }
 
+    fn admin_username(&self) -> Result<Option<String>> {
+        self.fetch_admin_username()
+    }
+
     fn ssh_keys(&self) -> Result<Vec<PublicKey>> {
         self.fetch_ssh_keys()
     }
@@ -382,5 +434,45 @@ impl MetadataProvider for Azure {
             }
             self.report_ready_state()
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_imds_public_keys_rejects_malformed_key() {
+        let body = r#"
+[
+    {
+        "keyData": "not-an-ssh-key",
+        "path": "/home/core/.ssh/authorized_keys"
+    }
+]
+"#;
+
+        let err = parse_imds_public_keys(body).unwrap_err();
+        let message = format!("{err:#}");
+        assert!(message.contains("failed to parse IMDS public key"));
+        assert!(message.contains("/home/core/.ssh/authorized_keys"));
+    }
+
+    #[test]
+    fn test_parse_imds_public_keys_accepts_valid_key() {
+        let body = r#"
+[
+    {
+        "keyData": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAAAgQDYVEprvtYJXVOBN0XNKVVRNCRX6BlnNbI+USLGais1sUWPwtSg7z9K9vhbYAPUZcq8c/s5S9dg5vTHbsiyPCIDOKyeHba4MUJq8Oh5b2i71/3BISpyxTBH/uZDHdslW2a+SrPDCeuMMoss9NFhBdKtDkdG9zyi0ibmCP6yMdEX8Q== Generated by Nova",
+        "path": "/home/core/.ssh/authorized_keys"
+    }
+]
+"#;
+
+        let keys = parse_imds_public_keys(body).unwrap();
+        assert_eq!(keys.len(), 1);
+        assert!(keys[0]
+            .to_key_format()
+            .starts_with("ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAAAgQDYVEprvtYJ"));
     }
 }
