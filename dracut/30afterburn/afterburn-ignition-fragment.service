@@ -16,6 +16,8 @@ OnFailure=emergency.target
 OnFailureJobMode=isolate
 
 [Service]
+ExecStartPre=/usr/bin/mount -t tmpfs -o mode=0755,nodev,nosuid tmpfs /usr/lib/ignition/base.platform.d
+ExecStartPre=/usr/bin/mkdir -p /usr/lib/ignition/base.platform.d/azure
 ExecStart=/usr/bin/afterburn render-ignition --cmdline --render-ignition-dir /usr/lib/ignition/base.platform.d/azure/ --platform-extensions
 Type=oneshot
 RemainAfterExit=yes
