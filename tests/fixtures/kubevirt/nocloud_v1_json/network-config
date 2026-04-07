@@ -33,6 +33,7 @@
     },
     {
       "type": "physical",
+      "name": "eth2",
       "mac_address": "06:aa:bb:cc:dd:02",
       "subnets": [
         {

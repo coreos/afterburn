@@ -6,16 +6,28 @@ ethernets:
       - 2001:db8::10/64
     gateway4: 192.168.1.1
     gateway6: 2001:db8::1
+    nameservers:
+      addresses:
+        - 8.8.8.8
+        - 8.8.4.4
+        - 2001:4860:4860::8888
+        - 2001:4860:4860::8844
   eth1:
     dhcp4: true
     dhcp6: true
+    nameservers:
+      addresses:
+        - 8.8.8.8
+        - 8.8.4.4
+        - 2001:4860:4860::8888
+        - 2001:4860:4860::8844
   id0:
     dhcp4: true
     match:
       macaddress: "06:aa:bb:cc:dd:02"
-nameservers:
-  addresses:
-    - 8.8.8.8
-    - 8.8.4.4
-    - 2001:4860:4860::8888
-    - 2001:4860:4860::8844
+    nameservers:
+      addresses:
+        - 8.8.8.8
+        - 8.8.4.4
+        - 2001:4860:4860::8888
+        - 2001:4860:4860::8844

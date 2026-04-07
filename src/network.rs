@@ -57,6 +57,24 @@ pub fn try_parse_cidr(address: IpAddr, netmask: IpAddr) -> Result<IpNetwork> {
     IpNetwork::new(address, prefix).context("failed to parse network")
 }
 
+/// Format an IP address for dracut kernel arguments.
+/// IPv6 addresses are wrapped in brackets so dracut's colon-delimited
+/// parser can distinguish them from field separators.
+pub fn dracut_addr(addr: &IpAddr) -> String {
+    match addr {
+        IpAddr::V6(_) => format!("[{addr}]"),
+        _ => addr.to_string(),
+    }
+}
+
+/// Format an IP network (address/prefix) for dracut kernel arguments.
+pub fn dracut_network(net: &IpNetwork) -> String {
+    match net {
+        IpNetwork::V6(_) => format!("[{net}]"),
+        _ => net.to_string(),
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct NetworkRoute {
     pub destination: IpNetwork,

@@ -164,10 +164,14 @@ fn test_network_data() {
             eth1.nameservers.len(),
             eth1.nameservers
         );
+        // In NoCloud v1, name is required by schema so all interfaces have names.
+        // In ConfigDrive, the MAC-only interface may or may not have a name.
+        // We just verify the interface exists and has the expected MAC address.
         assert_eq!(
-            eth2.name, None,
-            "Expected eth2.name to be None (no name field in JSON), got {:?}",
-            eth2.name
+            eth2.mac_address,
+            Some(pnet_base::MacAddr::from_str("06:aa:bb:cc:dd:02").unwrap()),
+            "Expected eth2.mac_address to be 06:aa:bb:cc:dd:02, got {:?}",
+            eth2.mac_address
         );
         assert_eq!(
             eth2.dhcp,
@@ -193,52 +197,32 @@ fn test_network_data() {
         let kargs = config.rd_network_kargs().unwrap().unwrap();
         let kargs_parts: Vec<&str> = kargs.split_whitespace().collect();
         assert_eq!(
-        kargs_parts.len(),
-        8,
-        "Expected kargs to have 8 parts (3 ip configs + 4 nameservers + 1 dhcp), got {} parts: {:?}",
-        kargs_parts.len(),
-        kargs_parts
-    );
-        assert!(
-            kargs.contains("ip=eth1:dhcp,dhcp6"),
-            "Expected kargs to contain 'ip=eth1:dhcp,dhcp6', but got: {:?}",
-            kargs
+            kargs_parts.len(),
+            10,
+            "Expected 10 kargs parts: {:?}",
+            kargs_parts
         );
+
+        // Static IPs without gateway (gateway is passed via rd.route)
+        let expected = [
+            "ip=192.168.1.10:::255.255.255.0::eth0:static",
+            "ip=[2001:db8::10]:::64::eth0:static",
+            "ip=eth1:dhcp,dhcp6",
+            "rd.route=0.0.0.0/0:192.168.1.1",
+            "rd.route=[::/0]:[2001:db8::1]",
+            "nameserver=8.8.8.8",
+            "nameserver=8.8.4.4",
+            "nameserver=[2001:4860:4860::8888]",
+            "nameserver=[2001:4860:4860::8844]",
+        ];
+        for exp in expected {
+            assert!(kargs.contains(exp), "Missing '{exp}' in: {kargs}");
+        }
+
+        // The MAC-only interface may use MAC or name depending on the fixture format
         assert!(
-            kargs.contains("ip=06:aa:bb:cc:dd:02:dhcp"),
-            "Expected kargs to contain 'ip=06:aa:bb:cc:dd:02:dhcp', but got: {:?}",
-            kargs
-        );
-        assert!(
-        kargs.contains("ip=192.168.1.10::192.168.1.1:255.255.255.0::eth0:static"),
-        "Expected kargs to contain 'ip=192.168.1.10::192.168.1.1:255.255.255.0::eth0:static', but got: {:?}",
-        kargs
-    );
-        assert!(
-        kargs.contains("ip=2001:db8::10::2001:db8::1:64::eth0:static"),
-        "Expected kargs to contain 'ip=2001:db8::10::2001:db8::1:64::eth0:static', but got: {:?}",
-        kargs
-    );
-        // Check that nameservers are included as separate arguments
-        assert!(
-            kargs.contains("nameserver=8.8.8.8"),
-            "Expected kargs to contain 'nameserver=8.8.8.8', but got: {:?}",
-            kargs
-        );
-        assert!(
-            kargs.contains("nameserver=8.8.4.4"),
-            "Expected kargs to contain 'nameserver=8.8.4.4', but got: {:?}",
-            kargs
-        );
-        assert!(
-            kargs.contains("nameserver=2001:4860:4860::8888"),
-            "Expected kargs to contain 'nameserver=2001:4860:4860::8888', but got: {:?}",
-            kargs
-        );
-        assert!(
-            kargs.contains("nameserver=2001:4860:4860::8844"),
-            "Expected kargs to contain 'nameserver=2001:4860:4860::8844', but got: {:?}",
-            kargs
+            kargs.contains("ip=06:aa:bb:cc:dd:02:dhcp") || kargs.contains("ip=eth2:dhcp"),
+            "Missing MAC/name dhcp karg in: {kargs}"
         );
         let attrs = config.attributes().expect(&fixture_path);
         assert_eq!(
@@ -256,4 +240,161 @@ fn test_network_data() {
             attrs.get("KUBEVIRT_IPV6")
         );
     }
+}
+
+fn assert_dhcp_with_static_gw_and_dns(config: &KubeVirtCloudConfig) {
+    let interfaces = config.networks().expect("cannot get interfaces");
+    assert_eq!(
+        interfaces.len(),
+        1,
+        "Expected 1 interface, got {:?}",
+        interfaces
+    );
+
+    let eth0 = &interfaces[0];
+    assert_eq!(eth0.name, Some("eth0".to_string()));
+    assert_eq!(eth0.dhcp, Some(DhcpSetting::Both));
+    assert_eq!(
+        eth0.ip_addresses.len(),
+        0,
+        "Expected no static IPs: {:?}",
+        eth0.ip_addresses
+    );
+    assert_eq!(eth0.routes.len(), 2, "Expected 2 routes: {:?}", eth0.routes);
+    assert!(eth0
+        .routes
+        .iter()
+        .any(|r| r.gateway == IpAddr::from_str("192.168.1.1").unwrap()));
+    assert!(eth0
+        .routes
+        .iter()
+        .any(|r| r.gateway == IpAddr::from_str("2001:db8::1").unwrap()));
+    assert_eq!(
+        eth0.nameservers.len(),
+        2,
+        "Expected 2 nameservers: {:?}",
+        eth0.nameservers
+    );
+    assert!(eth0
+        .nameservers
+        .contains(&IpAddr::from_str("8.8.8.8").unwrap()));
+    assert!(eth0
+        .nameservers
+        .contains(&IpAddr::from_str("8.8.4.4").unwrap()));
+
+    let kargs = config.rd_network_kargs().unwrap().unwrap();
+    let kargs_parts: Vec<&str> = kargs.split_whitespace().collect();
+    assert_eq!(
+        kargs_parts.len(),
+        5,
+        "Expected 5 kargs parts: {:?}",
+        kargs_parts
+    );
+
+    let expected = [
+        "ip=eth0:dhcp,dhcp6",
+        "rd.route=0.0.0.0/0:192.168.1.1",
+        "rd.route=[::/0]:[2001:db8::1]",
+        "nameserver=8.8.8.8",
+        "nameserver=8.8.4.4",
+    ];
+    for exp in expected {
+        assert!(kargs.contains(exp), "Missing '{exp}' in: {kargs}");
+    }
+}
+
+#[test]
+fn test_dhcp_with_static_gateway_and_dns() {
+    let config = KubeVirtCloudConfig::try_new(
+        Path::new("./tests/fixtures/kubevirt/dhcp_static_gw_dns"),
+        NetworkConfigurationFormat::ConfigDrive,
+    )
+    .expect("cannot parse config");
+    assert_dhcp_with_static_gw_and_dns(&config);
+}
+
+#[test]
+fn test_dhcp_with_static_gateway_and_dns_nocloud_v1() {
+    let config = KubeVirtCloudConfig::try_new(
+        Path::new("./tests/fixtures/kubevirt/dhcp_static_gw_dns_nocloud_v1"),
+        NetworkConfigurationFormat::NoCloud,
+    )
+    .expect("cannot parse config");
+    assert_dhcp_with_static_gw_and_dns(&config);
+}
+
+#[test]
+fn test_dhcp_with_static_gateway_and_dns_nocloud_v2() {
+    let config = KubeVirtCloudConfig::try_new(
+        Path::new("./tests/fixtures/kubevirt/dhcp_static_gw_dns_nocloud_v2"),
+        NetworkConfigurationFormat::NoCloud,
+    )
+    .expect("cannot parse config");
+    assert_dhcp_with_static_gw_and_dns(&config);
+}
+
+/// When both legacy gateway and explicit routes are present, only explicit
+/// routes should be used to avoid duplicates.
+fn assert_no_duplicate_routes(config: &KubeVirtCloudConfig) {
+    let interfaces = config.networks().expect("cannot get interfaces");
+    assert_eq!(interfaces.len(), 1);
+
+    let eth0 = &interfaces[0];
+    assert_eq!(eth0.name, Some("eth0".to_string()));
+    assert_eq!(eth0.dhcp, Some(DhcpSetting::Both));
+    assert_eq!(
+        eth0.routes.len(),
+        2,
+        "Expected 2 routes (no duplicates from legacy gateway): {:?}",
+        eth0.routes
+    );
+    assert!(eth0
+        .routes
+        .iter()
+        .any(|r| r.gateway == IpAddr::from_str("192.168.1.1").unwrap()
+            && r.destination == IpNetwork::from_str("0.0.0.0/0").unwrap()));
+    assert!(eth0
+        .routes
+        .iter()
+        .any(|r| r.gateway == IpAddr::from_str("2001:db8::1").unwrap()
+            && r.destination == IpNetwork::from_str("::/0").unwrap()));
+
+    let kargs = config.rd_network_kargs().unwrap().unwrap();
+    let expected = [
+        "ip=eth0:dhcp,dhcp6",
+        "rd.route=0.0.0.0/0:192.168.1.1",
+        "rd.route=[::/0]:[2001:db8::1]",
+    ];
+    for exp in expected {
+        assert!(kargs.contains(exp), "Missing '{exp}' in: {kargs}");
+    }
+    // Legacy gateways (192.168.1.2, 2001:db8::2) must NOT appear
+    assert!(
+        !kargs.contains("192.168.1.2"),
+        "Duplicate gateway in: {kargs}"
+    );
+    assert!(
+        !kargs.contains("2001:db8::2"),
+        "Duplicate gateway in: {kargs}"
+    );
+}
+
+#[test]
+fn test_no_duplicate_routes_nocloud_v1() {
+    let config = KubeVirtCloudConfig::try_new(
+        Path::new("./tests/fixtures/kubevirt/gateway_and_routes_nocloud_v1"),
+        NetworkConfigurationFormat::NoCloud,
+    )
+    .expect("cannot parse config");
+    assert_no_duplicate_routes(&config);
+}
+
+#[test]
+fn test_no_duplicate_routes_nocloud_v2() {
+    let config = KubeVirtCloudConfig::try_new(
+        Path::new("./tests/fixtures/kubevirt/gateway_and_routes_nocloud_v2"),
+        NetworkConfigurationFormat::NoCloud,
+    )
+    .expect("cannot parse config");
+    assert_no_duplicate_routes(&config);
 }

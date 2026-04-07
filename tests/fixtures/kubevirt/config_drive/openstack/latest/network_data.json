@@ -3,12 +3,14 @@
     {
       "id": "eth0",
       "type": "phy",
-      "name": "eth0"
+      "name": "eth0",
+      "ethernet_mac_address": "06:aa:bb:cc:dd:00"
     },
     {
       "id": "eth1",
       "type": "phy",
-      "name": "eth1"
+      "name": "eth1",
+      "ethernet_mac_address": "06:aa:bb:cc:dd:01"
     },
     {
       "id": "eth2",
@@ -21,6 +23,7 @@
       "id": "network0",
       "type": "ipv4",
       "link": "eth0",
+      "network_id": "net0",
       "ip_address": "192.168.1.10",
       "netmask": "255.255.255.0",
       "routes": [
@@ -35,6 +38,7 @@
       "id": "network0v6",
       "type": "ipv6",
       "link": "eth0",
+      "network_id": "net0v6",
       "ip_address": "2001:db8::10",
       "netmask": "ffff:ffff:ffff:ffff::",
       "routes": [
@@ -48,17 +52,20 @@
     {
       "id": "network1",
       "type": "ipv4_dhcp",
-      "link": "eth1"
+      "link": "eth1",
+      "network_id": "net1"
     },
     {
       "id": "network1v6",
       "type": "ipv6_dhcp",
-      "link": "eth1"
+      "link": "eth1",
+      "network_id": "net1v6"
     },
     {
       "id": "network2",
       "type": "ipv4_dhcp",
-      "link": "eth2"
+      "link": "eth2",
+      "network_id": "net2"
     }
   ],
   "services": [
