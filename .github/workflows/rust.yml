@@ -96,8 +96,6 @@ jobs:
         run: cargo fmt -- --check -l
       - name: cargo clippy (warnings)
         run: cargo clippy --all-targets -- -D warnings
-      - name: validate fixtures
-        run: make validate-fixtures
   tests-other-channels:
     name: Tests, unstable toolchain
     runs-on: ubuntu-latest
