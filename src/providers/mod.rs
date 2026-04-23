@@ -46,15 +46,16 @@ pub mod upcloud;
 pub mod vmware;
 pub mod vultr;
 
-use crate::network;
+use crate::network::{self, NetDevKind};
 use anyhow::{anyhow, Context, Result};
 use libsystemd::logging;
 use nix::unistd;
 use openssh_keys::PublicKey;
 use slog_scope::warn;
 use std::collections::HashMap;
-use std::fs::{self, File};
+use std::fs::{self, File, Permissions};
 use std::io::prelude::*;
+use std::os::unix::fs::PermissionsExt;
 use std::path::Path;
 use uzers::{self, User};
 
@@ -285,11 +286,11 @@ pub trait MetadataProvider {
 
         // Write `.network` fragments for network interfaces/links.
         for interface in &self.networks()? {
-            let unit_name = interface.sd_network_unit_name()?;
+            let unit_name = interface.sd_unit_name()?;
             let file_path = dir_path.join(unit_name);
             let mut unit_file = File::create(&file_path)
                 .with_context(|| format!("failed to create file {file_path:?}"))?;
-            write!(&mut unit_file, "{}", interface.config()).with_context(|| {
+            write!(&mut unit_file, "{}", interface.sd_config()).with_context(|| {
                 format!("failed to write network interface unit file {unit_file:?}")
             })?;
         }
@@ -302,6 +303,88 @@ pub trait MetadataProvider {
             write!(&mut unit_file, "{}", device.sd_netdev_config())
                 .with_context(|| format!("failed to write netdev unit file {unit_file:?}"))?;
         }
+        Ok(())
+    }
+
+    fn write_nm_profiles(&self, nm_profiles_dir: String) -> Result<()> {
+        let dir_path = Path::new(&nm_profiles_dir);
+        fs::create_dir_all(dir_path)
+            .with_context(|| format!("failed to create directory {dir_path:?}"))?;
+
+        let physical_interfaces = self.networks()?;
+        let virtual_devices = self.virtual_network_devices()?;
+        let mut configs = Vec::with_capacity(virtual_devices.len() + physical_interfaces.len());
+
+        // Separate bond master devices - since NetworkManager requires 1 configuration file with
+        // the information from both an `Interface` and `VirtualNetDev` we need to handle them
+        // separately.
+        let (virtual_bond_masters, virtual_devices): (Vec<_>, Vec<_>) = virtual_devices
+            .into_iter()
+            .partition(|v| v.kind == NetDevKind::Bond);
+        let (physical_bond_masters, physical_interfaces): (Vec<_>, Vec<_>) =
+            physical_interfaces.into_iter().partition(|i| {
+                let Some(ref name) = &i.name else {
+                    return false;
+                };
+                virtual_bond_masters.iter().any(|v| &v.name == name)
+            });
+
+        // Generate configurations for bond masters
+        for bond_master in virtual_bond_masters {
+            let name = &bond_master.name;
+            let physical_interface = physical_bond_masters
+                .iter()
+                .find(|p| p.name.as_ref().unwrap() == name);
+            configs.push((
+                name.to_owned(),
+                bond_master.nm_config(physical_interface)
+                    .with_context(|| {
+                        format!(
+                            "failed to generate NetworkManager connection profile for virtual device '{}'",
+                            name
+                        )
+                    })?)
+                );
+        }
+
+        // Generate configurations for remaining devices, including bond slaves
+        for interface in physical_interfaces {
+            let name = interface.name()?;
+            configs.push((
+                name,
+                interface.nm_config().with_context(|| {
+                    "failed to generate NetworkManager connection profile for interface '{name}'"
+                })?,
+            ));
+        }
+        for virt_dev in virtual_devices {
+            let name = virt_dev.name.clone();
+            let config = virt_dev.nm_config(None).with_context(|| {
+                format!(
+                    "failed to generate NetworkManager connection profile for virtual device '{}'",
+                    &name
+                )
+            })?;
+            configs.push((name, config));
+        }
+
+        // Write NetworkManager connection profile for all generated configurations
+        for (name, config) in configs {
+            let file_path = dir_path.join(format!("{name}.nmconnection"));
+            let mut keyfile = File::create(&file_path)
+                .with_context(|| format!("failed to create file {file_path:?}"))?;
+            keyfile.write_all(config.as_ref()).with_context(|| {
+                format!("failed to write NetworkManager profile to {file_path:?}")
+            })?;
+
+            // 0600 permissions required, since any file writeable or readable by
+            // any user other than root will be ignored.
+            // See: https://networkmanager.dev/docs/api/latest/nm-settings-keyfile.html
+            keyfile
+                .set_permissions(Permissions::from_mode(0o600))
+                .with_context(|| "failed to set NetworkManager keyfile permissions")?;
+        }
+
         Ok(())
     }
 
