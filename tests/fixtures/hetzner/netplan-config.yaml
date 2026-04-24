@@ -1,0 +1,14 @@
+network:
+  version: 2
+  ethernets:
+    eth0:
+      dhcp4: true
+      addresses:
+      - 1a00:20a0:a000:a000::1/64
+      routes:
+      - to: ::/0
+        via: aa11::1
+      nameservers:
+        addresses:
+        - 1a01:30ff:ff00::add:2
+        - 1a01:30ff:ff00::add:1
