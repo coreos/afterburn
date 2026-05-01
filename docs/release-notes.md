@@ -9,6 +9,7 @@ nav_order: 8
 Major changes:
 
 - KubeVirt: Add support for static and dynamic IP configuration from cloud-init
+- Support the generation of NetworkManager connection profiles (keyfile format)
 
 Minor changes:
 
