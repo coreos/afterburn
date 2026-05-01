@@ -10,6 +10,7 @@ Major changes:
 
 - KubeVirt: Add support for static and dynamic IP configuration from cloud-init
 - Hetzner: Add support for network configuration
+- Support the generation of NetworkManager connection profiles (keyfile format)
 
 Minor changes:
 
