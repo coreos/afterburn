@@ -16,10 +16,11 @@
 //!
 //! Generates per-feature `.ign` fragment files (hostname, user) into a
 //! directory specified by `--render-ignition-dir`.
-//! OVF data is only consulted for `adminPassword` policy checks.
+//! OVF data is consulted for `adminPassword`.
 
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
+use sha_crypt::{sha512_simple, Sha512Params};
 use slog_scope::{info, warn};
 use std::fs;
 use std::os::unix::fs::PermissionsExt;
@@ -33,6 +34,7 @@ const MOUNT_DEVICE: &str = "/dev/sr0";
 const MOUNT_POINT: &str = "/run/afterburn/media/";
 const CDROM_FS_TYPES: &[&str] = &["udf", "iso9660"];
 const MOUNT_RETRIES: u8 = 3;
+const PASSWORD_HASH_ROUNDS: usize = 10_000;
 
 #[derive(Debug, Serialize)]
 pub(crate) struct IgnitionConfig {
@@ -77,6 +79,8 @@ pub(crate) struct PasswdUser {
     name: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ssh_authorized_keys: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub password_hash: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -176,7 +180,9 @@ pub(crate) fn generate_user_fragment(
         .map(|k| k.to_key_format())
         .collect();
 
-    validate_ovf_admin_password_policy()?;
+    let password_hash = read_ovf_admin_password()?
+        .map(|password| hash_admin_password(&password))
+        .transpose()?;
 
     let config = IgnitionConfig {
         ignition: IgnitionMeta {
@@ -191,6 +197,7 @@ pub(crate) fn generate_user_fragment(
                 } else {
                     Some(ssh_keys)
                 },
+                password_hash,
             }],
         }),
     };
@@ -202,26 +209,30 @@ pub(crate) fn generate_user_fragment(
 }
 
 /// OVF is optional; if present, only `adminPassword` is consulted.
-fn validate_ovf_admin_password_policy() -> Result<()> {
+fn read_ovf_admin_password() -> Result<Option<String>> {
     let xml = match mount_and_read_ovf() {
         Ok(s) => s,
         Err(e) => {
             warn!("could not read OVF media: {}", e);
-            return Ok(());
+            return Ok(None);
         }
     };
 
     let env = parse_ovf_env(&xml).context("failed to parse OVF provisioning data")?;
-    if !env
-        .provisioning_section
-        .linux_prov_conf_set
-        .admin_password
-        .trim()
-        .is_empty()
-    {
-        anyhow::bail!("OVF contains a non-empty adminPassword, which is not supported");
+    let admin_password = env.provisioning_section.linux_prov_conf_set.admin_password;
+
+    if admin_password.trim().is_empty() {
+        Ok(None)
+    } else {
+        Ok(Some(admin_password))
     }
-    Ok(())
+}
+
+fn hash_admin_password(password: &str) -> Result<String> {
+    let params = Sha512Params::new(PASSWORD_HASH_ROUNDS)
+        .map_err(|e| anyhow::anyhow!("failed to initialize SHA-512 crypt: {:?}", e))?;
+    sha512_simple(password, &params)
+        .map_err(|e| anyhow::anyhow!("failed to hash OVF adminPassword: {:?}", e))
 }
 
 fn mount_and_read_ovf() -> Result<String> {
@@ -272,6 +283,7 @@ mod tests {
                 users: vec![PasswdUser {
                     name: "testuser".into(),
                     ssh_authorized_keys: Some(vec!["ssh-ed25519 AAAA...".into()]),
+                    password_hash: None,
                 }],
             }),
         };
@@ -283,10 +295,11 @@ mod tests {
             v["passwd"]["users"][0]["sshAuthorizedKeys"][0],
             "ssh-ed25519 AAAA..."
         );
+        assert!(v["passwd"]["users"][0].get("passwordHash").is_none());
     }
 
     #[test]
-    fn test_ignition_json_no_keys() {
+    fn test_ignition_json_with_password_hash() {
         let cfg = IgnitionConfig {
             ignition: IgnitionMeta {
                 version: "3.0.0".into(),
@@ -296,6 +309,7 @@ mod tests {
                 users: vec![PasswdUser {
                     name: "azureuser".into(),
                     ssh_authorized_keys: None,
+                    password_hash: Some("$6$rounds=10000$salt$hash".into()),
                 }],
             }),
         };
@@ -303,6 +317,10 @@ mod tests {
             serde_json::from_str(&serde_json::to_string_pretty(&cfg).unwrap()).unwrap();
         assert_eq!(v["passwd"]["users"][0]["name"], "azureuser");
         assert!(v["passwd"]["users"][0].get("sshAuthorizedKeys").is_none());
+        assert_eq!(
+            v["passwd"]["users"][0]["passwordHash"],
+            "$6$rounds=10000$salt$hash"
+        );
     }
 
     #[test]
@@ -350,9 +368,41 @@ mod tests {
     }
 
     #[test]
+    fn test_ovf_parse_non_empty_admin_password() {
+        let xml = r#"
+<Environment xmlns="http://schemas.dmtf.org/ovf/environment/1"
+    xmlns:wa="http://schemas.microsoft.com/windowsazure">
+    <wa:ProvisioningSection>
+        <wa:Version>1.0</wa:Version>
+        <LinuxProvisioningConfigurationSet>
+            <AdminPassword>SecretPassword123!</AdminPassword>
+        </LinuxProvisioningConfigurationSet>
+    </wa:ProvisioningSection>
+</Environment>"#;
+        let env = parse_ovf_env(xml).unwrap();
+        assert_eq!(
+            env.provisioning_section
+                .linux_prov_conf_set
+                .admin_password
+                .as_str(),
+            "SecretPassword123!"
+        );
+    }
+
+    #[test]
+    fn test_hash_admin_password_emits_sha512_crypt() {
+        let hash = hash_admin_password("SecretPassword123!").unwrap();
+
+        assert!(hash.starts_with("$6$rounds=10000$"));
+        assert!(sha_crypt::sha512_check("SecretPassword123!", &hash).is_ok());
+    }
+
+    #[test]
     fn test_write_fragment_emits_valid_json_and_permissions() {
         let tmp = tempfile::tempdir().unwrap();
-        let out_file = tmp.path().join("base.platform.d/azure/extensions.ign");
+        let out_file = tmp
+            .path()
+            .join("etc/ignition/base.platform.d/azure/extensions.ign");
 
         let cfg = IgnitionConfig {
             ignition: IgnitionMeta {
@@ -365,6 +415,7 @@ mod tests {
                     ssh_authorized_keys: Some(vec![
                         "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAAAgQDYVEprvtYJXVOBN0XNKVVRNCRX6BlnNbI+USLGais1sUWPwtSg7z9K9vhbYAPUZcq8c/s5S9dg5vTHbsiyPCIDOKyeHba4MUJq8Oh5b2i71/3BISpyxTBH/uZDHdslW2a+SrPDCeuMMoss9NFhBdKtDkdG9zyi0ibmCP6yMdEX8Q== Generated by Nova".into(),
                     ]),
+                    password_hash: None,
                 }],
             }),
         };

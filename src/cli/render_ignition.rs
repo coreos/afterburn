@@ -2,7 +2,8 @@
 //!
 //! Generates per-feature Ignition config fragment files in an output directory.
 //! Each enabled feature writes its own `.ign` file; Ignition merges them
-//! natively from `base.platform.d/<platform>/`.
+//! natively from `base.platform.d/<platform>/` under a system config directory
+//! such as `/etc/ignition`.
 
 use anyhow::{bail, Context, Result};
 use clap::{ArgGroup, Parser};
