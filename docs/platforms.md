@@ -43,6 +43,7 @@ The following platforms are supported, with a different set of features availabl
   - Attributes
   - Hostname
   - SSH Keys
+  - Network configuration
 * ibmcloud
   - Attributes
   - SSH Keys

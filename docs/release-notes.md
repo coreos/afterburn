@@ -9,12 +9,14 @@ nav_order: 8
 Major changes:
 
 - KubeVirt: Add support for static and dynamic IP configuration from cloud-init
+- Hetzner: Add support for network configuration
 
 Minor changes:
 
 - KubeVirt: Refactor for a more integrated testing, similar to ProxmoxVE
 - Makefile: download `90-afterburn-authorized-keys-file.conf` for rpm building
 - ProxmoxVE: Define DNS entries for every interface, not just the first
+- Hetzner: Add the `HETZNER_PUBLIC_IPV6` attribute
 
 Packaging changes:
 

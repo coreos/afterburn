@@ -171,6 +171,17 @@ impl DhcpSetting {
         };
         setting.to_string()
     }
+
+    /// Combine DHCP settings, to easily merge [`Self::V4`] and [`Self::V6`] variants into
+    /// [`Self::Both`] where applicable.
+    pub fn merge(self, other: Self) -> Self {
+        use DhcpSetting::*;
+        match (self, other) {
+            (V4, V4) => V4,
+            (V6, V6) => V6,
+            _ => Both,
+        }
+    }
 }
 
 impl Interface {

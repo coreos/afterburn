@@ -1,7 +1,14 @@
+use std::{collections::HashMap, fs, net::IpAddr, str::FromStr};
+
+use ipnetwork::IpNetwork;
 use mockito;
 use openssh_keys::Data;
+use pnet_base::MacAddr;
 
-use crate::providers::MetadataProvider;
+use crate::{
+    network::{Interface, NetworkRoute},
+    providers::MetadataProvider,
+};
 
 use super::HetznerProvider;
 
@@ -15,13 +22,14 @@ fn setup() -> (mockito::ServerGuard, HetznerProvider) {
 #[test]
 fn test_attributes() {
     let endpoint_metadata = "/hetzner/v1/metadata";
-    let endpoint_networks = "/hetzner/v1/metadata/private-networks";
+    let endpoint_private_networks = "/hetzner/v1/metadata/private-networks";
     let (mut server, provider) = setup();
 
     let availability_zone = "fsn1-dc14";
     let hostname = "some-hostname";
     let instance_id = "12345678";
     let public_ipv4 = "192.0.2.10";
+    let public_ipv6 = "1a00:1a0:a000:a000::1";
     let region = "eu-central";
 
     let body_metadata = format!(
@@ -32,26 +40,45 @@ public-ipv4: {public_ipv4}
 region: {region}
 local-ipv4: ''
 public-keys: []
-vendor_data: "blah blah blah""#
+vendor_data: "blah blah blah"
+network-config:
+     version: 1
+     config:
+         - type: physical
+           name: eth0
+           mac_address: "11:11:11:11:11:11"
+           subnets:
+             - type: dhcp
+               ipv4: true
+             - type: static
+               address: {public_ipv6}/64
+               ipv6: true
+               gateway: aa11::1
+               dns_nameservers:
+                 - 0a01:0ff:ff00::add:2
+                 - 0a01:0ff:ff00::add:1"#
     );
 
     let ip_0 = "10.0.0.2";
     let ip_1 = "10.128.0.2";
-
-    let body_networks = format!(
+    let body_private_networks = format!(
         r#"- ip: {ip_0}
 - ip: {ip_1}"#
     );
 
-    let expected = maplit::hashmap! {
-        "HETZNER_AVAILABILITY_ZONE".to_string() => availability_zone.to_string(),
-        "HETZNER_HOSTNAME".to_string() => hostname.to_string(),
-        "HETZNER_INSTANCE_ID".to_string() => instance_id.to_string(),
-        "HETZNER_PUBLIC_IPV4".to_string() => public_ipv4.to_string(),
-        "HETZNER_REGION".to_string() => region.to_string(),
-        "HETZNER_PRIVATE_IPV4_0".to_string() => ip_0.to_string(),
-        "HETZNER_PRIVATE_IPV4_1".to_string() => ip_1.to_string(),
-    };
+    let expected = HashMap::from([
+        (
+            "HETZNER_AVAILABILITY_ZONE".to_owned(),
+            availability_zone.to_owned(),
+        ),
+        ("HETZNER_HOSTNAME".to_owned(), hostname.to_owned()),
+        ("HETZNER_INSTANCE_ID".to_owned(), instance_id.to_owned()),
+        ("HETZNER_PUBLIC_IPV4".to_owned(), public_ipv4.to_owned()),
+        ("HETZNER_PUBLIC_IPV6".to_owned(), public_ipv6.to_owned()),
+        ("HETZNER_REGION".to_owned(), region.to_owned()),
+        ("HETZNER_PRIVATE_IPV4_0".to_owned(), ip_0.to_owned()),
+        ("HETZNER_PRIVATE_IPV4_1".to_owned(), ip_1.to_owned()),
+    ]);
 
     // Fail on not found
     provider.attributes().unwrap_err();
@@ -72,23 +99,23 @@ vendor_data: "blah blah blah""#
         .create();
 
     // Fail on internal server errors (networks endpoint)
-    let mock_networks = server
-        .mock("GET", endpoint_networks)
+    let mock_private_networks = server
+        .mock("GET", endpoint_private_networks)
         .with_status(503)
         .create();
     provider.attributes().unwrap_err();
-    mock_networks.assert();
+    mock_private_networks.assert();
 
     // Fetch metadata
-    let mock_networks = server
-        .mock("GET", endpoint_networks)
+    let mock_private_networks = server
+        .mock("GET", endpoint_private_networks)
         .with_status(200)
-        .with_body(body_networks)
+        .with_body(body_private_networks)
         .create();
 
     let actual = provider.attributes().unwrap();
     mock_metadata.assert();
-    mock_networks.assert();
+    mock_private_networks.assert();
     assert_eq!(actual, expected);
 }
 
@@ -177,4 +204,105 @@ fn test_pubkeys() {
         .create();
     let keys = provider.ssh_keys().unwrap();
     assert_eq!(keys.len(), 2);
+}
+
+#[test]
+fn test_networks() {
+    let endpoint_network_config = "/hetzner/v1/metadata/network-config";
+    let (mut server, provider) = setup();
+
+    let name = "interface_name";
+    let mac_addr = "11:11:11:11:11:11";
+    let ipv6_network = "2a01:4f9:c013:f7c7::1/64";
+    let gateway = "fa11::1";
+    let dns_nameserver_1 = "1a01:0ff:ff00::add:1";
+    let dns_nameserver_2 = "1a01:0ff:ff00::add:2";
+
+    let body_network_config = format!(
+        r#"version: 1
+config:
+  - type: physical
+    name: {name}
+    mac_address: {mac_addr}
+    subnets:
+      - type: dhcp
+        ipv4: true
+      - type: static
+        address: {ipv6_network}
+        ipv6: true
+        gateway: {gateway}
+        dns_nameservers:
+          - {dns_nameserver_1}
+          - {dns_nameserver_2}"#
+    );
+
+    let expected = vec![Interface {
+        name: Some(name.into()),
+        mac_address: Some(MacAddr::from_str(mac_addr).unwrap()),
+        nameservers: vec![
+            IpAddr::from_str(dns_nameserver_1).unwrap(),
+            IpAddr::from_str(dns_nameserver_2).unwrap(),
+        ],
+        ip_addresses: vec![IpNetwork::from_str(ipv6_network).unwrap()],
+        dhcp: Some(crate::network::DhcpSetting::V4),
+        routes: vec![NetworkRoute {
+            destination: IpNetwork::from_str("::/0").unwrap(),
+            gateway: IpAddr::from_str(gateway).unwrap(),
+        }],
+        unmanaged: false,
+        priority: 20,
+        bond: None,
+        required_for_online: None,
+        path: None,
+    }];
+
+    assert!(provider.networks().is_err(), "Should fail on not found");
+
+    let mock_metadata = server
+        .mock("GET", endpoint_network_config)
+        .with_status(503)
+        .create();
+    assert!(
+        provider.networks().is_err(),
+        "Should fail on internal server error"
+    );
+    mock_metadata.assert();
+
+    let mock_metadata = server
+        .mock("GET", endpoint_network_config)
+        .with_status(200)
+        .with_body(body_network_config)
+        .expect(1)
+        .create();
+
+    let actual = provider.networks().unwrap();
+    mock_metadata.assert();
+
+    assert_eq!(actual, expected);
+}
+
+#[test]
+fn test_netplan_config() {
+    let endpoint_network_config = "/hetzner/v1/metadata/network-config";
+    let (mut server, provider) = setup();
+
+    let body = fs::read("./tests/fixtures/hetzner/network-config.yaml")
+        .expect("Unable to read network-config fixture");
+    let expected = String::from_utf8(
+        fs::read("./tests/fixtures/hetzner/netplan-config.yaml")
+            .expect("Unable to read network-config fixture"),
+    )
+    .unwrap();
+
+    let mock_metadata = server
+        .mock("GET", endpoint_network_config)
+        .with_status(200)
+        .with_body(body)
+        .expect(1)
+        .create();
+
+    let actual = provider.netplan_config().unwrap().unwrap();
+    mock_metadata.assert();
+
+    assert_eq!(actual, expected);
 }
