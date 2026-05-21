@@ -4,7 +4,7 @@ One-shot agent for cloud-like platforms. Retrieves instance metadata (attributes
 
 ## Tech Stack
 
-- **Language**: Rust (edition 2021, MSRV 1.84.1)
+- **Language**: Rust (edition 2021, MSRV 1.85.0)
 - **CLI**: clap v4 (derive)
 - **HTTP**: reqwest (blocking)
 - **Serialization**: serde, serde_json, serde_yaml, serde-xml-rs
