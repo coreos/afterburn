@@ -59,6 +59,34 @@ fn test_pubkeys() {
     "shape": ""
 }"#;
 
+    let metadata_null_key = r#"{
+    "availabilityDomain": "",
+    "canonicalRegionName": "",
+    "compartmentId": "",
+    "faultDomain": "",
+    "id": "",
+    "hostname": "",
+    "shape": "",
+    "metadata": {
+        "ssh_authorized_keys": null
+    }
+}"#;
+
+    let metadata_non_string_key = r#"{
+    "availabilityDomain": "",
+    "canonicalRegionName": "",
+    "compartmentId": "",
+    "faultDomain": "",
+    "id": "",
+    "hostname": "",
+    "shape": "",
+    "metadata": {
+        "ssh_authorized_keys": {
+            "unexpected": "invalid-key"
+        }
+    }
+}"#;
+
     let mut server = mockito::Server::new();
     let client = retry::Client::try_new()
         .unwrap()
@@ -91,6 +119,69 @@ fn test_pubkeys() {
         .with_body(metadata_no_key)
         .create();
     let provider = oraclecloud::OracleCloudProvider::try_new_with_client(&client).unwrap();
+    let keys = provider.ssh_keys().unwrap();
+    assert_eq!(keys, vec![]);
+
+    server.reset();
+    server
+        .mock("GET", INSTANCE_METADATA_ENDPOINT)
+        .match_header("Authorization", "Bearer Oracle")
+        .with_status(200)
+        .with_body(metadata_null_key)
+        .create();
+    let provider = oraclecloud::OracleCloudProvider::try_new_with_client(&client).unwrap();
+    let keys = provider.ssh_keys().unwrap();
+    assert_eq!(keys, vec![]);
+
+    server.reset();
+    server
+        .mock("GET", INSTANCE_METADATA_ENDPOINT)
+        .match_header("Authorization", "Bearer Oracle")
+        .with_status(200)
+        .with_body(metadata_non_string_key)
+        .create();
+    let provider = oraclecloud::OracleCloudProvider::try_new_with_client(&client).unwrap();
+    let err = provider.ssh_keys().unwrap_err();
+    assert!(err.to_string().contains("invalid-key"));
+}
+
+#[test]
+fn test_instance_pool_metadata() {
+    let metadata = r#"{
+    "availabilityDomain": "EMIr:PHX-AD-2",
+    "canonicalRegionName": "us-phoenix-1",
+    "compartmentId": "ocid1.tenancy.oc1..exampleuniqueID",
+    "faultDomain": "FAULT-DOMAIN-1",
+    "id": "ocid1.instance.oc1.phx.exampleuniqueID",
+    "hostname": "fedora-coreos-pool",
+    "shape": "VM.Standard.A1.Flex",
+    "metadata": {
+        "compute_management": {
+            "instance_configuration": {
+                "state": "SUCCEEDED"
+            }
+        },
+        "user_data": "example-user-data"
+    }
+}"#;
+
+    let mut server = mockito::Server::new();
+    let client = retry::Client::try_new()
+        .unwrap()
+        .max_retries(0)
+        .mock_base_url(server.url());
+
+    server
+        .mock("GET", INSTANCE_METADATA_ENDPOINT)
+        .match_header("Authorization", "Bearer Oracle")
+        .with_status(200)
+        .with_body(metadata)
+        .create();
+
+    let provider = oraclecloud::OracleCloudProvider::try_new_with_client(&client).unwrap();
+    let hostname = provider.hostname().unwrap();
+    assert_eq!(hostname, Some("fedora-coreos-pool".to_string()));
+
     let keys = provider.ssh_keys().unwrap();
     assert_eq!(keys, vec![]);
 }
