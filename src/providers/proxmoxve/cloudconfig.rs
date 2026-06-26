@@ -199,13 +199,17 @@ impl MetadataProvider for ProxmoxVECloudConfig {
                                 .find(|r| r.destination.is_ipv4() && r.destination.prefix() == 0)
                             {
                                 kargs.push(format!(
-                                    "ip={}::{}:{}",
+                                    "ip={}::{}:{}:::off",
                                     network.ip(),
                                     gateway.gateway,
                                     network.mask()
                                 ));
                             } else {
-                                kargs.push(format!("ip={}:::{}", network.ip(), network.mask()));
+                                kargs.push(format!(
+                                    "ip={}:::{}:::off",
+                                    network.ip(),
+                                    network.mask()
+                                ));
                             }
                         }
                         IpNetwork::V6(network) => {
@@ -215,13 +219,17 @@ impl MetadataProvider for ProxmoxVECloudConfig {
                                 .find(|r| r.destination.is_ipv6() && r.destination.prefix() == 0)
                             {
                                 kargs.push(format!(
-                                    "ip={}::{}:{}",
+                                    "ip={}::{}:{}:::off",
                                     network.ip(),
                                     gateway.gateway,
                                     network.prefix()
                                 ));
                             } else {
-                                kargs.push(format!("ip={}:::{}", network.ip(), network.prefix()));
+                                kargs.push(format!(
+                                    "ip={}:::{}:::off",
+                                    network.ip(),
+                                    network.prefix()
+                                ));
                             }
                         }
                     }

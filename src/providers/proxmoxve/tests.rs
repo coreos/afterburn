@@ -168,8 +168,8 @@ fn test_network_kargs() {
     let kargs = kargs.unwrap();
 
     // Check static IP configuration with gateway
-    assert!(kargs.contains("ip=192.168.1.1::192.168.1.254:255.255.255.0"));
-    assert!(kargs.contains("ip=2001:db8:85a3::8a2e:370:0::2001:db8:85a3::8a2e:370:9999:24"));
+    assert!(kargs.contains("ip=192.168.1.1::192.168.1.254:255.255.255.0:::off"));
+    assert!(kargs.contains("ip=2001:db8:85a3::8a2e:370:0::2001:db8:85a3::8a2e:370:9999:24:::off"));
 
     // Check nameservers
     assert!(kargs.contains("nameserver=1.1.1.1,8.8.8.8"));
@@ -202,7 +202,7 @@ fn test_network_kargs_no_gateway() {
     let kargs = kargs.unwrap();
 
     // Check static IP configuration without gateway
-    assert!(kargs.contains("ip=192.168.1.1:::255.255.255.0"));
+    assert!(kargs.contains("ip=192.168.1.1:::255.255.255.0:::off"));
 
     // Check nameservers
     assert!(kargs.contains("nameserver=1.1.1.1,8.8.8.8"));
