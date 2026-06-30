@@ -1,3 +1,6 @@
+use std::collections::BTreeMap;
+use std::collections::HashMap;
+
 use crate::providers::aliyun;
 use crate::providers::MetadataProvider;
 use mockito;
@@ -83,18 +86,18 @@ fn basic_attributes() {
     let vpc_id = "test-vpc-id";
     let zone_id = "test-zone-id";
 
-    let endpoints = maplit::btreemap! {
-        "/latest/meta-data/eipv4" => eipv4,
-        "/latest/meta-data/hostname" => hostname,
-        "/latest/meta-data/image-id" => image_id,
-        "/latest/meta-data/instance-id" => instance_id,
-        "/latest/meta-data/instance/instance-type" => instance_type,
-        "/latest/meta-data/private-ipv4" => private_ipv4,
-        "/latest/meta-data/public-ipv4" => public_ipv4,
-        "/latest/meta-data/region-id" => region_id,
-        "/latest/meta-data/vpc-id" => vpc_id,
-        "/latest/meta-data/zone-id" => zone_id,
-    };
+    let endpoints = BTreeMap::from([
+        ("/latest/meta-data/eipv4", eipv4),
+        ("/latest/meta-data/hostname", hostname),
+        ("/latest/meta-data/image-id", image_id),
+        ("/latest/meta-data/instance-id", instance_id),
+        ("/latest/meta-data/instance/instance-type", instance_type),
+        ("/latest/meta-data/private-ipv4", private_ipv4),
+        ("/latest/meta-data/public-ipv4", public_ipv4),
+        ("/latest/meta-data/region-id", region_id),
+        ("/latest/meta-data/vpc-id", vpc_id),
+        ("/latest/meta-data/zone-id", zone_id),
+    ]);
     let mut server = mockito::Server::new();
     for (endpoint, body) in endpoints {
         server
@@ -104,18 +107,21 @@ fn basic_attributes() {
             .create();
     }
 
-    let attributes = maplit::hashmap! {
-        "ALIYUN_EIPV4".to_string() => eipv4.to_string(),
-        "ALIYUN_HOSTNAME".to_string() => hostname.to_string(),
-        "ALIYUN_IMAGE_ID".to_string() => image_id.to_string(),
-        "ALIYUN_INSTANCE_ID".to_string() => instance_id.to_string(),
-        "ALIYUN_INSTANCE_TYPE".to_string() => instance_type.to_string(),
-        "ALIYUN_IPV4_PRIVATE".to_string() => private_ipv4.to_string(),
-        "ALIYUN_IPV4_PUBLIC".to_string() => public_ipv4.to_string(),
-        "ALIYUN_REGION_ID".to_string()=> region_id.to_string(),
-        "ALIYUN_VPC_ID".to_string() => vpc_id.to_string(),
-        "ALIYUN_ZONE_ID".to_string() => zone_id.to_string(),
-    };
+    let attributes = HashMap::from([
+        ("ALIYUN_EIPV4".to_string(), eipv4.to_string()),
+        ("ALIYUN_HOSTNAME".to_string(), hostname.to_string()),
+        ("ALIYUN_IMAGE_ID".to_string(), image_id.to_string()),
+        ("ALIYUN_INSTANCE_ID".to_string(), instance_id.to_string()),
+        (
+            "ALIYUN_INSTANCE_TYPE".to_string(),
+            instance_type.to_string(),
+        ),
+        ("ALIYUN_IPV4_PRIVATE".to_string(), private_ipv4.to_string()),
+        ("ALIYUN_IPV4_PUBLIC".to_string(), public_ipv4.to_string()),
+        ("ALIYUN_REGION_ID".to_string(), region_id.to_string()),
+        ("ALIYUN_VPC_ID".to_string(), vpc_id.to_string()),
+        ("ALIYUN_ZONE_ID".to_string(), zone_id.to_string()),
+    ]);
 
     let client = crate::retry::Client::try_new()
         .unwrap()

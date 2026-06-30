@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::providers::{packet, MetadataProvider};
 use mockito::{self, Matcher};
 
@@ -104,19 +106,34 @@ fn test_packet_attributes() {
         "phone_home_url": "test-url"
     }"#;
 
-    let attributes = maplit::hashmap! {
-        "PACKET_HOSTNAME".to_string() => "test-hostname".to_string(),
-        "PACKET_PHONE_HOME_URL".to_string() => "test-url".to_string(),
-        "PACKET_PLAN".to_string() => "test-plan".to_string(),
-        "PACKET_IPV4_PUBLIC_0".to_string() => "147.0.0.1".to_string(),
-        "PACKET_IPV4_PUBLIC_GATEWAY_0".to_string() => "147.0.0.0".to_string(),
-        "PACKET_IPV4_PRIVATE_0".to_string() => "10.0.0.1".to_string(),
-        "PACKET_IPV4_PRIVATE_GATEWAY_0".to_string() => "10.0.0.0".to_string(),
-        "PACKET_IPV6_PUBLIC_0".to_string() => "2604:1380::1".to_string(),
-        "PACKET_IPV6_PUBLIC_GATEWAY_0".to_string() => "2604:1380::".to_string(),
-        "PACKET_IPV6_PRIVATE_0".to_string() => "fd00::1".to_string(),
-        "PACKET_IPV6_PRIVATE_GATEWAY_0".to_string() => "fd00::".to_string(),
-    };
+    let attributes = HashMap::from([
+        ("PACKET_HOSTNAME".to_string(), "test-hostname".to_string()),
+        ("PACKET_PHONE_HOME_URL".to_string(), "test-url".to_string()),
+        ("PACKET_PLAN".to_string(), "test-plan".to_string()),
+        ("PACKET_IPV4_PUBLIC_0".to_string(), "147.0.0.1".to_string()),
+        (
+            "PACKET_IPV4_PUBLIC_GATEWAY_0".to_string(),
+            "147.0.0.0".to_string(),
+        ),
+        ("PACKET_IPV4_PRIVATE_0".to_string(), "10.0.0.1".to_string()),
+        (
+            "PACKET_IPV4_PRIVATE_GATEWAY_0".to_string(),
+            "10.0.0.0".to_string(),
+        ),
+        (
+            "PACKET_IPV6_PUBLIC_0".to_string(),
+            "2604:1380::1".to_string(),
+        ),
+        (
+            "PACKET_IPV6_PUBLIC_GATEWAY_0".to_string(),
+            "2604:1380::".to_string(),
+        ),
+        ("PACKET_IPV6_PRIVATE_0".to_string(), "fd00::1".to_string()),
+        (
+            "PACKET_IPV6_PRIVATE_GATEWAY_0".to_string(),
+            "fd00::".to_string(),
+        ),
+    ]);
 
     let mut server = mockito::Server::new();
     server

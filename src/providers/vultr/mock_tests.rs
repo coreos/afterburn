@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::providers::vultr;
 use crate::providers::MetadataProvider;
 use mockito;
@@ -70,11 +72,11 @@ fn test_attributes() {
     let hostname = "test-hostname";
     let regioncode = "test-regioncode";
 
-    let endpoints = maplit::btreemap! {
-        "/v1/hostname" => hostname,
-        "/v1/instanceid" => instance_id,
-        "/v1/region/regioncode" => regioncode,
-    };
+    let endpoints = HashMap::from([
+        ("/v1/hostname", hostname),
+        ("/v1/instanceid", instance_id),
+        ("/v1/region/regioncode", regioncode),
+    ]);
 
     let mut server = mockito::Server::new();
     for (endpoint, body) in endpoints {
@@ -85,11 +87,11 @@ fn test_attributes() {
             .create();
     }
 
-    let attributes = maplit::hashmap! {
-        "VULTR_INSTANCE_ID".to_string() => instance_id.to_string(),
-        "VULTR_HOSTNAME".to_string() => hostname.to_string(),
-        "VULTR_REGION_CODE".to_string() => regioncode.to_string(),
-    };
+    let attributes = HashMap::from([
+        ("VULTR_INSTANCE_ID".to_string(), instance_id.to_string()),
+        ("VULTR_HOSTNAME".to_string(), hostname.to_string()),
+        ("VULTR_REGION_CODE".to_string(), regioncode.to_string()),
+    ]);
 
     let client = crate::retry::Client::try_new()
         .unwrap()
