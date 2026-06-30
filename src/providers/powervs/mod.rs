@@ -114,11 +114,13 @@ impl PowerVSProvider {
             bail!("empty local hostname");
         }
 
-        let attrs = maplit::hashmap! {
-            "POWERVS_INSTANCE_ID".to_string() => metadata.instance_id,
-            "POWERVS_LOCAL_HOSTNAME".to_string() => metadata.local_hostname,
-
-        };
+        let attrs = HashMap::from([
+            ("POWERVS_INSTANCE_ID".to_string(), metadata.instance_id),
+            (
+                "POWERVS_LOCAL_HOSTNAME".to_string(),
+                metadata.local_hostname,
+            ),
+        ]);
         Ok(attrs)
     }
 

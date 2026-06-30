@@ -82,14 +82,17 @@ fn write_ssh_key_journal_entry(log: logging::Priority, name: &str, path: &str, a
         if added { "wrote" } else { "removed" },
         name
     );
-    let map = maplit::hashmap! {
-        "AFTERBURN_USER_NAME" => name.as_ref(),
-        "AFTERBURN_PATH" => path.as_ref(),
-        "MESSAGE_ID" => match added {
-            true => AFTERBURN_SSH_AUTHORIZED_KEYS_ADDED_MESSAGEID,
-            false => AFTERBURN_SSH_AUTHORIZED_KEYS_REMOVED_MESSAGEID,
-        },
-    };
+    let map = HashMap::from([
+        ("AFTERBURN_USER_NAME", name),
+        ("AFTERBURN_PATH", path),
+        (
+            "MESSAGE_ID",
+            match added {
+                true => AFTERBURN_SSH_AUTHORIZED_KEYS_ADDED_MESSAGEID,
+                false => AFTERBURN_SSH_AUTHORIZED_KEYS_REMOVED_MESSAGEID,
+            },
+        ),
+    ]);
     if let Err(e) = logging::journal_send(log, &message, map.iter()) {
         warn!("failed to send information to journald: {}", e);
     }

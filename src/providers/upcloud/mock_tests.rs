@@ -1,3 +1,5 @@
+use std::collections::{BTreeMap, HashMap};
+
 use crate::providers::upcloud::UpCloudProvider;
 use crate::providers::MetadataProvider;
 use mockito;
@@ -70,11 +72,11 @@ fn test_attributes() {
     let hostname = "test-hostname";
     let region = "test-region";
 
-    let endpoints = maplit::btreemap! {
-        "/metadata/v1/hostname" => hostname,
-        "/metadata/v1/instance_id" => instance_id,
-        "/metadata/v1/region" => region,
-    };
+    let endpoints = BTreeMap::from([
+        ("/metadata/v1/hostname", hostname),
+        ("/metadata/v1/instance_id", instance_id),
+        ("/metadata/v1/region", region),
+    ]);
 
     let mut server = mockito::Server::new();
     for (endpoint, body) in endpoints {
@@ -85,11 +87,11 @@ fn test_attributes() {
             .create();
     }
 
-    let attributes = maplit::hashmap! {
-        "UPCLOUD_INSTANCE_ID".to_string() => instance_id.to_string(),
-        "UPCLOUD_HOSTNAME".to_string() => hostname.to_string(),
-        "UPCLOUD_REGION".to_string() => region.to_string(),
-    };
+    let attributes = HashMap::from([
+        ("UPCLOUD_INSTANCE_ID".to_string(), instance_id.to_string()),
+        ("UPCLOUD_HOSTNAME".to_string(), hostname.to_string()),
+        ("UPCLOUD_REGION".to_string(), region.to_string()),
+    ]);
 
     let client = crate::retry::Client::try_new()
         .unwrap()
