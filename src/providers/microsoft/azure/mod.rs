@@ -14,6 +14,8 @@
 
 //! Azure provider, metadata and wireserver fetcher.
 
+pub(crate) mod config;
+
 use super::goalstate;
 
 use std::collections::HashMap;
@@ -87,6 +89,52 @@ pub struct Azure {
 struct Attributes {
     pub virtual_ipv4: Option<IpAddr>,
     pub dynamic_ipv4: Option<IpAddr>,
+}
+
+#[derive(Debug, Deserialize)]
+struct ImdsSshKey {
+    #[serde(rename = "keyData")]
+    key_data: String,
+    #[serde(default)]
+    path: String,
+}
+
+fn imds_key_path_context(path: &str) -> String {
+    let value = path.trim();
+    if value.is_empty() {
+        String::new()
+    } else {
+        format!(" (path: {value})")
+    }
+}
+
+pub(crate) fn parse_imds_public_keys(body: &str) -> Result<Vec<PublicKey>> {
+    let items: Vec<ImdsSshKey> =
+        serde_json::from_str(body).context("failed to parse IMDS publicKeys JSON")?;
+
+    items
+        .into_iter()
+        .enumerate()
+        .map(|(index, item)| {
+            let key_data = item.key_data.replace(['\r', '\n'], "").trim().to_string();
+
+            if key_data.is_empty() {
+                anyhow::bail!(
+                    "IMDS publicKeys entry at index {}{} has empty keyData",
+                    index,
+                    imds_key_path_context(&item.path),
+                );
+            }
+
+            PublicKey::parse(&key_data).with_context(|| {
+                format!(
+                    "failed to parse IMDS public key at index {}{}",
+                    index,
+                    imds_key_path_context(&item.path)
+                )
+            })
+        })
+        .collect()
 }
 
 impl Azure {
@@ -282,8 +330,28 @@ impl Azure {
         Ok(vmsize)
     }
 
-    /// Fetch SSH public keys from Azure Instance Metadata Service (IMDS)
-    /// https://learn.microsoft.com/en-us/azure/virtual-machines/instance-metadata-service
+    fn fetch_admin_username(&self) -> Result<Option<String>> {
+        const URL: &str =
+            "metadata/instance/compute/osProfile/adminUsername?api-version=2021-02-01&format=text";
+        let url = format!("{}/{}", Self::metadata_endpoint(), URL);
+
+        let username = self
+            .client
+            .clone()
+            .header(
+                HeaderName::from_static("metadata"),
+                HeaderValue::from_static("true"),
+            )
+            .get(retry::Raw, url)
+            .send::<String>()
+            .context("failed to query IMDS for adminUsername")?;
+
+        match username {
+            Some(u) if !u.trim().is_empty() => Ok(Some(u.trim().to_string())),
+            _ => Ok(None),
+        }
+    }
+
     fn fetch_ssh_keys(&self) -> Result<Vec<PublicKey>> {
         const URL: &str = "metadata/instance/compute/publicKeys?api-version=2021-02-01";
         let url = format!("{}/{}", Self::metadata_endpoint(), URL);
@@ -300,32 +368,7 @@ impl Azure {
             .context("failed to query IMDS for publicKeys")?
             .ok_or_else(|| anyhow::anyhow!("IMDS did not return a publicKeys payload"))?;
 
-        #[derive(Debug, Deserialize)]
-        struct ImdsSshKey {
-            #[serde(rename = "keyData")]
-            key_data: String,
-            path: String,
-        }
-
-        let items: Vec<ImdsSshKey> =
-            serde_json::from_str(&body).context("failed to parse IMDS publicKeys JSON")?;
-
-        let keys: Vec<PublicKey> = items
-            .into_iter()
-            .map(|item| {
-                let kd = item
-                    .key_data
-                    .replace("\r\n", "")
-                    .replace('\n', "")
-                    .trim()
-                    .to_string();
-
-                PublicKey::parse(&kd)
-                    .with_context(|| format!("failed to parse IMDS key at path {}", item.path))
-            })
-            .collect::<Result<_>>()?;
-
-        Ok(keys)
+        parse_imds_public_keys(&body)
     }
 
     /// Report ready state to the WireServer.
@@ -370,6 +413,10 @@ impl MetadataProvider for Azure {
         self.fetch_hostname()
     }
 
+    fn admin_username(&self) -> Result<Option<String>> {
+        self.fetch_admin_username()
+    }
+
     fn ssh_keys(&self) -> Result<Vec<PublicKey>> {
         self.fetch_ssh_keys()
     }
@@ -382,5 +429,135 @@ impl MetadataProvider for Azure {
             }
             self.report_ready_state()
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_imds_public_keys_rejects_malformed_key() {
+        let body = r#"
+[
+    {
+        "keyData": "not-an-ssh-key",
+        "path": "/home/core/.ssh/authorized_keys"
+    }
+]
+"#;
+
+        let err = parse_imds_public_keys(body).unwrap_err();
+        let message = format!("{err:#}");
+        assert!(message.contains("failed to parse IMDS public key"));
+        assert!(message.contains("/home/core/.ssh/authorized_keys"));
+    }
+
+    #[test]
+    fn test_parse_imds_public_keys_accepts_valid_key() {
+        let body = r#"
+[
+    {
+        "keyData": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAAAgQDYVEprvtYJXVOBN0XNKVVRNCRX6BlnNbI+USLGais1sUWPwtSg7z9K9vhbYAPUZcq8c/s5S9dg5vTHbsiyPCIDOKyeHba4MUJq8Oh5b2i71/3BISpyxTBH/uZDHdslW2a+SrPDCeuMMoss9NFhBdKtDkdG9zyi0ibmCP6yMdEX8Q== Generated by Nova",
+        "path": "/home/core/.ssh/authorized_keys"
+    }
+]
+"#;
+
+        let keys = parse_imds_public_keys(body).unwrap();
+        assert_eq!(keys.len(), 1);
+        assert!(keys[0]
+            .to_key_format()
+            .starts_with("ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAAAgQDYVEprvtYJ"));
+    }
+
+    #[test]
+    fn test_parse_imds_public_keys_rejects_empty_key_data() {
+        // Exercises the empty-keyData guard distinct from the
+        // PublicKey::parse failure path.
+        let body = r#"
+[
+    {
+        "keyData": "   ",
+        "path": "/home/core/.ssh/authorized_keys"
+    }
+]
+"#;
+
+        let err = parse_imds_public_keys(body).unwrap_err();
+        let message = format!("{err:#}");
+        assert!(
+            message.contains("empty keyData"),
+            "unexpected error: {message}"
+        );
+        assert!(message.contains("/home/core/.ssh/authorized_keys"));
+    }
+
+    #[test]
+    fn test_parse_imds_public_keys_strips_embedded_newlines() {
+        // Some sources copy keys with hard-wrapped CR/LF newlines; the
+        // parser must normalize them before handing to PublicKey::parse.
+        // We inject newlines into a known-valid key (the same one used
+        // by the mock-tests fixture) so the test exercises real key bytes.
+        const VALID_KEY: &str = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCzTI2wld1/Ib3q2N8ynJoTk+1PfanCoPdcYXxd7k8DK/T7BlvD3AHajUiqJ4Im2GfyMCloBkJGbI4/utt7qCF6y3Vb5Suxdd5/nXpAr75ocHkg43TzZdU5zSPHdgLefe2VEKXokAobU13wHAwj6d6bJaTpAJx5MkQJAb88HD1LtBFMz5C8b+wVloxB+Zusj0dX/Bc+rZFo62KW50BoaWxDzO5jN18DGuamcN34WBCkMmRvVrKGQaOru+rBVnxeQtVw+hygq7rb6zekar9zyEyW5IvaZiRkqC60QiycV7I9fIxRJfp8FvrlusiVyWpsLILL3CxK95c8Sju4qQN6AofTh52XJtFkdP8ngXKrobXqrcLS5GaEnAo6BZowUt9cpr7HdmdqJmYk3+ueJOrLiAkRE2Gguc28sbpQl/ok4vHWhXEi/GzK+FK0lrN5L7LY5D4MfJ1XZ5sZw4ulJXjiB3x/aKLT0lLFc3lNitl+UPw46Lp1PTR0dJkYNyvZvEuWLgk= core@host";
+
+        // Splice CRLF mid-base64 and a trailing LF; normalization must
+        // restore the original key byte-for-byte.
+        let (head, tail) = VALID_KEY.split_at(60);
+        let wrapped = format!("{head}\\r\\n{tail}\\n");
+        let body =
+            format!(r#"[{{"keyData": "{wrapped}", "path": "/home/core/.ssh/authorized_keys"}}]"#);
+
+        let keys = parse_imds_public_keys(&body).unwrap();
+        assert_eq!(keys.len(), 1);
+        let serialized = keys[0].to_key_format();
+        assert!(
+            !serialized.contains('\n') && !serialized.contains('\r'),
+            "serialized key contained line endings: {serialized:?}"
+        );
+        assert!(serialized.starts_with("ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQ"));
+    }
+
+    #[test]
+    fn test_parse_imds_public_keys_preserves_multiple_keys_in_order() {
+        let body = r#"
+[
+    {
+        "keyData": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIE5dnA1jzwJZ2ndPmoZAvB1MDLU+UJpw0o9EzGm6tF5Y first@host",
+        "path": "/home/core/.ssh/authorized_keys"
+    },
+    {
+        "keyData": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBFmlqemnJgtwQfrqlmwR0sFE+wLDmHGm2I0i/uVy/JJ second@host",
+        "path": "/home/core/.ssh/authorized_keys"
+    }
+]
+"#;
+
+        let keys = parse_imds_public_keys(body).unwrap();
+        assert_eq!(keys.len(), 2);
+        assert!(keys[0].to_key_format().ends_with(" first@host"));
+        assert!(keys[1].to_key_format().ends_with(" second@host"));
+    }
+
+    #[test]
+    fn test_parse_imds_public_keys_handles_missing_path_field() {
+        // `path` is marked `#[serde(default)]`; payloads that omit it
+        // should parse and produce an error message without a `(path: )`
+        // suffix when keyData is invalid.
+        let body = r#"
+[
+    {
+        "keyData": "not-an-ssh-key"
+    }
+]
+"#;
+
+        let err = parse_imds_public_keys(body).unwrap_err();
+        let message = format!("{err:#}");
+        assert!(message.contains("index 0"), "unexpected error: {message}");
+        assert!(
+            !message.contains("(path:"),
+            "empty path should not appear in error: {message}"
+        );
     }
 }

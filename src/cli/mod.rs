@@ -6,6 +6,7 @@ use slog_scope::trace;
 
 mod exp;
 mod multi;
+mod render_ignition;
 
 /// Path to kernel command-line (requires procfs mount).
 const CMDLINE_PATH: &str = "/proc/cmdline";
@@ -19,6 +20,7 @@ pub(crate) enum CliConfig {
     Multi(multi::CliMulti),
     #[clap(subcommand)]
     Exp(exp::CliExp),
+    RenderIgnition(render_ignition::CliRenderIgnition),
 }
 
 impl CliConfig {
@@ -27,6 +29,7 @@ impl CliConfig {
         match self {
             CliConfig::Multi(cmd) => cmd.run(),
             CliConfig::Exp(cmd) => cmd.run(),
+            CliConfig::RenderIgnition(cmd) => cmd.run(),
         }
     }
 }
@@ -230,5 +233,65 @@ mod tests {
         .collect();
 
         parse_args(t3).unwrap();
+    }
+
+    #[test]
+    fn test_render_ignition_cmd() {
+        let args: Vec<_> = [
+            "afterburn",
+            "render-ignition",
+            "--provider",
+            "azure",
+            "--render-ignition-dir",
+            "/tmp/fragments",
+            "--hostname",
+            "--platform-user",
+        ]
+        .iter()
+        .map(ToString::to_string)
+        .collect();
+
+        let cmd = parse_args(args).unwrap();
+        match cmd {
+            CliConfig::RenderIgnition(_) => {}
+            x => panic!("unexpected cmd: {x:?}"),
+        };
+    }
+
+    #[test]
+    fn test_render_ignition_platform_extensions() {
+        let args: Vec<_> = [
+            "afterburn",
+            "render-ignition",
+            "--cmdline",
+            "--render-ignition-dir",
+            "/tmp/fragments",
+            "--platform-extensions",
+        ]
+        .iter()
+        .map(ToString::to_string)
+        .collect();
+
+        let cmd = parse_args(args).unwrap();
+        match cmd {
+            CliConfig::RenderIgnition(_) => {}
+            x => panic!("unexpected cmd: {x:?}"),
+        };
+    }
+
+    #[test]
+    fn test_render_ignition_requires_render_ignition_dir() {
+        let args: Vec<_> = [
+            "afterburn",
+            "render-ignition",
+            "--provider",
+            "azure",
+            "--hostname",
+        ]
+        .iter()
+        .map(ToString::to_string)
+        .collect();
+
+        parse_args(args).unwrap_err();
     }
 }
