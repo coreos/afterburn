@@ -1,0 +1,26 @@
+[Unit]
+Description=Afterburn Ignition Config Fragment Generator
+Documentation=https://coreos.github.io/afterburn/
+
+# Only run on platforms that support ignition fragment generation.
+ConditionKernelCommandLine=|ignition.platform.id=azure
+
+# Run after networking is available (needed for the Azure IMDS call). Use
+# network.target (not network-online.target) to match ignition-fetch.service
+# and avoid stalling on multi-NIC DHCP; IMDS is link-local and afterburn
+# has its own retry logic.
+#
+# Run between fetch and disks so writes don't race the fetch stage's parse
+# of base.platform.d (Ignition re-reads it every stage; applied at files).
+After=network.target
+After=ignition-fetch.service
+Before=ignition-disks.service
+
+OnFailure=emergency.target
+OnFailureJobMode=isolate
+
+[Service]
+ExecStartPre=/usr/bin/mkdir -p /etc/ignition/base.platform.d/azure
+ExecStart=/usr/bin/afterburn render-ignition --cmdline --render-ignition-dir /etc/ignition/base.platform.d/azure/ --platform-extensions
+Type=oneshot
+RemainAfterExit=yes
