@@ -417,6 +417,12 @@ impl MetadataProvider for Azure {
         self.fetch_admin_username()
     }
 
+    fn admin_password_hash(&self) -> Result<Option<String>> {
+        config::read_ovf_admin_password()?
+            .map(|password| config::hash_admin_password(&password))
+            .transpose()
+    }
+
     fn ssh_keys(&self) -> Result<Vec<PublicKey>> {
         self.fetch_ssh_keys()
     }

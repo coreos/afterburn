@@ -12,15 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! Ignition config fragment generation for Azure.
+//! Azure OVF admin-password support.
 //!
-//! Generates per-feature `.ign` fragment files (hostname, user) into a
-//! directory specified by `--render-ignition-dir`.
-//! OVF data is consulted for `adminPassword`.
+//! Mounts the Azure provisioning ISO, reads `adminPassword` from the OVF
+//! environment, and hashes it as an sha512-crypt digest for use in an Ignition
+//! `passwd` fragment. The generic Ignition fragment machinery lives in the
+//! `render-ignition` CLI sub-command.
 
 use anyhow::{Context, Result};
-use serde::{Deserialize, Serialize};
-use slog_scope::{info, warn};
+use serde::Deserialize;
+use slog_scope::warn;
 use std::ffi::{c_char, CStr, CString};
 use std::fs;
 use std::io::Read;
@@ -30,8 +31,6 @@ use xml::reader::{EventReader, XmlEvent as ReadEvent};
 use xml::writer::{EmitterConfig, XmlEvent as WriteEvent};
 
 use crate::util;
-
-const IGNITION_VERSION: &str = "3.0.0";
 
 const MOUNT_DEVICE: &str = "/dev/sr0";
 const MOUNT_POINT: &str = "/run/afterburn/media/";
@@ -97,53 +96,6 @@ fn load_crypt_r() -> Result<CryptRFn> {
     }
 }
 
-#[derive(Debug, Serialize)]
-pub(crate) struct IgnitionConfig {
-    pub ignition: IgnitionMeta,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub storage: Option<Storage>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub passwd: Option<Passwd>,
-}
-
-#[derive(Debug, Serialize)]
-pub(crate) struct IgnitionMeta {
-    pub version: String,
-}
-
-#[derive(Debug, Serialize)]
-pub(crate) struct Storage {
-    pub files: Vec<StorageFile>,
-}
-
-#[derive(Debug, Serialize)]
-pub(crate) struct StorageFile {
-    pub path: String,
-    pub mode: u32,
-    pub overwrite: bool,
-    pub contents: FileContents,
-}
-
-#[derive(Debug, Serialize)]
-pub(crate) struct FileContents {
-    pub source: String,
-}
-
-#[derive(Debug, Serialize)]
-pub(crate) struct Passwd {
-    pub users: Vec<PasswdUser>,
-}
-
-#[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub(crate) struct PasswdUser {
-    name: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub ssh_authorized_keys: Option<Vec<String>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub password_hash: Option<String>,
-}
-
 #[derive(Debug, Deserialize)]
 #[serde(rename = "Environment")]
 struct OvfEnvironment {
@@ -163,114 +115,8 @@ struct LinuxProvisioningConfigurationSet {
     admin_password: String,
 }
 
-pub(crate) fn hostname_data_uri(hostname: &str) -> String {
-    let encoded =
-        percent_encoding::utf8_percent_encode(hostname, percent_encoding::NON_ALPHANUMERIC)
-            .to_string();
-    format!("data:,{encoded}")
-}
-
-pub(crate) fn write_fragment(config: &IgnitionConfig, path: &Path) -> Result<()> {
-    if let Some(parent) = path.parent() {
-        fs::create_dir_all(parent)
-            .with_context(|| format!("failed to create directory {}", parent.display()))?;
-    }
-    let json =
-        serde_json::to_string_pretty(config).context("failed to serialize ignition config")?;
-    fs::write(path, json.as_bytes())
-        .with_context(|| format!("failed to write {}", path.display()))?;
-    fs::set_permissions(path, fs::Permissions::from_mode(0o644))
-        .with_context(|| format!("failed to set permissions on {}", path.display()))?;
-    Ok(())
-}
-
-pub(crate) fn generate_hostname_fragment(
-    provider: &dyn crate::providers::MetadataProvider,
-    output_dir: &str,
-) -> Result<()> {
-    let hostname = match provider.hostname()? {
-        Some(h) => h,
-        None => {
-            warn!("hostname requested, but not available from this provider");
-            return Ok(());
-        }
-    };
-
-    let config = IgnitionConfig {
-        ignition: IgnitionMeta {
-            version: IGNITION_VERSION.to_string(),
-        },
-        storage: Some(Storage {
-            files: vec![StorageFile {
-                path: "/etc/hostname".into(),
-                mode: 420,
-                overwrite: true,
-                contents: FileContents {
-                    source: hostname_data_uri(&hostname),
-                },
-            }],
-        }),
-        passwd: None,
-    };
-
-    let path = Path::new(output_dir).join("hostname.ign");
-    write_fragment(&config, &path)?;
-    info!("wrote hostname ignition fragment"; "path" => path.display().to_string());
-    Ok(())
-}
-
-pub(crate) fn generate_user_fragment(
-    provider: &dyn crate::providers::MetadataProvider,
-    output_dir: &str,
-) -> Result<()> {
-    let username = provider
-        .admin_username()
-        .context("failed to query admin username from provider")?;
-    let username = match username {
-        Some(u) => u,
-        None => {
-            warn!("platform-user requested, but admin username not available from this provider");
-            return Ok(());
-        }
-    };
-
-    let ssh_keys: Vec<String> = provider
-        .ssh_keys()
-        .context("failed to query SSH keys from provider")?
-        .into_iter()
-        .map(|k| k.to_key_format())
-        .collect();
-
-    let password_hash = read_ovf_admin_password()?
-        .map(|password| hash_admin_password(&password))
-        .transpose()?;
-
-    let config = IgnitionConfig {
-        ignition: IgnitionMeta {
-            version: IGNITION_VERSION.to_string(),
-        },
-        storage: None,
-        passwd: Some(Passwd {
-            users: vec![PasswdUser {
-                name: username,
-                ssh_authorized_keys: if ssh_keys.is_empty() {
-                    None
-                } else {
-                    Some(ssh_keys)
-                },
-                password_hash,
-            }],
-        }),
-    };
-
-    let path = Path::new(output_dir).join("user.ign");
-    write_fragment(&config, &path)?;
-    info!("wrote platform-user ignition fragment"; "path" => path.display().to_string());
-    Ok(())
-}
-
 /// OVF is optional; if present, only `adminPassword` is consulted.
-fn read_ovf_admin_password() -> Result<Option<String>> {
+pub(crate) fn read_ovf_admin_password() -> Result<Option<String>> {
     let xml = match mount_and_read_ovf() {
         Ok(s) => s,
         Err(e) => {
@@ -289,7 +135,7 @@ fn read_ovf_admin_password() -> Result<Option<String>> {
     }
 }
 
-fn hash_admin_password(password: &str) -> Result<String> {
+pub(crate) fn hash_admin_password(password: &str) -> Result<String> {
     let salt = generate_salt().context("failed to generate password salt")?;
     sha512_crypt(password, &salt, PASSWORD_HASH_ROUNDS)
 }
@@ -415,57 +261,6 @@ fn strip_xml_namespaces(xml: &str) -> Result<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn test_ignition_json_with_keys() {
-        let cfg = IgnitionConfig {
-            ignition: IgnitionMeta {
-                version: "3.0.0".into(),
-            },
-            storage: None,
-            passwd: Some(Passwd {
-                users: vec![PasswdUser {
-                    name: "testuser".into(),
-                    ssh_authorized_keys: Some(vec!["ssh-ed25519 AAAA...".into()]),
-                    password_hash: None,
-                }],
-            }),
-        };
-        let v: serde_json::Value =
-            serde_json::from_str(&serde_json::to_string_pretty(&cfg).unwrap()).unwrap();
-        assert_eq!(v["ignition"]["version"], "3.0.0");
-        assert_eq!(v["passwd"]["users"][0]["name"], "testuser");
-        assert_eq!(
-            v["passwd"]["users"][0]["sshAuthorizedKeys"][0],
-            "ssh-ed25519 AAAA..."
-        );
-        assert!(v["passwd"]["users"][0].get("passwordHash").is_none());
-    }
-
-    #[test]
-    fn test_ignition_json_with_password_hash() {
-        let cfg = IgnitionConfig {
-            ignition: IgnitionMeta {
-                version: "3.0.0".into(),
-            },
-            storage: None,
-            passwd: Some(Passwd {
-                users: vec![PasswdUser {
-                    name: "azureuser".into(),
-                    ssh_authorized_keys: None,
-                    password_hash: Some("$6$rounds=10000$salt$hash".into()),
-                }],
-            }),
-        };
-        let v: serde_json::Value =
-            serde_json::from_str(&serde_json::to_string_pretty(&cfg).unwrap()).unwrap();
-        assert_eq!(v["passwd"]["users"][0]["name"], "azureuser");
-        assert!(v["passwd"]["users"][0].get("sshAuthorizedKeys").is_none());
-        assert_eq!(
-            v["passwd"]["users"][0]["passwordHash"],
-            "$6$rounds=10000$salt$hash"
-        );
-    }
 
     #[test]
     fn test_ovf_parse_admin_password() {
@@ -621,95 +416,5 @@ mod tests {
             assert_eq!(salt.len(), SALT_LEN);
             assert!(salt.bytes().all(|b| SALT_ALPHABET.contains(&b)));
         }
-    }
-
-    #[test]
-    fn test_write_fragment_emits_valid_json_and_permissions() {
-        let tmp = tempfile::tempdir().unwrap();
-        let out_file = tmp
-            .path()
-            .join("etc/ignition/base.platform.d/azure/extensions.ign");
-
-        let cfg = IgnitionConfig {
-            ignition: IgnitionMeta {
-                version: "3.0.0".into(),
-            },
-            storage: None,
-            passwd: Some(Passwd {
-                users: vec![PasswdUser {
-                    name: "core".into(),
-                    ssh_authorized_keys: Some(vec![
-                        "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAAAgQDYVEprvtYJXVOBN0XNKVVRNCRX6BlnNbI+USLGais1sUWPwtSg7z9K9vhbYAPUZcq8c/s5S9dg5vTHbsiyPCIDOKyeHba4MUJq8Oh5b2i71/3BISpyxTBH/uZDHdslW2a+SrPDCeuMMoss9NFhBdKtDkdG9zyi0ibmCP6yMdEX8Q== Generated by Nova".into(),
-                    ]),
-                    password_hash: None,
-                }],
-            }),
-        };
-
-        write_fragment(&cfg, &out_file).unwrap();
-
-        assert!(out_file.exists());
-
-        let raw = fs::read_to_string(&out_file).unwrap();
-        let json: serde_json::Value = serde_json::from_str(&raw).unwrap();
-        assert_eq!(json["ignition"]["version"], "3.0.0");
-        assert_eq!(json["passwd"]["users"][0]["name"], "core");
-
-        let mode = fs::metadata(&out_file).unwrap().permissions().mode() & 0o777;
-        assert_eq!(mode, 0o644);
-    }
-
-    #[test]
-    fn test_hostname_data_uri() {
-        assert_eq!(hostname_data_uri("core1"), "data:,core1");
-        assert_eq!(
-            hostname_data_uri("my-vm.internal"),
-            "data:,my%2Dvm%2Einternal"
-        );
-    }
-
-    #[test]
-    fn test_hostname_storage_fragment_serialization() {
-        let cfg = IgnitionConfig {
-            ignition: IgnitionMeta {
-                version: "3.0.0".into(),
-            },
-            storage: Some(Storage {
-                files: vec![StorageFile {
-                    path: "/etc/hostname".into(),
-                    mode: 420,
-                    overwrite: true,
-                    contents: FileContents {
-                        source: hostname_data_uri("myvm"),
-                    },
-                }],
-            }),
-            passwd: None,
-        };
-
-        let v: serde_json::Value =
-            serde_json::from_str(&serde_json::to_string_pretty(&cfg).unwrap()).unwrap();
-        assert_eq!(v["ignition"]["version"], "3.0.0");
-        assert_eq!(v["storage"]["files"][0]["path"], "/etc/hostname");
-        assert_eq!(v["storage"]["files"][0]["mode"], 420);
-        assert_eq!(v["storage"]["files"][0]["overwrite"], true);
-        assert_eq!(v["storage"]["files"][0]["contents"]["source"], "data:,myvm");
-        assert!(v.get("passwd").is_none());
-    }
-
-    #[test]
-    fn test_storage_none_omitted_from_json() {
-        let cfg = IgnitionConfig {
-            ignition: IgnitionMeta {
-                version: "3.0.0".into(),
-            },
-            storage: None,
-            passwd: None,
-        };
-
-        let v: serde_json::Value =
-            serde_json::from_str(&serde_json::to_string_pretty(&cfg).unwrap()).unwrap();
-        assert!(v.get("storage").is_none());
-        assert!(v.get("passwd").is_none());
     }
 }

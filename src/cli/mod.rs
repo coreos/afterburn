@@ -244,8 +244,8 @@ mod tests {
             "azure",
             "--render-ignition-dir",
             "/tmp/fragments",
-            "--hostname",
-            "--platform-user",
+            "--disable-hostname-fragment",
+            "--disable-user-fragment",
         ]
         .iter()
         .map(ToString::to_string)
@@ -259,14 +259,13 @@ mod tests {
     }
 
     #[test]
-    fn test_render_ignition_platform_extensions() {
+    fn test_render_ignition_defaults() {
         let args: Vec<_> = [
             "afterburn",
             "render-ignition",
             "--cmdline",
             "--render-ignition-dir",
             "/tmp/fragments",
-            "--platform-extensions",
         ]
         .iter()
         .map(ToString::to_string)
@@ -281,16 +280,10 @@ mod tests {
 
     #[test]
     fn test_render_ignition_requires_render_ignition_dir() {
-        let args: Vec<_> = [
-            "afterburn",
-            "render-ignition",
-            "--provider",
-            "azure",
-            "--hostname",
-        ]
-        .iter()
-        .map(ToString::to_string)
-        .collect();
+        let args: Vec<_> = ["afterburn", "render-ignition", "--provider", "azure"]
+            .iter()
+            .map(ToString::to_string)
+            .collect();
 
         parse_args(args).unwrap_err();
     }
