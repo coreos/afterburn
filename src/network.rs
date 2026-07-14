@@ -22,6 +22,7 @@ use pnet_base::MacAddr;
 use slog_scope::warn;
 use std::fmt::Write;
 use std::net::IpAddr;
+use std::ops::Deref;
 use std::string::String;
 use std::string::ToString;
 
@@ -82,6 +83,55 @@ pub struct NetworkRoute {
     pub gateway: IpAddr,
 }
 
+/// Represents a NetworkManager autoconnect-priority.
+///
+/// Range: -999 to 999
+/// Priority given to higher number, unlike the systemd priorities.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct NmAutoconnectPriority(i16);
+impl NmAutoconnectPriority {
+    const MIN: i16 = -999;
+    const MAX: i16 = 999;
+
+    fn new(priority: i16) -> Self {
+        debug_assert!(priority >= Self::MIN, "value less than the minimum");
+        debug_assert!(priority <= Self::MAX, "value greater than the maximum");
+
+        Self(priority)
+    }
+
+    /// Creates [`Self`] from a systemd.network priority.
+    ///
+    /// While the valid range is 0..4294967295, values above 999 will
+    /// be capped at the minimum NetworkManager priority (0).
+    fn from_systemd_network_priority(priority: u32) -> Self {
+        let priority: i16 = match priority {
+            0..999 => priority as i16,
+            _ => 999,
+        };
+        NmAutoconnectPriority::new(999 - priority)
+    }
+
+    /// Creates [`Self`] from a systemd.netdev priority.
+    ///
+    /// While the valid range is 0..65535, values above 999 will
+    /// be capped at the minimum NetworkManager priority (0).
+    fn from_systemd_netdev_priority(priority: u16) -> Self {
+        let priority: i16 = match priority {
+            0..999 => priority as i16,
+            _ => 999,
+        };
+        NmAutoconnectPriority::new(999 - priority)
+    }
+}
+
+impl Deref for NmAutoconnectPriority {
+    type Target = i16;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
 /// A network interface/link.
 ///
 /// Depending on platforms, an interface may be identified by
@@ -95,7 +145,7 @@ pub struct Interface {
     /// Path as identifier
     pub path: Option<String>,
     /// Relative priority for interface configuration.
-    pub priority: u8,
+    pub priority: u32,
     pub nameservers: Vec<IpAddr>,
     pub ip_addresses: Vec<IpNetwork>,
     // Optionally enable DHCP
@@ -113,7 +163,7 @@ pub struct VirtualNetDev {
     pub name: String,
     pub kind: NetDevKind,
     pub mac_address: MacAddr,
-    pub priority: Option<u32>,
+    pub priority: Option<u16>,
     pub custom_sections: CustomNetworkSections,
 }
 
@@ -320,8 +370,7 @@ impl Interface {
         writeln!(
             config,
             "autoconnect-priority={}",
-            // Lower number means higher priority for systemd, but it's the opposite for NM
-            100i32.saturating_sub(i32::from(self.priority))
+            *NmAutoconnectPriority::from_systemd_network_priority(self.priority),
         )?;
 
         if let Some(ref bond) = self.bond {
@@ -486,7 +535,7 @@ impl VirtualNetDev {
             writeln!(
                 config,
                 "autoconnect-priority={}",
-                100i32.saturating_sub_unsigned(priority)
+                *NmAutoconnectPriority::from_systemd_netdev_priority(priority),
             )?;
         }
 
@@ -938,7 +987,7 @@ MACAddress=00:00:00:00:00:00
 id=eth0
 type=ethernet
 autoconnect=true
-autoconnect-priority=100
+autoconnect-priority=999
 
 [ethernet]
 mac-address=00:00:00:00:00:00
@@ -1006,7 +1055,7 @@ id=bond0
 type=bond
 interface-name=bond0
 autoconnect=true
-autoconnect-priority=80
+autoconnect-priority=979
 
 [bond]
 mode=balance-rr
@@ -1051,7 +1100,7 @@ id=vlan0
 type=vlan
 interface-name=vlan0
 autoconnect=true
-autoconnect-priority=80
+autoconnect-priority=979
 
 [vlan]
 id=100
