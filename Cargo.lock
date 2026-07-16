@@ -33,6 +33,7 @@ dependencies = [
  "clap",
  "ipnetwork",
  "libflate",
+ "libflate_lz77",
  "libsystemd",
  "mailparse",
  "maplit",
