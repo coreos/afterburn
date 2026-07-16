@@ -196,6 +196,14 @@ pub trait MetadataProvider {
         Ok(None)
     }
 
+    fn admin_username(&self) -> Result<Option<String>> {
+        Ok(None)
+    }
+
+    fn admin_password_hash(&self) -> Result<Option<String>> {
+        Ok(None)
+    }
+
     fn ssh_keys(&self) -> Result<Vec<PublicKey>> {
         warn!("ssh-keys requested, but not supported on this platform");
         Ok(vec![])

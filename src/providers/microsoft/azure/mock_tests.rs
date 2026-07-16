@@ -169,6 +169,20 @@ fn mock_shared_config(server: &mut mockito::Server) -> mockito::Mock {
         .create()
 }
 
+/// https://learn.microsoft.com/en-us/azure/virtual-machines/instance-metadata-service
+fn mock_imds_admin_username(server: &mut mockito::Server, body: &str) -> mockito::Mock {
+    server
+        .mock(
+            "GET",
+            "/metadata/instance/compute/osProfile/adminUsername?api-version=2021-02-01&format=text",
+        )
+        .match_header("Metadata", "true")
+        .with_header("content-type", "text/plain")
+        .with_body(body)
+        .with_status(200)
+        .create()
+}
+
 #[test]
 fn test_boot_checkin() {
     let mut server = mockito::Server::new();
@@ -361,4 +375,38 @@ fn test_imds_fetch_empty_ssh_keys() {
 
     m_imds.assert();
     assert!(keys.is_empty());
+}
+
+#[test]
+fn test_imds_fetch_admin_username() {
+    let mut server = mockito::Server::new();
+    let _m_version = mock_fab_version(&mut server);
+    let m_imds = mock_imds_admin_username(&mut server, "  azureuser\n");
+
+    let client = retry::Client::try_new()
+        .unwrap()
+        .mock_base_url(server.url());
+    let provider = azure::Azure::with_client(Some(client)).unwrap();
+    let username = provider.admin_username().unwrap();
+
+    m_imds.assert();
+    // Whitespace and a trailing newline should be trimmed off.
+    assert_eq!(username.as_deref(), Some("azureuser"));
+}
+
+#[test]
+fn test_imds_fetch_admin_username_empty_body() {
+    let mut server = mockito::Server::new();
+    let _m_version = mock_fab_version(&mut server);
+    let m_imds = mock_imds_admin_username(&mut server, "   \n");
+
+    let client = retry::Client::try_new()
+        .unwrap()
+        .mock_base_url(server.url());
+    let provider = azure::Azure::with_client(Some(client)).unwrap();
+    let username = provider.admin_username().unwrap();
+
+    m_imds.assert();
+    // Whitespace-only payload should be treated as "no admin username".
+    assert_eq!(username, None);
 }

@@ -13,6 +13,7 @@
 // limitations under the License.
 
 mod cli;
+mod ignition;
 mod initrd;
 mod metadata;
 mod network;
