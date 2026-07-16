@@ -28,7 +28,7 @@ use pnet_base::MacAddr;
 use serde::Deserialize;
 use slog_scope::warn;
 
-use crate::network::{self, Interface, NetworkRoute};
+use crate::network::{self, CustomNetworkSections, Interface, NetworkRoute};
 use crate::providers::MetadataProvider;
 use crate::retry;
 use crate::util;
@@ -287,7 +287,7 @@ impl PacketProvider {
             return Ok((interfaces, vec![]));
         }
 
-        let mut attrs = vec![
+        let mut sd_attrs = vec![
             ("TransmitHashPolicy".to_owned(), "layer3+4".to_owned()),
             ("MIIMonitorSec".to_owned(), ".1".to_owned()),
             ("UpDelaySec".to_owned(), ".2".to_owned()),
@@ -297,9 +297,33 @@ impl PacketProvider {
                 network::bonding_mode_to_string(netinfo.bonding.mode)?,
             ),
         ];
+
+        let mut nm_attrs = vec![
+            ("xmit_hash_policy".to_owned(), "layer3+4".to_owned()),
+            ("miimon".to_owned(), "100".to_owned()),
+            ("updelay".to_owned(), "200".to_owned()),
+            ("downdelay".to_owned(), "200".to_owned()),
+            (
+                "mode".to_owned(),
+                network::bonding_mode_to_string(netinfo.bonding.mode)?,
+            ),
+        ];
+
         if netinfo.bonding.mode == network::BONDING_MODE_LACP {
-            attrs.push(("LACPTransmitRate".to_owned(), "fast".to_owned()));
+            sd_attrs.push(("LACPTransmitRate".to_owned(), "fast".to_owned()));
+            nm_attrs.push(("lacp_rate".to_owned(), "fast".to_owned()));
         }
+
+        let custom_sections = CustomNetworkSections::new(
+            vec![network::SdSection {
+                name: "Bond".to_owned(),
+                attributes: sd_attrs,
+            }],
+            vec![network::NmSection {
+                name: "bond".to_owned(),
+                attributes: nm_attrs,
+            }],
+        );
 
         let mut network_devices = Vec::with_capacity(bonds.len());
         for (mac, bond) in bonds {
@@ -312,10 +336,7 @@ impl PacketProvider {
                 kind: network::NetDevKind::Bond,
                 mac_address: mac,
                 priority: Some(5),
-                sd_netdev_sections: vec![network::SdSection {
-                    name: "Bond".to_owned(),
-                    attributes: attrs.clone(),
-                }],
+                custom_sections: custom_sections.clone(),
             };
             network_devices.push(bond_netdev);
 
