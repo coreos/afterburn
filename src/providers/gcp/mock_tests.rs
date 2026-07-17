@@ -1,3 +1,6 @@
+use std::collections::BTreeMap;
+use std::collections::HashMap;
+
 use crate::providers::gcp;
 use crate::providers::MetadataProvider;
 use mockito;
@@ -37,12 +40,18 @@ fn basic_attributes() {
     let ip_local = "test-ip-local";
     let machine_type = "test-machine-type";
 
-    let endpoints = maplit::btreemap! {
-        "/computeMetadata/v1/instance/hostname" => hostname,
-        "/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip" => ip_external,
-        "/computeMetadata/v1/instance/network-interfaces/0/ip" => ip_local,
-        "/computeMetadata/v1/instance/machine-type" => machine_type,
-    };
+    let endpoints = BTreeMap::from([
+        ("/computeMetadata/v1/instance/hostname", hostname),
+        (
+            "/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/external-ip",
+            ip_external,
+        ),
+        (
+            "/computeMetadata/v1/instance/network-interfaces/0/ip",
+            ip_local,
+        ),
+        ("/computeMetadata/v1/instance/machine-type", machine_type),
+    ]);
     let mut server = mockito::Server::new();
     for (endpoint, body) in endpoints {
         server
@@ -52,12 +61,12 @@ fn basic_attributes() {
             .create();
     }
 
-    let attributes = maplit::hashmap! {
-        "GCP_HOSTNAME".to_string() => hostname.to_string(),
-        "GCP_IP_EXTERNAL_0".to_string() => ip_external.to_string(),
-        "GCP_IP_LOCAL_0".to_string() => ip_local.to_string(),
-        "GCP_MACHINE_TYPE".to_string() => machine_type.to_string(),
-    };
+    let attributes = HashMap::from([
+        ("GCP_HOSTNAME".to_string(), hostname.to_string()),
+        ("GCP_IP_EXTERNAL_0".to_string(), ip_external.to_string()),
+        ("GCP_IP_LOCAL_0".to_string(), ip_local.to_string()),
+        ("GCP_MACHINE_TYPE".to_string(), machine_type.to_string()),
+    ]);
 
     let client = crate::retry::Client::try_new()
         .unwrap()

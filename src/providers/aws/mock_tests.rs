@@ -51,30 +51,48 @@ fn aws_get_maps() -> (
     let region = "test-region";
 
     (
-        maplit::btreemap! {
-            "/2021-01-03/meta-data/instance-id" => instance_id,
-            "/2021-01-03/meta-data/instance-type" => instance_type,
-            "/2021-01-03/meta-data/local-ipv4" => ipv4_local,
-            "/2021-01-03/meta-data/public-ipv4" => ipv4_public,
-            "/2021-01-03/meta-data/ipv6" => ipv6,
-            "/2021-01-03/meta-data/placement/availability-zone" => availability_zone,
-            "/2021-01-03/meta-data/placement/availability-zone-id" => availability_zone_id,
-            "/2021-01-03/meta-data/hostname" => hostname,
-            "/2021-01-03/meta-data/public-hostname" => public_hostname,
-            "/2021-01-03/dynamic/instance-identity/document" => instance_id_doc,
-        },
-        maplit::hashmap! {
-            "AWS_INSTANCE_ID".to_string() => instance_id.to_string(),
-            "AWS_INSTANCE_TYPE".to_string() => instance_type.to_string(),
-            "AWS_IPV4_LOCAL".to_string() => ipv4_local.to_string(),
-            "AWS_IPV4_PUBLIC".to_string() => ipv4_public.to_string(),
-            "AWS_IPV6".to_string() => ipv6.to_string(),
-            "AWS_AVAILABILITY_ZONE".to_string() => availability_zone.to_string(),
-            "AWS_AVAILABILITY_ZONE_ID".to_string() => availability_zone_id.to_string(),
-            "AWS_HOSTNAME".to_string() => hostname.to_string(),
-            "AWS_PUBLIC_HOSTNAME".to_string() => public_hostname.to_string(),
-            "AWS_REGION".to_string() => region.to_string(),
-        },
+        BTreeMap::from([
+            ("/2021-01-03/meta-data/instance-id", instance_id),
+            ("/2021-01-03/meta-data/instance-type", instance_type),
+            ("/2021-01-03/meta-data/local-ipv4", ipv4_local),
+            ("/2021-01-03/meta-data/public-ipv4", ipv4_public),
+            ("/2021-01-03/meta-data/ipv6", ipv6),
+            (
+                "/2021-01-03/meta-data/placement/availability-zone",
+                availability_zone,
+            ),
+            (
+                "/2021-01-03/meta-data/placement/availability-zone-id",
+                availability_zone_id,
+            ),
+            ("/2021-01-03/meta-data/hostname", hostname),
+            ("/2021-01-03/meta-data/public-hostname", public_hostname),
+            (
+                "/2021-01-03/dynamic/instance-identity/document",
+                instance_id_doc,
+            ),
+        ]),
+        HashMap::from([
+            ("AWS_INSTANCE_ID".to_string(), instance_id.to_string()),
+            ("AWS_INSTANCE_TYPE".to_string(), instance_type.to_string()),
+            ("AWS_IPV4_LOCAL".to_string(), ipv4_local.to_string()),
+            ("AWS_IPV4_PUBLIC".to_string(), ipv4_public.to_string()),
+            ("AWS_IPV6".to_string(), ipv6.to_string()),
+            (
+                "AWS_AVAILABILITY_ZONE".to_string(),
+                availability_zone.to_string(),
+            ),
+            (
+                "AWS_AVAILABILITY_ZONE_ID".to_string(),
+                availability_zone_id.to_string(),
+            ),
+            ("AWS_HOSTNAME".to_string(), hostname.to_string()),
+            (
+                "AWS_PUBLIC_HOSTNAME".to_string(),
+                public_hostname.to_string(),
+            ),
+            ("AWS_REGION".to_string(), region.to_string()),
+        ]),
     )
 }
 

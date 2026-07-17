@@ -1,3 +1,6 @@
+use std::collections::BTreeMap;
+use std::collections::HashMap;
+
 use crate::providers::exoscale;
 use crate::providers::MetadataProvider;
 use mockito;
@@ -68,17 +71,17 @@ fn basic_attributes() {
     let cloud_identifier = "test-cloud-identifier";
     let vm_id = "test-vm-id";
 
-    let endpoints = maplit::btreemap! {
-        "/1.0/meta-data/local-hostname" => local_hostname,
-        "/1.0/meta-data/public-hostname" => public_hostname,
-        "/1.0/meta-data/instance-id" => instance_id,
-        "/1.0/meta-data/service-offering" => service_offering,
-        "/1.0/meta-data/local-ipv4" => local_ipv4,
-        "/1.0/meta-data/public-ipv4" => public_ipv4,
-        "/1.0/meta-data/availability-zone" => availability_zone,
-        "/1.0/meta-data/cloud-identifier" => cloud_identifier,
-        "/1.0/meta-data/vm-id" => vm_id,
-    };
+    let endpoints = BTreeMap::from([
+        ("/1.0/meta-data/local-hostname", local_hostname),
+        ("/1.0/meta-data/public-hostname", public_hostname),
+        ("/1.0/meta-data/instance-id", instance_id),
+        ("/1.0/meta-data/service-offering", service_offering),
+        ("/1.0/meta-data/local-ipv4", local_ipv4),
+        ("/1.0/meta-data/public-ipv4", public_ipv4),
+        ("/1.0/meta-data/availability-zone", availability_zone),
+        ("/1.0/meta-data/cloud-identifier", cloud_identifier),
+        ("/1.0/meta-data/vm-id", vm_id),
+    ]);
     let mut server = mockito::Server::new();
     for (endpoint, body) in endpoints {
         server
@@ -88,17 +91,32 @@ fn basic_attributes() {
             .create();
     }
 
-    let attributes = maplit::hashmap! {
-        "EXOSCALE_INSTANCE_ID".to_string() => instance_id.to_string(),
-        "EXOSCALE_LOCAL_HOSTNAME".to_string() => local_hostname.to_string(),
-        "EXOSCALE_PUBLIC_HOSTNAME".to_string() => public_hostname.to_string(),
-        "EXOSCALE_AVAILABILITY_ZONE".to_string() => availability_zone.to_string(),
-        "EXOSCALE_PUBLIC_IPV4".to_string() => public_ipv4.to_string(),
-        "EXOSCALE_LOCAL_IPV4".to_string() => local_ipv4.to_string(),
-        "EXOSCALE_SERVICE_OFFERING".to_string() => service_offering.to_string(),
-        "EXOSCALE_CLOUD_IDENTIFIER".to_string()=> cloud_identifier.to_string(),
-        "EXOSCALE_VM_ID".to_string() => vm_id.to_string(),
-    };
+    let attributes = HashMap::from([
+        ("EXOSCALE_INSTANCE_ID".to_string(), instance_id.to_string()),
+        (
+            "EXOSCALE_LOCAL_HOSTNAME".to_string(),
+            local_hostname.to_string(),
+        ),
+        (
+            "EXOSCALE_PUBLIC_HOSTNAME".to_string(),
+            public_hostname.to_string(),
+        ),
+        (
+            "EXOSCALE_AVAILABILITY_ZONE".to_string(),
+            availability_zone.to_string(),
+        ),
+        ("EXOSCALE_PUBLIC_IPV4".to_string(), public_ipv4.to_string()),
+        ("EXOSCALE_LOCAL_IPV4".to_string(), local_ipv4.to_string()),
+        (
+            "EXOSCALE_SERVICE_OFFERING".to_string(),
+            service_offering.to_string(),
+        ),
+        (
+            "EXOSCALE_CLOUD_IDENTIFIER".to_string(),
+            cloud_identifier.to_string(),
+        ),
+        ("EXOSCALE_VM_ID".to_string(), vm_id.to_string()),
+    ]);
 
     let client = crate::retry::Client::try_new()
         .unwrap()

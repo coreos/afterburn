@@ -173,11 +173,16 @@ impl IBMClassicProvider {
             bail!("empty local hostname");
         }
 
-        let attrs = maplit::hashmap! {
-            "IBMCLOUD_CLASSIC_INSTANCE_ID".to_string() => metadata.instance_id,
-            "IBMCLOUD_CLASSIC_LOCAL_HOSTNAME".to_string() => metadata.local_hostname,
-
-        };
+        let attrs = HashMap::from([
+            (
+                "IBMCLOUD_CLASSIC_INSTANCE_ID".to_string(),
+                metadata.instance_id,
+            ),
+            (
+                "IBMCLOUD_CLASSIC_LOCAL_HOSTNAME".to_string(),
+                metadata.local_hostname,
+            ),
+        ]);
         Ok(attrs)
     }
 

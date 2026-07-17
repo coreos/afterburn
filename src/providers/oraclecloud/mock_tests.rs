@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::providers::oraclecloud;
 use crate::providers::MetadataProvider;
 use crate::retry;
@@ -161,15 +163,36 @@ fn test_attributes() {
         .with_body(metadata)
         .create();
 
-    let attributes = maplit::hashmap! {
-        "ORACLECLOUD_AVAILABILITY_DOMAIN".to_string() => "EMIr:PHX-AD-1".to_string(),
-        "ORACLECLOUD_COMPARTMENT_ID".to_string() => "ocid1.tenancy.oc1..exampleuniqueID".to_string(),
-        "ORACLECLOUD_FAULT_DOMAIN".to_string() => "FAULT-DOMAIN-3".to_string(),
-        "ORACLECLOUD_HOSTNAME".to_string() => "my-hostname".to_string(),
-        "ORACLECLOUD_INSTANCE_ID".to_string() => "ocid1.instance.oc1.phx.exampleuniqueID".to_string(),
-        "ORACLECLOUD_INSTANCE_SHAPE".to_string() => "VM.Standard.E3.Flex".to_string(),
-        "ORACLECLOUD_REGION_ID".to_string() => "us-phoenix-1".to_string(),
-    };
+    let attributes = HashMap::from([
+        (
+            "ORACLECLOUD_AVAILABILITY_DOMAIN".to_string(),
+            "EMIr:PHX-AD-1".to_string(),
+        ),
+        (
+            "ORACLECLOUD_COMPARTMENT_ID".to_string(),
+            "ocid1.tenancy.oc1..exampleuniqueID".to_string(),
+        ),
+        (
+            "ORACLECLOUD_FAULT_DOMAIN".to_string(),
+            "FAULT-DOMAIN-3".to_string(),
+        ),
+        (
+            "ORACLECLOUD_HOSTNAME".to_string(),
+            "my-hostname".to_string(),
+        ),
+        (
+            "ORACLECLOUD_INSTANCE_ID".to_string(),
+            "ocid1.instance.oc1.phx.exampleuniqueID".to_string(),
+        ),
+        (
+            "ORACLECLOUD_INSTANCE_SHAPE".to_string(),
+            "VM.Standard.E3.Flex".to_string(),
+        ),
+        (
+            "ORACLECLOUD_REGION_ID".to_string(),
+            "us-phoenix-1".to_string(),
+        ),
+    ]);
 
     let provider = oraclecloud::OracleCloudProvider::try_new_with_client(&client).unwrap();
     let v = provider.attributes().unwrap();

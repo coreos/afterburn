@@ -116,10 +116,10 @@ impl MetadataProvider for KubeVirtCloudConfig {
             .or(self.meta_data.local_hostname.as_ref())
             .ok_or_else(|| anyhow::anyhow!("missing hostname"))?;
 
-        let mut attrs = maplit::hashmap! {
-            "KUBEVIRT_INSTANCE_ID".to_string() => instance_id.clone(),
-            "KUBEVIRT_HOSTNAME".to_string() => hostname_value.clone(),
-        };
+        let mut attrs = HashMap::from([
+            ("KUBEVIRT_INSTANCE_ID".to_string(), instance_id.clone()),
+            ("KUBEVIRT_HOSTNAME".to_string(), hostname_value.clone()),
+        ]);
 
         if let Some(instance_type) = &self.meta_data.instance_type {
             attrs.insert("KUBEVIRT_INSTANCE_TYPE".to_string(), instance_type.clone());
