@@ -169,7 +169,9 @@ fn test_network_kargs() {
 
     // Check static IP configuration with gateway
     assert!(kargs.contains("ip=192.168.1.1::192.168.1.254:255.255.255.0:::off"));
-    assert!(kargs.contains("ip=2001:db8:85a3::8a2e:370:0::2001:db8:85a3::8a2e:370:9999:24:::off"));
+    assert!(
+        kargs.contains("ip=[2001:db8:85a3::8a2e:370:0]::[2001:db8:85a3::8a2e:370:9999]:24:::off")
+    );
 
     // Check nameservers
     assert!(kargs.contains("nameserver=1.1.1.1,8.8.8.8"));

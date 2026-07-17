@@ -1,5 +1,5 @@
 use crate::{
-    network::{self, DhcpSetting, NetworkRoute},
+    network::{self, dracut_addr, DhcpSetting, NetworkRoute},
     providers::MetadataProvider,
 };
 use anyhow::{Context, Result};
@@ -220,14 +220,14 @@ impl MetadataProvider for ProxmoxVECloudConfig {
                             {
                                 kargs.push(format!(
                                     "ip={}::{}:{}:::off",
-                                    network.ip(),
-                                    gateway.gateway,
+                                    dracut_addr(&IpAddr::V6(network.ip())),
+                                    dracut_addr(&gateway.gateway),
                                     network.prefix()
                                 ));
                             } else {
                                 kargs.push(format!(
                                     "ip={}:::{}:::off",
-                                    network.ip(),
+                                    dracut_addr(&IpAddr::V6(network.ip())),
                                     network.prefix()
                                 ));
                             }
