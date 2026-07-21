@@ -18,6 +18,7 @@ Minor changes:
 - Makefile: download `90-afterburn-authorized-keys-file.conf` for rpm building
 - ProxmoxVE: Define DNS entries for every interface, not just the first
 - Hetzner: Add the `HETZNER_PUBLIC_IPV6` attribute
+- ProxmoxVE: Explicitely deactivate Dracut IP autoconf as the IP is statically set
 
 Packaging changes:
 
