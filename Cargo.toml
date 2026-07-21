@@ -40,7 +40,10 @@ base64 = "0.22"
 cfg-if = "1.0"
 clap = { version = "4", "default-features" = false, "features" = ["std", "cargo", "derive", "error-context", "help", "suggestions", "usage", "wrap_help"] }
 ipnetwork = ">= 0.17, < 0.22"
-libflate = "2.1"
+libflate = "<2.3"
+# Pin transitive dep since libflate_lz77 >=2.3 uses edition 2024 without declaring
+# a rust-version, so resolver v3 can't filter it out.
+libflate_lz77 = "<2.3"
 libsystemd = ">= 0.2.1, < 0.8.0"
 mailparse = ">= 0.13, < 0.17"
 maplit = "1.0"
