@@ -106,10 +106,17 @@ impl MetadataProvider for OracleCloudProvider {
     }
 
     fn ssh_keys(&self) -> Result<Vec<PublicKey>> {
-        self.instance
-            .metadata
-            .get("ssh_authorized_keys")
-            .unwrap_or(&String::new())
+        let Some(ssh_authorized_keys) = self.instance.metadata.get("ssh_authorized_keys") else {
+            return Ok(vec![]);
+        };
+        if ssh_authorized_keys.is_null() {
+            return Ok(vec![]);
+        }
+        let ssh_authorized_keys = ssh_authorized_keys.as_str().with_context(|| {
+            format!("ssh_authorized_keys metadata value is not a string: {ssh_authorized_keys}")
+        })?;
+
+        ssh_authorized_keys
             .split_terminator('\n')
             .map(PublicKey::parse)
             .collect::<Result<_, _>>()
@@ -136,5 +143,5 @@ struct Instance {
     id: String,
     shape: String,
     #[serde(default)]
-    metadata: HashMap<String, String>,
+    metadata: HashMap<String, serde_json::Value>,
 }
