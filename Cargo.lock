@@ -18,7 +18,6 @@ dependencies = [
  "clap",
  "ipnetwork 0.21.1",
  "libflate",
- "libflate_lz77 1.2.0",
  "libsystemd",
  "mailparse",
  "maplit",
@@ -1230,17 +1229,8 @@ dependencies = [
  "adler32",
  "crc32fast",
  "dary_heap",
- "libflate_lz77 2.3.0",
+ "libflate_lz77",
  "no_std_io2",
-]
-
-[[package]]
-name = "libflate_lz77"
-version = "1.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a52d3a8bfc85f250440e4424db7d857e241a3aebbbe301f3eb606ab15c39acbf"
-dependencies = [
- "rle-decode-fast",
 ]
 
 [[package]]

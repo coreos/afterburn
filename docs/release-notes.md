@@ -22,6 +22,7 @@ Minor changes:
 
 Packaging changes:
 
+- Require Rust ≥ 1.88.0
 
 ## Afterburn 5.10.0
 
