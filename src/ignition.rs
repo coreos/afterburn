@@ -85,12 +85,19 @@ impl IgnitionConfig {
     }
 
     /// Serialize this config and write it as an Ignition fragment file at
-    /// `path`, creating parent directories and setting mode 0644. The file is
-    /// written atomically so a reader never observes a partially written config.
+    /// `path`, creating parent directories. The file is written atomically so a
+    /// reader never observes a partially written config. It is written mode
+    /// 0600 when it carries a password hash (so the hash is not world-readable,
+    /// mirroring /etc/shadow vs /etc/passwd), otherwise mode 0644.
     pub(crate) fn write_to(&self, path: &Path) -> Result<()> {
         let json =
             serde_json::to_string_pretty(self).context("failed to serialize ignition config")?;
-        crate::util::write_file_atomic(path, json.as_bytes(), 0o644)
+        let has_password_hash = self
+            .passwd
+            .as_ref()
+            .is_some_and(|p| p.users.iter().any(|u| u.password_hash.is_some()));
+        let mode = if has_password_hash { 0o600 } else { 0o644 };
+        crate::util::write_file_atomic(path, json.as_bytes(), mode)
             .with_context(|| format!("failed to write {}", path.display()))?;
         Ok(())
     }
@@ -271,6 +278,25 @@ mod tests {
 
         let mode = fs::metadata(&out_file).unwrap().permissions().mode() & 0o777;
         assert_eq!(mode, 0o644);
+    }
+
+    #[test]
+    fn test_write_to_password_hash_is_owner_only() {
+        let tmp = tempfile::tempdir().unwrap();
+        let out_file = tmp.path().join("azure/user.ign");
+
+        let cfg = IgnitionConfig::user_fragment(
+            "core".into(),
+            vec![],
+            Some("$6$rounds=10000$salt$hash".into()),
+        );
+        cfg.write_to(&out_file).unwrap();
+
+        let mode = fs::metadata(&out_file).unwrap().permissions().mode() & 0o777;
+        assert_eq!(
+            mode, 0o600,
+            "fragments carrying a password hash must not be world-readable"
+        );
     }
 
     #[test]
