@@ -23,9 +23,13 @@ install() {
     inst_simple "$moddir/afterburn-network-kargs.service" \
         "$systemdutildir/system/afterburn-network-kargs.service"
 
+    inst_simple "$moddir/afterburn-ignition-fragment.service" \
+        "$systemdutildir/system/afterburn-ignition-fragment.service"
+
     # These services are only run once on first-boot, so they piggyback
     # on Ignition completion target.
     mkdir -p "$initdir/$systemdsystemunitdir/ignition-complete.target.requires"
     ln -s "../afterburn-hostname.service" "$initdir/$systemdsystemunitdir/ignition-complete.target.requires/afterburn-hostname.service"
     ln -s "../afterburn-network-kargs.service" "$initdir/$systemdsystemunitdir/ignition-complete.target.requires/afterburn-network-kargs.service"
+    ln -s "../afterburn-ignition-fragment.service" "$initdir/$systemdsystemunitdir/ignition-complete.target.requires/afterburn-ignition-fragment.service"
 }
