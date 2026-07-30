@@ -46,6 +46,7 @@ pub mod upcloud;
 pub mod vmware;
 pub mod vultr;
 
+use crate::ignition::IgnitionConfig;
 use crate::network::{self, NetDevKind};
 use anyhow::{anyhow, Context, Result};
 use libsystemd::logging;
@@ -188,12 +189,42 @@ fn max_hostname_len() -> Result<Option<usize>> {
         .transpose()
 }
 
+/// Truncate `hostname` to the system's maximum hostname length.
+///
+/// If the value exceeds `HOST_NAME_MAX`, it is truncated to the first dot, or to
+/// the maximum length if there is no dot within that bound.
+/// See https://github.com/coreos/afterburn/issues/509.
+fn truncate_hostname(mut hostname: String) -> Result<String> {
+    if let Some(maxlen) = max_hostname_len()? {
+        if hostname.len() > maxlen {
+            slog_scope::info!(
+                "received hostname {:?} longer than {} characters; truncating",
+                hostname,
+                maxlen
+            );
+            hostname.truncate(maxlen);
+            if let Some(idx) = hostname.find('.') {
+                hostname.truncate(idx);
+            }
+        }
+    }
+    Ok(hostname)
+}
+
 pub trait MetadataProvider {
     fn attributes(&self) -> Result<HashMap<String, String>> {
         Ok(HashMap::new())
     }
 
     fn hostname(&self) -> Result<Option<String>> {
+        Ok(None)
+    }
+
+    fn admin_username(&self) -> Result<Option<String>> {
+        Ok(None)
+    }
+
+    fn admin_password_hash(&self) -> Result<Option<String>> {
         Ok(None)
     }
 
@@ -251,24 +282,8 @@ pub trait MetadataProvider {
     }
 
     fn write_hostname(&self, hostname_file_path: String) -> Result<()> {
-        if let Some(mut hostname) = self.hostname()? {
-            if let Some(maxlen) = max_hostname_len()? {
-                if hostname.len() > maxlen {
-                    // Value exceeds the system's maximum hostname length.
-                    // Truncate hostname to the first dot, or to the maximum
-                    // length if necessary.
-                    // https://github.com/coreos/afterburn/issues/509
-                    slog_scope::info!(
-                        "received hostname {:?} longer than {} characters; truncating",
-                        hostname,
-                        maxlen
-                    );
-                    hostname.truncate(maxlen);
-                    if let Some(idx) = hostname.find('.') {
-                        hostname.truncate(idx);
-                    }
-                }
-            }
+        if let Some(hostname) = self.hostname()? {
+            let hostname = truncate_hostname(hostname)?;
 
             let mut hostname_file = create_file(&hostname_file_path)?;
             writeln!(&mut hostname_file, "{hostname}").with_context(|| {
@@ -276,6 +291,58 @@ pub trait MetadataProvider {
             })?;
             slog_scope::info!("wrote hostname {} to {}", hostname, hostname_file_path);
         }
+        Ok(())
+    }
+
+    /// Write an Ignition config fragment that sets the system hostname (sourced
+    /// from this provider) into `output_dir` as `hostname.ign`. Skips writing if
+    /// the provider exposes no hostname.
+    fn write_hostname_ignition_fragment(&self, output_dir: &str) -> Result<()> {
+        let Some(hostname) = self.hostname()? else {
+            warn!("hostname requested, but not available from this provider");
+            return Ok(());
+        };
+        let hostname = truncate_hostname(hostname)?;
+
+        let path = Path::new(output_dir).join("hostname.ign");
+        IgnitionConfig::hostname_fragment(&hostname).write_to(&path)?;
+        slog_scope::info!("wrote hostname ignition fragment"; "path" => path.display().to_string());
+        Ok(())
+    }
+
+    /// Write an Ignition config fragment that configures the platform user
+    /// (admin username, SSH keys, and optional password hash, sourced from this
+    /// provider) into `output_dir` as `user.ign`. Skips writing if no admin
+    /// username is available, or if the user would have neither SSH keys nor a
+    /// password.
+    fn write_user_ignition_fragment(&self, output_dir: &str) -> Result<()> {
+        let Some(username) = self
+            .admin_username()
+            .context("failed to query admin username from provider")?
+        else {
+            warn!("platform-user requested, but admin username not available from this provider");
+            return Ok(());
+        };
+
+        let ssh_keys: Vec<String> = self
+            .ssh_keys()
+            .context("failed to query SSH keys from provider")?
+            .into_iter()
+            .map(|k| k.to_key_format())
+            .collect();
+
+        let password_hash = self
+            .admin_password_hash()
+            .context("failed to query admin password hash from provider")?;
+
+        if ssh_keys.is_empty() && password_hash.is_none() {
+            warn!("admin username present but no SSH keys or password; skipping user fragment");
+            return Ok(());
+        }
+
+        let path = Path::new(output_dir).join("user.ign");
+        IgnitionConfig::user_fragment(username, ssh_keys, password_hash).write_to(&path)?;
+        slog_scope::info!("wrote platform-user ignition fragment"; "path" => path.display().to_string());
         Ok(())
     }
 
