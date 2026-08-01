@@ -21,6 +21,7 @@ Minor changes:
 - Hetzner: Add the `HETZNER_PUBLIC_IPV6` attribute
 - ProxmoxVE: Explicitely deactivate Dracut IP autoconf as the IP is statically set
 - Oracle Cloud: Handle nested metadata values for instance pool members
+- ProxmoxVE: Emit one `nameserver=` karg per address so multiple DNS servers work
 
 Packaging changes:
 

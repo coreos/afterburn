@@ -186,6 +186,7 @@ impl MetadataProvider for ProxmoxVECloudConfig {
 
     fn rd_network_kargs(&self) -> Result<Option<String>> {
         let mut kargs = Vec::new();
+        let mut all_nameservers: Vec<IpAddr> = Vec::new();
 
         if let Ok(networks) = self.networks() {
             for iface in networks {
@@ -244,17 +245,20 @@ impl MetadataProvider for ProxmoxVECloudConfig {
                     }
                 }
 
-                // Add nameservers
-                if !iface.nameservers.is_empty() {
-                    let nameservers = iface
-                        .nameservers
-                        .iter()
-                        .map(|ns| ns.to_string())
-                        .collect::<Vec<_>>()
-                        .join(",");
-                    kargs.push(format!("nameserver={}", nameservers));
+                // Collect nameservers from all interfaces. The same nameserver
+                // list is attached to every interface, so deduplicate.
+                for nameserver in &iface.nameservers {
+                    if !all_nameservers.contains(nameserver) {
+                        all_nameservers.push(*nameserver);
+                    }
                 }
             }
+        }
+
+        // dracut's `nameserver=` karg takes a single address and is repeated to
+        // configure more than one; a comma-separated list is not valid there.
+        for nameserver in &all_nameservers {
+            kargs.push(format!("nameserver={}", dracut_addr(nameserver)));
         }
 
         if kargs.is_empty() {
