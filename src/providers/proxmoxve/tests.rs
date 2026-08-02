@@ -67,7 +67,8 @@ fn test_network_dhcp() {
             dhcp: Some(DhcpSetting::V4),
             nameservers: vec![
                 IpAddr::from_str("1.1.1.1").unwrap(),
-                IpAddr::from_str("8.8.8.8").unwrap()
+                IpAddr::from_str("8.8.8.8").unwrap(),
+                IpAddr::from_str("2001:4860:4860::8888").unwrap()
             ],
             ip_addresses: vec![],
             routes: vec![],
@@ -173,8 +174,12 @@ fn test_network_kargs() {
         kargs.contains("ip=[2001:db8:85a3::8a2e:370:0]::[2001:db8:85a3::8a2e:370:9999]:24:::off")
     );
 
-    // Check nameservers
-    assert!(kargs.contains("nameserver=1.1.1.1,8.8.8.8"));
+    // Check nameservers: one karg each, not a comma-separated list. This
+    // fixture has two interfaces sharing one nameserver list, so each address
+    // must still be emitted exactly once.
+    assert!(!kargs.contains("nameserver=1.1.1.1,8.8.8.8"));
+    assert_eq!(kargs.matches("nameserver=1.1.1.1").count(), 1);
+    assert_eq!(kargs.matches("nameserver=8.8.8.8").count(), 1);
 }
 
 #[test]
@@ -189,8 +194,12 @@ fn test_network_kargs_dhcp() {
     // Check DHCP configuration
     assert!(kargs.contains("ip=dhcp"));
 
-    // Check nameservers
-    assert!(kargs.contains("nameserver=1.1.1.1,8.8.8.8"));
+    // Check nameservers: one karg each, not a comma-separated list, with an
+    // IPv6 address bracketed the way dracut expects.
+    assert!(kargs.contains("nameserver=1.1.1.1"));
+    assert!(kargs.contains("nameserver=8.8.8.8"));
+    assert!(kargs.contains("nameserver=[2001:4860:4860::8888]"));
+    assert!(!kargs.contains("nameserver=1.1.1.1,8.8.8.8"));
 }
 
 #[test]
@@ -206,8 +215,10 @@ fn test_network_kargs_no_gateway() {
     // Check static IP configuration without gateway
     assert!(kargs.contains("ip=192.168.1.1:::255.255.255.0:::off"));
 
-    // Check nameservers
-    assert!(kargs.contains("nameserver=1.1.1.1,8.8.8.8"));
+    // Check nameservers: one karg each, not a comma-separated list
+    assert!(kargs.contains("nameserver=1.1.1.1"));
+    assert!(kargs.contains("nameserver=8.8.8.8"));
+    assert!(!kargs.contains("nameserver=1.1.1.1,8.8.8.8"));
 }
 
 #[test]
