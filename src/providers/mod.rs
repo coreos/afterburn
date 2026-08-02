@@ -202,7 +202,14 @@ fn truncate_hostname(mut hostname: String) -> Result<String> {
                 hostname,
                 maxlen
             );
-            hostname.truncate(maxlen);
+            // Truncate on a character boundary: String::truncate() panics if the
+            // index lands in the middle of a multi-byte UTF-8 sequence, and
+            // maxlen counts bytes.
+            let mut end = maxlen;
+            while !hostname.is_char_boundary(end) {
+                end -= 1;
+            }
+            hostname.truncate(end);
             if let Some(idx) = hostname.find('.') {
                 hostname.truncate(idx);
             }
@@ -531,5 +538,30 @@ mod tests {
             try_write_hostname(&format!("{}.example.com", &long_string[0..maxlen - 10])),
             long_string[0..maxlen - 10]
         );
+    }
+
+    #[test]
+    fn test_hostname_truncation_multibyte() {
+        // maxlen counts bytes, so an over-long hostname can put the truncation
+        // point in the middle of a multi-byte character. Truncate back to the
+        // preceding character boundary rather than panicking.
+        let maxlen = max_hostname_len().unwrap().unwrap();
+
+        // Straddle the limit with a two-byte character: it starts at maxlen - 1
+        // and so occupies the byte at maxlen, whatever maxlen happens to be.
+        let straddle = format!("{}\u{e9}{}", "a".repeat(maxlen - 1), "b".repeat(maxlen));
+        assert!(!straddle.is_char_boundary(maxlen));
+        let out = try_write_hostname(&straddle);
+        assert_eq!(out, "a".repeat(maxlen - 1));
+
+        // Same, but with a dot section following, to exercise both truncations.
+        let out = try_write_hostname(&format!("{straddle}.example.com"));
+        assert_eq!(out, "a".repeat(maxlen - 1));
+
+        // An all-multi-byte hostname truncates to whole characters.
+        let wide = "\u{20ac}".repeat(maxlen);
+        let out = try_write_hostname(&wide);
+        assert!(out.len() <= maxlen);
+        assert_eq!(out, wide[0..out.len()]);
     }
 }
