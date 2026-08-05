@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use mockito::{self, Matcher};
 
 use crate::providers::scaleway::ScalewayProvider;
@@ -22,15 +24,24 @@ fn test_attributes() {
         "ssh_public_keys": []
     }"#;
 
-    let want = maplit::hashmap! {
-        "SCALEWAY_INSTANCE_ID".to_string() => "11111111-1111-1111-1111-111111111111".to_string(),
-        "SCALEWAY_INSTANCE_TYPE".to_string() => "GP1-M".to_string(),
-        "SCALEWAY_HOSTNAME".to_string() => "frontend-0".to_string(),
-        "SCALEWAY_IPV4_PRIVATE".to_string() => "10.0.0.2".to_string(),
-        "SCALEWAY_IPV4_PUBLIC".to_string() => "93.184.216.34".to_string(),
-        "SCALEWAY_IPV6_PUBLIC".to_string() => "2001:db8::1".to_string(),
-        "SCALEWAY_ZONE_ID".to_string() => "par1".to_string(),
-    };
+    let want = HashMap::from([
+        (
+            "SCALEWAY_INSTANCE_ID".to_string(),
+            "11111111-1111-1111-1111-111111111111".to_string(),
+        ),
+        ("SCALEWAY_INSTANCE_TYPE".to_string(), "GP1-M".to_string()),
+        ("SCALEWAY_HOSTNAME".to_string(), "frontend-0".to_string()),
+        ("SCALEWAY_IPV4_PRIVATE".to_string(), "10.0.0.2".to_string()),
+        (
+            "SCALEWAY_IPV4_PUBLIC".to_string(),
+            "93.184.216.34".to_string(),
+        ),
+        (
+            "SCALEWAY_IPV6_PUBLIC".to_string(),
+            "2001:db8::1".to_string(),
+        ),
+        ("SCALEWAY_ZONE_ID".to_string(), "par1".to_string()),
+    ]);
 
     let mut server = mockito::Server::new();
     server
