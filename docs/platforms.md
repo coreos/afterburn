@@ -64,6 +64,10 @@ The following platforms are supported, with a different set of features availabl
   * Features:
       - Attributes
       - SSH Keys
+* outscale
+  - Attributes
+  - Hostname
+  - SSH keys
 * oraclecloud
   - Attributes
   - Hostname
