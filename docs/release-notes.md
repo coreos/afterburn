@@ -8,6 +8,8 @@ nav_order: 8
 
 Major changes:
 
+- Add support for Outscale
+
 Minor changes:
 
 - Reuse the existing HTTP client when building PATCH, PUT, and POST requests
