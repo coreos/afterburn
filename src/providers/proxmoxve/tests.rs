@@ -222,6 +222,39 @@ fn test_network_kargs_no_gateway() {
 }
 
 #[test]
+fn test_network_dhcp_dual() {
+    let config = ProxmoxVECloudConfig::try_new(Path::new("tests/fixtures/proxmoxve/dhcp-dual"))
+        .expect("cannot parse config");
+
+    let networks = config.networks().expect("cannot get networks");
+    let eth0 = networks
+        .iter()
+        .find(|i| i.name.as_deref() == Some("eth0"))
+        .expect("eth0 not found");
+
+    // dhcp4 and dhcp6 subnets on one interface merge into dual-stack.
+    assert_eq!(eth0.dhcp, Some(DhcpSetting::Both));
+}
+
+#[test]
+fn test_network_kargs_dhcp_dual() {
+    let config = ProxmoxVECloudConfig::try_new(Path::new("tests/fixtures/proxmoxve/dhcp-dual"))
+        .expect("cannot parse config");
+
+    let kargs = config.rd_network_kargs().expect("cannot get network kargs");
+    assert!(kargs.is_some());
+    let kargs = kargs.unwrap();
+
+    // Dual-stack DHCP maps to the "any" autoconf keyword.
+    assert!(kargs.contains("ip=any"));
+
+    // Check nameservers: one karg each, not a comma-separated list
+    assert!(!kargs.contains("nameserver=1.1.1.1,8.8.8.8"));
+    assert_eq!(kargs.matches("nameserver=1.1.1.1").count(), 1);
+    assert_eq!(kargs.matches("nameserver=8.8.8.8").count(), 1);
+}
+
+#[test]
 fn test_netplan_config_static() {
     let config = ProxmoxVECloudConfig::try_new(Path::new("tests/fixtures/proxmoxve/static"))
         .expect("cannot parse config");
@@ -307,4 +340,21 @@ fn test_netplan_config_dhcp() {
         .as_sequence()
         .unwrap()
         .contains(&serde_yaml::Value::String("8.8.8.8".into())));
+}
+
+#[test]
+fn test_netplan_config_dhcp_dual() {
+    let config = ProxmoxVECloudConfig::try_new(Path::new("tests/fixtures/proxmoxve/dhcp-dual"))
+        .expect("cannot parse config");
+
+    let netplan = config.netplan_config().expect("cannot get netplan config");
+    assert!(netplan.is_some());
+    let netplan = netplan.unwrap();
+
+    let parsed: serde_yaml::Value = serde_yaml::from_str(&netplan).expect("invalid YAML");
+    let eth0 = &parsed["network"]["ethernets"]["eth0"];
+
+    // Dual-stack DHCP enables both families in netplan.
+    assert_eq!(eth0["dhcp4"], serde_yaml::Value::Bool(true));
+    assert_eq!(eth0["dhcp6"], serde_yaml::Value::Bool(true));
 }

@@ -205,9 +205,9 @@ fn test_network_data() {
 
         // Static IPs without gateway (gateway is passed via rd.route)
         let expected = [
-            "ip=192.168.1.10:::255.255.255.0::eth0:static",
-            "ip=[2001:db8::10]:::64::eth0:static",
-            "ip=eth1:dhcp,dhcp6",
+            "ip=192.168.1.10:::255.255.255.0::eth0:off",
+            "ip=[2001:db8::10]:::64::eth0:off",
+            "ip=eth1:any",
             "rd.route=0.0.0.0/0:192.168.1.1",
             "rd.route=[::/0]:[2001:db8::1]",
             "nameserver=8.8.8.8",
@@ -292,7 +292,7 @@ fn assert_dhcp_with_static_gw_and_dns(config: &KubeVirtCloudConfig) {
     );
 
     let expected = [
-        "ip=eth0:dhcp,dhcp6",
+        "ip=eth0:any",
         "rd.route=0.0.0.0/0:192.168.1.1",
         "rd.route=[::/0]:[2001:db8::1]",
         "nameserver=8.8.8.8",
@@ -361,7 +361,7 @@ fn assert_no_duplicate_routes(config: &KubeVirtCloudConfig) {
 
     let kargs = config.rd_network_kargs().unwrap().unwrap();
     let expected = [
-        "ip=eth0:dhcp,dhcp6",
+        "ip=eth0:any",
         "rd.route=0.0.0.0/0:192.168.1.1",
         "rd.route=[::/0]:[2001:db8::1]",
     ];
