@@ -30,6 +30,7 @@ Minor changes:
 - KubeVirt, ProxmoxVE: Use `ip=any` rather than `ip=dhcp,dhcp6` for systemd compatibility. As of Dracut 112, its network-legacy module treats `ip=any` as IPv4-only, so this change breaks IPv6 in that case. At the time of writing, a Dracut change to make this dual stack is under review.
 - ProxmoxVE: Fix dual stack network configuration
 - Cargo.toml: Optimize build for binary size
+- CI: Keep track of binary size to avoid accidental excessive growth
 
 Packaging changes:
 
