@@ -29,6 +29,7 @@ Minor changes:
 - KubeVirt: Use `off` rather than `static` to disable IP autoconf for Dracut and systemd compatibility
 - KubeVirt, ProxmoxVE: Use `ip=any` rather than `ip=dhcp,dhcp6` for systemd compatibility. As of Dracut 112, its network-legacy module treats `ip=any` as IPv4-only, so this change breaks IPv6 in that case. At the time of writing, a Dracut change to make this dual stack is under review.
 - ProxmoxVE: Fix dual stack network configuration
+- Cargo.toml: Optimize build for binary size
 
 Packaging changes:
 
