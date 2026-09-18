@@ -38,6 +38,7 @@ pub mod microsoft;
 pub mod noop;
 pub mod openstack;
 pub mod oraclecloud;
+pub mod outscale;
 pub mod packet;
 pub mod powervs;
 pub mod proxmoxve;
