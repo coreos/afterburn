@@ -4,7 +4,15 @@ nav_order: 8
 
 # Release notes
 
-## Upcoming Afterburn 5.11.0 (unreleased)
+## Upcoming Afterburn 5.12.0 (unreleased)
+
+Major changes:
+
+Minor changes:
+
+Packaging changes:
+
+## Afterburn 5.11.0
 
 Major changes:
 
