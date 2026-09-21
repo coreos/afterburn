@@ -84,6 +84,10 @@ The following platforms are supported, with a different set of features availabl
   - Attributes
   - Boot check-in
   - SSH keys
+* stackit
+  - Attributes
+  - Hostname
+  - SSH Keys
 * upcloud
   - Attributes
   - Hostname

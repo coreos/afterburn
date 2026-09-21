@@ -8,6 +8,7 @@ nav_order: 8
 
 Major changes:
 
+- Add support for STACKIT
 - KubeVirt: Add support for static and dynamic IP configuration from cloud-init
 - Azure: Add `render-ignition` subcommand to generate Ignition config fragments from IMDS metadata
 - Hetzner: Add support for network configuration
