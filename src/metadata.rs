@@ -32,6 +32,7 @@ use crate::providers::microsoft::azurestack::AzureStack;
 use crate::providers::openstack;
 use crate::providers::openstack::network::OpenstackProviderNetwork;
 use crate::providers::oraclecloud::OracleCloudProvider;
+use crate::providers::outscale::OutscaleProvider;
 use crate::providers::packet::PacketProvider;
 use crate::providers::powervs::PowerVSProvider;
 use crate::providers::proxmoxve;
@@ -71,6 +72,7 @@ pub fn fetch_metadata(provider: &str) -> Result<Box<dyn providers::MetadataProvi
         "kubevirt" => kubevirt::try_new_provider_else_noop(),
         "openstack" => openstack::try_config_drive_else_network(),
         "openstack-metadata" => box_result!(OpenstackProviderNetwork::try_new()?),
+        "outscale" => box_result!(OutscaleProvider::try_new()?),
         "oraclecloud" => box_result!(OracleCloudProvider::try_new()?),
         "packet" => box_result!(PacketProvider::try_new()?),
         "powervs" => box_result!(PowerVSProvider::try_new()?),
