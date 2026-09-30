@@ -57,8 +57,12 @@ struct Dns {
     nameservers: Vec<IpAddr>,
 }
 
+/// Metadata provider for DigitalOcean
+///
+/// See: https://docs.digitalocean.com/reference/api/metadata/droplet-properties/#getMetadata
 #[derive(Clone, Deserialize)]
 pub struct DigitalOceanProvider {
+    droplet_id: i64,
     hostname: String,
     interfaces: Interfaces,
     public_keys: Vec<String>,
@@ -83,6 +87,10 @@ impl DigitalOceanProvider {
     fn parse_attrs(&self) -> Vec<(String, String)> {
         let mut attrs = vec![
             ("DIGITALOCEAN_HOSTNAME".to_owned(), self.hostname.clone()),
+            (
+                "DIGITALOCEAN_INSTANCE_ID".to_owned(),
+                self.droplet_id.to_string(),
+            ),
             ("DIGITALOCEAN_REGION".to_owned(), self.region.clone()),
         ];
 
