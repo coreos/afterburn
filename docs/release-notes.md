@@ -10,6 +10,8 @@ Major changes:
 
 Minor changes:
 
+- Reuse the existing HTTP client when building PATCH, PUT, and POST requests
+
 Packaging changes:
 
 ## Afterburn 5.11.0

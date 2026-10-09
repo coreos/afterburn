@@ -278,7 +278,8 @@ where
         let url = self.parse_url()?;
 
         self.retry.clone().retry(|attempt| {
-            let mut builder = blocking::Client::new()
+            let mut builder = self
+                .client
                 .patch(url.clone())
                 .headers(self.headers.clone())
                 .header(header::CONTENT_TYPE, self.d.content_type());
@@ -308,7 +309,8 @@ where
         let url = self.parse_url()?;
 
         self.retry.clone().retry(|attempt| {
-            let mut builder = blocking::Client::new()
+            let mut builder = self
+                .client
                 .put(url.clone())
                 .headers(self.headers.clone())
                 .header(header::CONTENT_TYPE, self.d.content_type());
@@ -335,7 +337,8 @@ where
         let url = self.parse_url()?;
 
         self.retry.clone().retry(|attempt| {
-            let mut builder = blocking::Client::new()
+            let mut builder = self
+                .client
                 .post(url.clone())
                 .headers(self.headers.clone())
                 .header(header::CONTENT_TYPE, self.d.content_type());
