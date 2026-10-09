@@ -24,6 +24,21 @@ pub fn read_config_file(path: &Path, file: &str) -> Result<Option<BufReader<File
     Ok(Some(BufReader::new(file)))
 }
 
+/// Parse a route destination in CIDR notation
+///
+/// Like cloud-init and Netplan, `default` is accepted as an alias for the
+/// default route of the gateway's address family.
+fn parse_route_destination(destination: &str, gateway: IpAddr) -> Result<IpNetwork> {
+    if destination == "default" {
+        let unspecified = match gateway {
+            IpAddr::V4(_) => "0.0.0.0/0",
+            IpAddr::V6(_) => "::/0",
+        };
+        return Ok(IpNetwork::from_str(unspecified)?);
+    }
+    Ok(IpNetwork::from_str(destination)?)
+}
+
 /// Cloud-init Network Config format wrapper
 ///
 /// This can be either v1 or v2 format
@@ -71,7 +86,7 @@ pub struct NetworkConfigV1Entry {
 /// OpenStack-compatible `network`/`netmask` alias.
 #[derive(Debug, Deserialize)]
 pub struct RouteConfigV1 {
-    /// Destination in CIDR notation (preferred)
+    /// Destination in CIDR notation (preferred), or `default`
     pub destination: Option<String>,
     /// Destination network (OpenStack alias for `destination`)
     pub network: Option<String>,
@@ -195,7 +210,7 @@ pub struct NameserversConfig {
 /// Route configuration in v2 format
 #[derive(Debug, Deserialize)]
 pub struct RouteConfigV2 {
-    /// Destination network in CIDR notation
+    /// Destination network in CIDR notation, or `default`
     pub to: String,
     /// Gateway address
     pub via: String,
@@ -351,7 +366,7 @@ impl NetworkConfigV1Entry {
 
                 // Parse destination: prefer `destination` (CIDR), fall back to `network`/`netmask`
                 let destination = if let Some(dest) = &route.destination {
-                    IpNetwork::from_str(dest)?
+                    parse_route_destination(dest, gateway)?
                 } else if let Some(network) = &route.network {
                     let network_addr = IpAddr::from_str(network)?;
                     if let Some(netmask) = &route.netmask {
@@ -455,9 +470,10 @@ impl NetworkConfigV2 {
 
             // Process explicit routes first
             for route in &config.routes {
+                let gateway = IpAddr::from_str(&route.via)?;
                 iface.routes.push(NetworkRoute {
-                    destination: IpNetwork::from_str(&route.to)?,
-                    gateway: IpAddr::from_str(&route.via)?,
+                    destination: parse_route_destination(&route.to, gateway)?,
+                    gateway,
                 });
             }
 
