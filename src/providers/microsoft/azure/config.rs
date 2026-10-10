@@ -14,10 +14,10 @@
 
 //! Azure OVF admin-password support.
 //!
-//! Mounts the Azure provisioning ISO, reads `adminPassword` from the OVF
-//! environment, and hashes it as an sha512-crypt digest for use in an Ignition
-//! `passwd` fragment. The generic Ignition fragment machinery lives in the
-//! `render-ignition` CLI sub-command.
+//! Mounts the Azure provisioning ISO, reads the admin password from `UserPassword`
+//! in the OVF environment, and hashes it as an sha512-crypt digest for use in an
+//! Ignition `passwd` fragment. The generic Ignition fragment machinery lives in
+//! the `render-ignition` CLI sub-command.
 
 use anyhow::{Context, Result};
 use serde::Deserialize;
@@ -117,11 +117,11 @@ struct ProvisioningSection {
 
 #[derive(Debug, Deserialize)]
 struct LinuxProvisioningConfigurationSet {
-    #[serde(rename = "AdminPassword", alias = "adminPassword", default)]
+    #[serde(rename = "UserPassword", default)]
     admin_password: String,
 }
 
-/// OVF is optional; if present, only `adminPassword` is consulted.
+/// OVF is optional; the admin password is read from `UserPassword`.
 pub(crate) fn read_ovf_admin_password() -> Result<Option<String>> {
     let xml = match mount_and_read_ovf() {
         Ok(s) => s,
@@ -275,69 +275,53 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_ovf_parse_admin_password() {
+    fn test_ovf_parse_admin_password_with_azure_namespaces() {
         let xml = r#"
 <Environment xmlns="http://schemas.dmtf.org/ovf/environment/1"
-    xmlns:wa="http://schemas.microsoft.com/windowsazure">
+    xmlns:oe="http://schemas.dmtf.org/ovf/environment/1"
+    xmlns:wa="http://schemas.microsoft.com/windowsazure"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <wa:ProvisioningSection>
         <wa:Version>1.0</wa:Version>
-        <LinuxProvisioningConfigurationSet>
-            <AdminPassword></AdminPassword>
+        <LinuxProvisioningConfigurationSet xmlns="http://schemas.microsoft.com/windowsazure"
+            xmlns:i="http://www.w3.org/2001/XMLSchema-instance">
+            <ConfigurationSetType>LinuxProvisioningConfiguration</ConfigurationSetType>
+            <UserName>testuser</UserName>
+            <DisableSshPasswordAuthentication>false</DisableSshPasswordAuthentication>
+            <SSH><PublicKeys /></SSH>
+            <HostName>testvm</HostName><UserPassword>synthetic-test-password</UserPassword>
         </LinuxProvisioningConfigurationSet>
     </wa:ProvisioningSection>
+    <wa:PlatformSettingsSection />
 </Environment>"#;
         let env = parse_ovf_env(xml).unwrap();
         assert_eq!(
-            env.provisioning_section
-                .linux_prov_conf_set
-                .admin_password
-                .as_str(),
-            ""
+            env.provisioning_section.linux_prov_conf_set.admin_password,
+            "synthetic-test-password"
         );
     }
 
     #[test]
-    fn test_ovf_parse_supports_lowercase_admin_password_tag() {
-        let xml = r#"
-<Environment xmlns="http://schemas.dmtf.org/ovf/environment/1"
-    xmlns:wa="http://schemas.microsoft.com/windowsazure">
-    <wa:ProvisioningSection>
-        <wa:Version>1.0</wa:Version>
-        <LinuxProvisioningConfigurationSet>
-            <adminPassword></adminPassword>
-        </LinuxProvisioningConfigurationSet>
-    </wa:ProvisioningSection>
-</Environment>"#;
-        let env = parse_ovf_env(xml).unwrap();
-        assert_eq!(
-            env.provisioning_section
+    fn test_ovf_parse_missing_or_empty_admin_password() {
+        for password_element in [
+            "",
+            "<UserPassword />",
+            "<AdminPassword>ignored-password</AdminPassword>",
+            "<adminPassword>ignored-password</adminPassword>",
+        ] {
+            let xml = format!(
+                "<Environment><ProvisioningSection>\
+                 <LinuxProvisioningConfigurationSet>{password_element}\
+                 </LinuxProvisioningConfigurationSet>\
+                 </ProvisioningSection></Environment>"
+            );
+            let env = parse_ovf_env(&xml).unwrap();
+            assert!(env
+                .provisioning_section
                 .linux_prov_conf_set
                 .admin_password
-                .as_str(),
-            ""
-        );
-    }
-
-    #[test]
-    fn test_ovf_parse_non_empty_admin_password() {
-        let xml = r#"
-<Environment xmlns="http://schemas.dmtf.org/ovf/environment/1"
-    xmlns:wa="http://schemas.microsoft.com/windowsazure">
-    <wa:ProvisioningSection>
-        <wa:Version>1.0</wa:Version>
-        <LinuxProvisioningConfigurationSet>
-            <AdminPassword>SecretPassword123!</AdminPassword>
-        </LinuxProvisioningConfigurationSet>
-    </wa:ProvisioningSection>
-</Environment>"#;
-        let env = parse_ovf_env(xml).unwrap();
-        assert_eq!(
-            env.provisioning_section
-                .linux_prov_conf_set
-                .admin_password
-                .as_str(),
-            "SecretPassword123!"
-        );
+                .is_empty());
+        }
     }
 
     #[test]

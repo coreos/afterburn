@@ -11,6 +11,7 @@ Major changes:
 Minor changes:
 
 - Reuse the existing HTTP client when building PATCH, PUT, and POST requests
+- Azure: Read the admin password from OVF `UserPassword` when rendering the platform-user Ignition fragment
 
 Packaging changes:
 
