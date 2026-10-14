@@ -12,6 +12,7 @@ Minor changes:
 
 - Reuse the existing HTTP client when building PATCH, PUT, and POST requests
 - Azure: Read the admin password from OVF `UserPassword` when rendering the platform-user Ignition fragment
+- KubeVirt: Support `default` route destinations in NoCloud network config
 
 Packaging changes:
 
