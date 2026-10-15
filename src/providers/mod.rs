@@ -42,6 +42,7 @@ pub mod packet;
 pub mod powervs;
 pub mod proxmoxve;
 pub mod scaleway;
+pub mod stackit;
 pub mod upcloud;
 pub mod vmware;
 pub mod vultr;
@@ -120,7 +121,7 @@ fn write_ssh_keys(user: User, ssh_keys: Vec<PublicKey>) -> Result<()> {
     if !ssh_keys.is_empty() {
         // ensure directory exists
         fs::create_dir_all(&dir_path)
-            .with_context(|| format!("failed to create directory {:?}", &dir_path))?;
+            .with_context(|| format!("failed to create directory {:?}", dir_path))?;
 
         // create temporary file
         let mut temp_file = tempfile::Builder::new()
