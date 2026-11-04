@@ -136,7 +136,8 @@ impl MetadataProvider for ProxmoxVECloudConfig {
         Ok(self
             .user_data
             .as_ref()
-            .and_then(|user_data| user_data.hostname.clone()))
+            .and_then(|user_data| user_data.hostname.clone())
+            .filter(|hostname| !hostname.is_empty()))
     }
 
     fn ssh_keys(&self) -> Result<Vec<PublicKey>> {

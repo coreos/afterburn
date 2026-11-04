@@ -372,3 +372,16 @@ fn test_no_hostname() {
         .contains_key("PROXMOXVE_HOSTNAME"));
     assert_eq!(config.ssh_keys().unwrap(), vec![test_ssh_key]);
 }
+
+#[test]
+fn test_empty_hostname() {
+    let config =
+        ProxmoxVECloudConfig::try_new(Path::new("tests/fixtures/proxmoxve/empty-hostname"))
+            .expect("cannot parse config");
+
+    assert!(config.hostname().unwrap().is_none());
+    assert!(!config
+        .attributes()
+        .unwrap()
+        .contains_key("PROXMOXVE_HOSTNAME"));
+}
