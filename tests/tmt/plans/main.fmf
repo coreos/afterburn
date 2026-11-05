@@ -11,9 +11,8 @@ prepare:
       # to set a environment variable to point to the afterburn binary location.
       set -x -e -o pipefail
       echo "Preparing the test environment"
-      AFTERBURN_BIN_NAME="afterburn"
       PARENT_DIR=$(dirname "${TMT_TREE}")
-      AFTERBURN_BIN_FULL_PATH=$(find "${PARENT_DIR}" -type f -name "${AFTERBURN_BIN_NAME}")
+      AFTERBURN_BIN_FULL_PATH=$(find "${PARENT_DIR}" -type f -path '*/target/release/afterburn' -print -quit)
       if [ -z "${AFTERBURN_BIN_FULL_PATH}" ]; then
           echo "afterburn file not found."
           exit 1
