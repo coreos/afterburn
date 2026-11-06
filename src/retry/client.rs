@@ -129,6 +129,15 @@ impl Client {
         })
     }
 
+    /// Disable system proxies for this client.
+    pub fn no_proxy(mut self) -> Result<Self> {
+        self.client = blocking::Client::builder()
+            .no_proxy()
+            .build()
+            .context("failed to initialize client without proxies")?;
+        Ok(self)
+    }
+
     pub fn header(mut self, k: header::HeaderName, v: header::HeaderValue) -> Self {
         self.headers.append(k, v);
         self
