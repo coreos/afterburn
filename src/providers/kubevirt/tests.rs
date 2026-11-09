@@ -398,3 +398,51 @@ fn test_no_duplicate_routes_nocloud_v2() {
     .expect("cannot parse config");
     assert_no_duplicate_routes(&config);
 }
+
+/// `default` route destinations resolve to the gateway's address family.
+fn assert_route_to_default(config: &KubeVirtCloudConfig) {
+    let interfaces = config.networks().expect("cannot get interfaces");
+    assert_eq!(interfaces.len(), 1);
+
+    let eth0 = &interfaces[0];
+    assert_eq!(eth0.routes.len(), 2, "Unexpected routes: {:?}", eth0.routes);
+    assert!(eth0
+        .routes
+        .iter()
+        .any(|r| r.gateway == IpAddr::from_str("192.168.1.1").unwrap()
+            && r.destination == IpNetwork::from_str("0.0.0.0/0").unwrap()));
+    assert!(eth0
+        .routes
+        .iter()
+        .any(|r| r.gateway == IpAddr::from_str("2001:db8::1").unwrap()
+            && r.destination == IpNetwork::from_str("::/0").unwrap()));
+
+    let kargs = config.rd_network_kargs().unwrap().unwrap();
+    let expected = [
+        "rd.route=0.0.0.0/0:192.168.1.1",
+        "rd.route=[::/0]:[2001:db8::1]",
+    ];
+    for exp in expected {
+        assert!(kargs.contains(exp), "Missing '{exp}' in: {kargs}");
+    }
+}
+
+#[test]
+fn test_route_to_default_nocloud_v1() {
+    let config = KubeVirtCloudConfig::try_new(
+        Path::new("./tests/fixtures/kubevirt/route_to_default_nocloud_v1"),
+        NetworkConfigurationFormat::NoCloud,
+    )
+    .expect("cannot parse config");
+    assert_route_to_default(&config);
+}
+
+#[test]
+fn test_route_to_default_nocloud_v2() {
+    let config = KubeVirtCloudConfig::try_new(
+        Path::new("./tests/fixtures/kubevirt/route_to_default_nocloud_v2"),
+        NetworkConfigurationFormat::NoCloud,
+    )
+    .expect("cannot parse config");
+    assert_route_to_default(&config);
+}

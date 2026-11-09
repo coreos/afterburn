@@ -1,0 +1,15 @@
+version: 1
+config:
+  - type: physical
+    name: eth0
+    subnets:
+      - type: static
+        address: 192.168.1.10/24
+        routes:
+          - destination: default
+            gateway: 192.168.1.1
+      - type: static6
+        address: "2001:db8::10/64"
+        routes:
+          - destination: default
+            gateway: "2001:db8::1"
