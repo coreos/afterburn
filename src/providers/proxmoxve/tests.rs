@@ -358,3 +358,30 @@ fn test_netplan_config_dhcp_dual() {
     assert_eq!(eth0["dhcp4"], serde_yaml::Value::Bool(true));
     assert_eq!(eth0["dhcp6"], serde_yaml::Value::Bool(true));
 }
+
+#[test]
+fn test_no_hostname() {
+    let test_ssh_key = PublicKey::from_str("ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDd1hElre4j44sbmULXyO5j6dRnkRFCMjEGtRSy2SuvFD8WyB5uectcEMvz7ORhQIVbPlz94wFjpSX5wl/gmSKL/7GOyerJo0Y2cvyjJJahuDn+JnIL0tT0HS1pJ5iJqQpxXeOAzMK5Heum+uGw9BzbiUHnRzjJr8Ltx4CAGMfubevD4SX32Q8BTQiaU4ZnGtdHo16pWwRsq1f6/UtL4gDCni9vm8QmmGDRloi/pBn1csjKw+volFyu/kSEmGLWow6NuT6TrhGAbMKas5HfYq0Mn3LGPZL7XjqJQ6CO0TzkG/BNplZT2tiwHtsvXsbePTp4ZUi4dkCMz2xR4eikaI1V dummy@dummy.local").unwrap();
+    let config = ProxmoxVECloudConfig::try_new(Path::new("tests/fixtures/proxmoxve/no-hostname"))
+        .expect("cannot parse config");
+
+    assert!(config.hostname().unwrap().is_none());
+    assert!(!config
+        .attributes()
+        .unwrap()
+        .contains_key("PROXMOXVE_HOSTNAME"));
+    assert_eq!(config.ssh_keys().unwrap(), vec![test_ssh_key]);
+}
+
+#[test]
+fn test_empty_hostname() {
+    let config =
+        ProxmoxVECloudConfig::try_new(Path::new("tests/fixtures/proxmoxve/empty-hostname"))
+            .expect("cannot parse config");
+
+    assert!(config.hostname().unwrap().is_none());
+    assert!(!config
+        .attributes()
+        .unwrap()
+        .contains_key("PROXMOXVE_HOSTNAME"));
+}

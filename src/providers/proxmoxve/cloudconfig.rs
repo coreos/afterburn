@@ -33,7 +33,7 @@ pub struct ProxmoxVECloudMetaData {
 
 #[derive(Debug, Deserialize)]
 pub struct ProxmoxVECloudUserData {
-    pub hostname: String,
+    pub hostname: Option<String>,
     #[serde(default)]
     pub ssh_authorized_keys: Vec<String>,
 }
@@ -136,7 +136,8 @@ impl MetadataProvider for ProxmoxVECloudConfig {
         Ok(self
             .user_data
             .as_ref()
-            .map(|user_data| user_data.hostname.clone()))
+            .and_then(|user_data| user_data.hostname.clone())
+            .filter(|hostname| !hostname.is_empty()))
     }
 
     fn ssh_keys(&self) -> Result<Vec<PublicKey>> {
