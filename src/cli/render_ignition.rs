@@ -161,6 +161,10 @@ mod tests {
         let json: serde_json::Value = serde_json::from_str(&raw).unwrap();
         assert_eq!(json["passwd"]["users"][0]["name"], "core");
         assert_eq!(
+            json["passwd"]["users"][0]["groups"],
+            serde_json::json!(["wheel"])
+        );
+        assert_eq!(
             json["passwd"]["users"][0]["passwordHash"],
             "$6$rounds=10000$salt$hash"
         );
