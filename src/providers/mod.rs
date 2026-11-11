@@ -320,12 +320,12 @@ pub trait MetadataProvider {
         Ok(())
     }
 
-    /// Write an Ignition config fragment that configures the platform user
-    /// (admin username, SSH keys, and optional password hash, sourced from this
-    /// provider) into `output_dir` as `user.ign`. Skips writing if no admin
-    /// username is available, or if the user would have neither SSH keys nor a
-    /// password.
-    fn write_user_ignition_fragment(&self, output_dir: &str) -> Result<()> {
+    /// Write an Ignition config fragment that configures the platform user with
+    /// the supplied supplementary groups and provider-sourced admin username,
+    /// SSH keys, and optional password hash into `output_dir` as `user.ign`.
+    /// Skips writing if no admin username is available, or if the user would
+    /// have neither SSH keys nor a password.
+    fn write_user_ignition_fragment(&self, output_dir: &str, groups: Vec<String>) -> Result<()> {
         let Some(username) = self
             .admin_username()
             .context("failed to query admin username from provider")?
@@ -351,7 +351,7 @@ pub trait MetadataProvider {
         }
 
         let path = Path::new(output_dir).join("user.ign");
-        IgnitionConfig::user_fragment(username, ssh_keys, password_hash).write_to(&path)?;
+        IgnitionConfig::user_fragment(username, groups, ssh_keys, password_hash).write_to(&path)?;
         slog_scope::info!("wrote platform-user ignition fragment"; "path" => path.display().to_string());
         Ok(())
     }
