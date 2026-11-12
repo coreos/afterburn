@@ -28,6 +28,9 @@ pub struct CliRenderIgnition {
     /// Do not write the platform user fragment file
     #[arg(long)]
     disable_user_fragment: bool,
+    /// Supplementary group for the platform user
+    #[arg(long = "user-group", value_name = "group")]
+    user_groups: Vec<String>,
 }
 
 impl CliRenderIgnition {
@@ -63,7 +66,7 @@ impl CliRenderIgnition {
 
         if platform_user {
             metadata
-                .write_user_ignition_fragment(&self.render_ignition_dir)
+                .write_user_ignition_fragment(&self.render_ignition_dir, self.user_groups)
                 .context("generating platform-user ignition fragment")?;
         }
 
@@ -142,6 +145,45 @@ mod tests {
     }
 
     #[test]
+    fn test_user_groups_from_cli() {
+        for (group_args, expected_groups) in [
+            (vec![], vec![]),
+            (
+                vec!["--user-group", "wheel", "--user-group", "sudo"],
+                vec!["wheel", "sudo"],
+            ),
+        ] {
+            let mut args = vec![
+                "render-ignition",
+                "--provider",
+                "azure",
+                "--render-ignition-dir",
+                "/tmp/fragments",
+            ];
+            args.extend(group_args);
+            let cli = CliRenderIgnition::try_parse_from(args).unwrap();
+            assert_eq!(cli.user_groups, expected_groups);
+
+            let tmp = tempfile::tempdir().unwrap();
+            let provider = FakeProvider {
+                admin_username: Some("testuser".into()),
+                admin_password_hash: Some("$6$rounds=10000$salt$hash".into()),
+                ..Default::default()
+            };
+            provider
+                .write_user_ignition_fragment(tmp.path().to_str().unwrap(), cli.user_groups)
+                .unwrap();
+
+            let raw = fs::read_to_string(tmp.path().join("user.ign")).unwrap();
+            let json: serde_json::Value = serde_json::from_str(&raw).unwrap();
+            assert_eq!(
+                json["passwd"]["users"][0]["groups"],
+                serde_json::json!(expected_groups)
+            );
+        }
+    }
+
+    #[test]
     fn test_write_user_ignition_fragment_includes_password_hash() {
         let tmp = tempfile::tempdir().unwrap();
         let dir = tmp.path().to_str().unwrap();
@@ -155,11 +197,17 @@ mod tests {
             ..Default::default()
         };
 
-        provider.write_user_ignition_fragment(dir).unwrap();
+        provider
+            .write_user_ignition_fragment(dir, vec!["wheel".into(), "sudo".into()])
+            .unwrap();
 
         let raw = fs::read_to_string(tmp.path().join("user.ign")).unwrap();
         let json: serde_json::Value = serde_json::from_str(&raw).unwrap();
         assert_eq!(json["passwd"]["users"][0]["name"], "core");
+        assert_eq!(
+            json["passwd"]["users"][0]["groups"],
+            serde_json::json!(["wheel", "sudo"])
+        );
         assert_eq!(
             json["passwd"]["users"][0]["passwordHash"],
             "$6$rounds=10000$salt$hash"
@@ -180,7 +228,7 @@ mod tests {
             ..Default::default()
         };
 
-        provider.write_user_ignition_fragment(dir).unwrap();
+        provider.write_user_ignition_fragment(dir, vec![]).unwrap();
         assert!(!tmp.path().join("user.ign").exists());
     }
 
@@ -194,7 +242,7 @@ mod tests {
             ..Default::default()
         };
 
-        provider.write_user_ignition_fragment(dir).unwrap();
+        provider.write_user_ignition_fragment(dir, vec![]).unwrap();
         assert!(!tmp.path().join("user.ign").exists());
     }
 }
