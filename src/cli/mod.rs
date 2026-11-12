@@ -246,6 +246,7 @@ mod tests {
             "/tmp/fragments",
             "--disable-hostname-fragment",
             "--disable-user-fragment",
+            "--disable-sshd-fragment",
         ]
         .iter()
         .map(ToString::to_string)
