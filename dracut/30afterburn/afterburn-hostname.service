@@ -16,6 +16,7 @@ ConditionKernelCommandLine=|ignition.platform.id=oraclecloud
 ConditionKernelCommandLine=|ignition.platform.id=outscale
 ConditionKernelCommandLine=|ignition.platform.id=proxmoxve
 ConditionKernelCommandLine=|ignition.platform.id=scaleway
+ConditionKernelCommandLine=|ignition.platform.id=stackit
 ConditionKernelCommandLine=|ignition.platform.id=upcloud
 ConditionKernelCommandLine=|ignition.platform.id=vultr
 
