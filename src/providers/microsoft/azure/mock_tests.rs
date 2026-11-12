@@ -410,3 +410,78 @@ fn test_imds_fetch_admin_username_empty_body() {
     // Whitespace-only payload should be treated as "no admin username".
     assert_eq!(username, None);
 }
+
+#[test]
+fn test_imds_disable_password_authentication() {
+    let mut server = mockito::Server::new();
+    let _m_version = mock_fab_version(&mut server);
+    let client = retry::Client::try_new()
+        .unwrap()
+        .max_retries(0)
+        .mock_base_url(server.url());
+    let provider = azure::Azure::with_client(Some(client)).unwrap();
+    let endpoint = "/metadata/instance/compute/osProfile/disablePasswordAuthentication?api-version=2021-02-01&format=text";
+
+    for (body, expected) in [("true", Some(true)), (" false\n", Some(false)), ("", None)] {
+        let mock = server
+            .mock("GET", endpoint)
+            .match_header("Metadata", "true")
+            .with_body(body)
+            .create();
+        assert_eq!(
+            provider.disable_password_authentication().unwrap(),
+            expected
+        );
+        mock.assert();
+        mock.remove();
+    }
+
+    let mock = server.mock("GET", endpoint).with_status(404).create();
+    assert_eq!(provider.disable_password_authentication().unwrap(), None);
+    mock.assert();
+    mock.remove();
+
+    let mock = server
+        .mock("GET", endpoint)
+        .with_body("not-a-boolean")
+        .create();
+    let err = provider.disable_password_authentication().unwrap_err();
+    assert!(format!("{err:#}").contains("disablePasswordAuthentication"));
+    mock.assert();
+    mock.remove();
+
+    let mock = server.mock("GET", endpoint).with_status(500).create();
+    assert!(provider.disable_password_authentication().is_err());
+    mock.assert();
+}
+
+#[test]
+fn test_imds_password_authentication_renders_sshd_fragment() {
+    let mut server = mockito::Server::new();
+    let _m_version = mock_fab_version(&mut server);
+    let mock = server
+        .mock(
+            "GET",
+            "/metadata/instance/compute/osProfile/disablePasswordAuthentication?api-version=2021-02-01&format=text",
+        )
+        .match_header("Metadata", "true")
+        .with_body("false")
+        .create();
+    let client = retry::Client::try_new()
+        .unwrap()
+        .max_retries(0)
+        .mock_base_url(server.url());
+    let provider = azure::Azure::with_client(Some(client)).unwrap();
+    let tmp = tempfile::tempdir().unwrap();
+
+    provider
+        .write_sshd_ignition_fragment(tmp.path().to_str().unwrap())
+        .unwrap();
+    mock.assert();
+    let raw = std::fs::read_to_string(tmp.path().join("sshd.ign")).unwrap();
+    let json: serde_json::Value = serde_json::from_str(&raw).unwrap();
+    assert_eq!(
+        json["storage"]["files"][0]["contents"]["source"],
+        "data:,PasswordAuthentication%20yes%0A"
+    );
+}

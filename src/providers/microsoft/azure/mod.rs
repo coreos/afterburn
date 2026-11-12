@@ -352,6 +352,30 @@ impl Azure {
         }
     }
 
+    fn fetch_disable_password_authentication(&self) -> Result<Option<bool>> {
+        const URL: &str = "metadata/instance/compute/osProfile/disablePasswordAuthentication?api-version=2021-02-01&format=text";
+        let url = format!("{}/{}", Self::metadata_endpoint(), URL);
+
+        let value = self
+            .client
+            .clone()
+            .return_on_404(true)
+            .header(
+                HeaderName::from_static("metadata"),
+                HeaderValue::from_static("true"),
+            )
+            .get(retry::Raw, url)
+            .send::<String>()
+            .context("failed to query IMDS for disablePasswordAuthentication")?;
+
+        match value.as_deref().map(str::trim) {
+            None | Some("") => Ok(None),
+            Some("true") => Ok(Some(true)),
+            Some("false") => Ok(Some(false)),
+            Some(_) => anyhow::bail!("invalid IMDS disablePasswordAuthentication value"),
+        }
+    }
+
     fn fetch_ssh_keys(&self) -> Result<Vec<PublicKey>> {
         const URL: &str = "metadata/instance/compute/publicKeys?api-version=2021-02-01";
         let url = format!("{}/{}", Self::metadata_endpoint(), URL);
@@ -421,6 +445,10 @@ impl MetadataProvider for Azure {
         config::read_ovf_admin_password()?
             .map(|password| config::hash_admin_password(&password))
             .transpose()
+    }
+
+    fn disable_password_authentication(&self) -> Result<Option<bool>> {
+        self.fetch_disable_password_authentication()
     }
 
     fn ssh_keys(&self) -> Result<Vec<PublicKey>> {

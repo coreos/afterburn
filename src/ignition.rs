@@ -50,7 +50,7 @@ impl IgnitionConfig {
                     mode: 0o644,
                     overwrite: true,
                     contents: FileContents {
-                        source: hostname_data_uri(hostname),
+                        source: data_uri(hostname),
                     },
                 }],
             }),
@@ -83,6 +83,31 @@ impl IgnitionConfig {
                     password_hash,
                 }],
             }),
+        }
+    }
+
+    /// Build a fragment that configures SSH password authentication.
+    pub(crate) fn sshd_fragment(disabled: bool) -> Self {
+        let contents = if disabled {
+            "PasswordAuthentication no\nKbdInteractiveAuthentication no\n"
+        } else {
+            "PasswordAuthentication yes\n"
+        };
+        IgnitionConfig {
+            ignition: IgnitionMeta {
+                version: IGNITION_VERSION.to_string(),
+            },
+            storage: Some(Storage {
+                files: vec![StorageFile {
+                    path: "/etc/ssh/sshd_config.d/20-afterburn.conf".into(),
+                    mode: 0o644,
+                    overwrite: true,
+                    contents: FileContents {
+                        source: data_uri(contents),
+                    },
+                }],
+            }),
+            passwd: None,
         }
     }
 
@@ -144,9 +169,9 @@ pub(crate) struct PasswdUser {
     pub password_hash: Option<String>,
 }
 
-fn hostname_data_uri(hostname: &str) -> String {
+fn data_uri(contents: &str) -> String {
     let encoded =
-        percent_encoding::utf8_percent_encode(hostname, percent_encoding::NON_ALPHANUMERIC)
+        percent_encoding::utf8_percent_encode(contents, percent_encoding::NON_ALPHANUMERIC)
             .to_string();
     format!("data:,{encoded}")
 }
@@ -343,11 +368,8 @@ mod tests {
 
     #[test]
     fn test_hostname_data_uri() {
-        assert_eq!(hostname_data_uri("core1"), "data:,core1");
-        assert_eq!(
-            hostname_data_uri("my-vm.internal"),
-            "data:,my%2Dvm%2Einternal"
-        );
+        assert_eq!(data_uri("core1"), "data:,core1");
+        assert_eq!(data_uri("my-vm.internal"), "data:,my%2Dvm%2Einternal");
     }
 
     #[test]
@@ -362,7 +384,7 @@ mod tests {
                     mode: 0o644,
                     overwrite: true,
                     contents: FileContents {
-                        source: hostname_data_uri("myvm"),
+                        source: data_uri("myvm"),
                     },
                 }],
             }),
