@@ -15,6 +15,7 @@ Minor changes:
 - Reuse the existing HTTP client when building PATCH, PUT, and POST requests
 - Azure: Read the admin password from OVF `UserPassword` when rendering the platform-user Ignition fragment
 - Azure: Support configurable platform-user groups via `--user-group`
+- Azure: Render an SSH daemon Ignition fragment from the IMDS password authentication setting
 - DigitalOcean: Add the `DIGITALOCEAN_INSTANCE_ID` attribute
 - ProxmoxVE: Accept user-data without a `hostname` key
 

@@ -239,6 +239,10 @@ pub trait MetadataProvider {
         Ok(None)
     }
 
+    fn disable_password_authentication(&self) -> Result<Option<bool>> {
+        Ok(None)
+    }
+
     fn ssh_keys(&self) -> Result<Vec<PublicKey>> {
         warn!("ssh-keys requested, but not supported on this platform");
         Ok(vec![])
@@ -354,6 +358,23 @@ pub trait MetadataProvider {
         let path = Path::new(output_dir).join("user.ign");
         IgnitionConfig::user_fragment(username, groups, ssh_keys, password_hash).write_to(&path)?;
         slog_scope::info!("wrote platform-user ignition fragment"; "path" => path.display().to_string());
+        Ok(())
+    }
+
+    /// Write an Ignition fragment configuring SSH password authentication when
+    /// the provider supplies a setting.
+    fn write_sshd_ignition_fragment(&self, output_dir: &str) -> Result<()> {
+        let Some(disabled) = self
+            .disable_password_authentication()
+            .context("failed to query SSH password authentication from provider")?
+        else {
+            warn!("SSH password authentication setting not available from this provider");
+            return Ok(());
+        };
+
+        let path = Path::new(output_dir).join("sshd.ign");
+        IgnitionConfig::sshd_fragment(disabled).write_to(&path)?;
+        slog_scope::info!("wrote sshd ignition fragment"; "path" => path.display().to_string());
         Ok(())
     }
 
