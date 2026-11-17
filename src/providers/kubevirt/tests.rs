@@ -398,3 +398,58 @@ fn test_no_duplicate_routes_nocloud_v2() {
     .expect("cannot parse config");
     assert_no_duplicate_routes(&config);
 }
+
+/// cloud-init accepts NoCloud network-config either at the top level or
+/// nested under a top-level `network` key (as in the KubeVirt user guide).
+/// Both forms must produce the same interfaces and initrd kargs.
+fn assert_network_key_wrapped(fixture: &str) {
+    let fixture = Path::new(fixture);
+    let config = KubeVirtCloudConfig::try_new(fixture, NetworkConfigurationFormat::NoCloud)
+        .expect("cannot parse config");
+
+    let interfaces = config.networks().expect("cannot get interfaces");
+    assert_eq!(interfaces.len(), 1, "Unexpected interfaces: {interfaces:?}");
+    let eth0 = &interfaces[0];
+    assert_eq!(eth0.name.as_deref(), Some("eth0"));
+    assert_eq!(
+        eth0.ip_addresses,
+        vec![IpNetwork::from_str("192.168.1.10/24").unwrap()]
+    );
+    assert_eq!(eth0.nameservers, vec![IpAddr::from_str("8.8.8.8").unwrap()]);
+
+    let kargs = config.rd_network_kargs().unwrap();
+    assert_eq!(
+        kargs.as_deref(),
+        Some("ip=192.168.1.10:::255.255.255.0::eth0:off rd.route=0.0.0.0/0:192.168.1.1 nameserver=8.8.8.8")
+    );
+
+    // The same config without the `network` wrapper gives the same result.
+    let raw = std::fs::read_to_string(fixture.join("network-config")).unwrap();
+    let wrapped: serde_yaml::Value = serde_yaml::from_str(&raw).unwrap();
+    let unwrapped_dir = tempfile::tempdir().unwrap();
+    std::fs::copy(
+        fixture.join("meta-data"),
+        unwrapped_dir.path().join("meta-data"),
+    )
+    .unwrap();
+    std::fs::write(
+        unwrapped_dir.path().join("network-config"),
+        serde_yaml::to_string(&wrapped["network"]).unwrap(),
+    )
+    .unwrap();
+    let unwrapped =
+        KubeVirtCloudConfig::try_new(unwrapped_dir.path(), NetworkConfigurationFormat::NoCloud)
+            .expect("cannot parse unwrapped config");
+    assert_eq!(unwrapped.networks().unwrap(), interfaces);
+    assert_eq!(unwrapped.rd_network_kargs().unwrap(), kargs);
+}
+
+#[test]
+fn test_network_key_wrapped_nocloud_v1() {
+    assert_network_key_wrapped("./tests/fixtures/kubevirt/nocloud_network_key_v1");
+}
+
+#[test]
+fn test_network_key_wrapped_nocloud_v2() {
+    assert_network_key_wrapped("./tests/fixtures/kubevirt/nocloud_network_key_v2");
+}

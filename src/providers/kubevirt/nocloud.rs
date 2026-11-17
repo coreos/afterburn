@@ -217,8 +217,18 @@ impl NetworkConfig {
         let reader = BufReader::new(file);
 
         // serde_yaml can parse both YAML and JSON
-        let config: NetworkConfig =
+        let mut value: serde_yaml::Value =
             serde_yaml::from_reader(reader).context("failed to parse network-config file")?;
+
+        // Like cloud-init, accept the config either at the top level or nested
+        // under a top-level `network` key. Without this, a wrapped config would
+        // silently deserialize as an empty v2 config.
+        if let Some(inner) = value.get("network").filter(|v| v.is_mapping()) {
+            value = inner.clone();
+        }
+
+        let config: NetworkConfig =
+            serde_yaml::from_value(value).context("failed to parse network-config file")?;
 
         Ok(Some(config))
     }
