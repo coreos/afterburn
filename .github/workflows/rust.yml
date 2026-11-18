@@ -7,6 +7,7 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+    types: [opened, synchronize, reopened, labeled, unlabeled]
 permissions:
   contents: read
 
@@ -96,6 +97,36 @@ jobs:
         run: cargo fmt -- --check -l
       - name: cargo clippy (warnings)
         run: cargo clippy --all-targets -- -D warnings
+  check-lockfile-downgrades:
+    name: Check for Cargo.lock downgrades
+    runs-on: ubuntu-latest
+    if: >-
+      github.event_name == 'pull_request' &&
+      !contains(github.event.pull_request.labels.*.name, 'allow-downgrade')
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+      - name: Check for base lockfile
+        id: base-lockfile
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          set -euo pipefail
+          git fetch --depth=1 origin "+refs/heads/$BASE_REF:refs/remotes/origin/$BASE_REF"
+          if git cat-file -e "origin/$BASE_REF:Cargo.lock"; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No Cargo.lock on base branch; skipping downgrade check."
+          fi
+      - name: Check for dependency downgrades
+        id: downgrades
+        if: steps.base-lockfile.outputs.exists == 'true'
+        # Temporary fork until https://github.com/Garfield1002/cargo-no-downgrades/issues/1 is fixed.
+        uses: prestist/cargo-no-downgrades@e34e8a1894e48119667dbe321f2059d60aaf4d6e # fix-downgrade-detection
+      - name: Explain intentional downgrade override
+        if: failure() && steps.downgrades.outcome == 'failure'
+        run: |
+          echo "If the downgrade is intentional, add the 'allow-downgrade' label and document the reason in the PR description."
   tests-other-channels:
     name: Tests, unstable toolchain
     runs-on: ubuntu-latest
