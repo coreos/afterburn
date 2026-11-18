@@ -44,19 +44,12 @@ pub struct IBMClassicProvider {
 /// Partial object for `meta_data.json`
 #[derive(Debug, Deserialize)]
 pub struct MetaDataJSON {
-    /// Fully-Qualified Domain Name (FQDN).
-    #[serde(rename = "hostname")]
-    #[allow(dead_code)]
-    pub fqdn: String,
     /// Local hostname.
     #[serde(rename = "name")]
     pub local_hostname: String,
     /// Instance ID (UUID).
     #[serde(rename = "uuid")]
     pub instance_id: String,
-    /// SSH public keys.
-    #[allow(dead_code)]
-    pub public_keys: HashMap<String, String>,
 }
 
 /// Partial object for `network_data.json`
@@ -79,13 +72,6 @@ pub struct NetLinkJSON {
 /// JSON entry in `networks` array.
 #[derive(Debug, Deserialize)]
 pub struct NetNetworkJSON {
-    /// Unique network ID.
-    #[allow(dead_code)]
-    pub id: String,
-    /// Network type (e.g. `ipv4`)
-    #[serde(rename = "type")]
-    #[allow(dead_code)]
-    pub kind: String,
     /// Reference to the underlying interface (see `NetLinkJSON.id`)
     pub link: String,
     /// IP network address.
@@ -362,7 +348,6 @@ mod tests {
 
         assert!(!parsed.instance_id.is_empty());
         assert!(!parsed.local_hostname.is_empty());
-        assert!(!parsed.public_keys.is_empty());
     }
 
     #[test]
