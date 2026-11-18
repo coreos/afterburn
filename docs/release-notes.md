@@ -16,6 +16,7 @@ Minor changes:
 - Azure: Read the admin password from OVF `UserPassword` when rendering the platform-user Ignition fragment
 - Azure: Support configurable platform-user groups via `--user-group`
 - DigitalOcean: Add the `DIGITALOCEAN_INSTANCE_ID` attribute
+- KubeVirt: Accept NoCloud network-config nested under a top-level `network` key
 - ProxmoxVE: Accept user-data without a `hostname` key
 
 Packaging changes:
