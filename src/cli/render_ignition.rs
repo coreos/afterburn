@@ -31,6 +31,9 @@ pub struct CliRenderIgnition {
     /// Supplementary group for the platform user
     #[arg(long = "user-group", value_name = "group")]
     user_groups: Vec<String>,
+    /// Do not write the SSH daemon fragment file
+    #[arg(long)]
+    disable_sshd_fragment: bool,
 }
 
 impl CliRenderIgnition {
@@ -49,8 +52,9 @@ impl CliRenderIgnition {
 
         let hostname = !self.disable_hostname_fragment;
         let platform_user = !self.disable_user_fragment;
+        let sshd = !self.disable_sshd_fragment;
 
-        if !hostname && !platform_user {
+        if !hostname && !platform_user && !sshd {
             warn!("render-ignition: all fragments disabled, nothing to do");
             return Ok(());
         }
@@ -68,6 +72,12 @@ impl CliRenderIgnition {
             metadata
                 .write_user_ignition_fragment(&self.render_ignition_dir, self.user_groups)
                 .context("generating platform-user ignition fragment")?;
+        }
+
+        if sshd {
+            metadata
+                .write_sshd_ignition_fragment(&self.render_ignition_dir)
+                .context("generating sshd ignition fragment")?;
         }
 
         Ok(())
@@ -89,6 +99,7 @@ mod tests {
         admin_username: Option<String>,
         ssh_keys: Vec<&'static str>,
         admin_password_hash: Option<String>,
+        disable_password_authentication: Option<bool>,
     }
 
     impl MetadataProvider for FakeProvider {
@@ -109,6 +120,9 @@ mod tests {
         }
         fn admin_password_hash(&self) -> Result<Option<String>> {
             Ok(self.admin_password_hash.clone())
+        }
+        fn disable_password_authentication(&self) -> Result<Option<bool>> {
+            Ok(self.disable_password_authentication)
         }
     }
 
@@ -244,5 +258,60 @@ mod tests {
 
         provider.write_user_ignition_fragment(dir, vec![]).unwrap();
         assert!(!tmp.path().join("user.ign").exists());
+    }
+
+    #[test]
+    fn test_write_sshd_ignition_fragment() {
+        for (disabled, contents) in [
+            (
+                true,
+                "data:,PasswordAuthentication%20no%0AKbdInteractiveAuthentication%20no%0A",
+            ),
+            (false, "data:,PasswordAuthentication%20yes%0A"),
+        ] {
+            let tmp = tempfile::tempdir().unwrap();
+            let provider = FakeProvider {
+                disable_password_authentication: Some(disabled),
+                ..Default::default()
+            };
+
+            provider
+                .write_sshd_ignition_fragment(tmp.path().to_str().unwrap())
+                .unwrap();
+
+            let raw = fs::read_to_string(tmp.path().join("sshd.ign")).unwrap();
+            let json: serde_json::Value = serde_json::from_str(&raw).unwrap();
+            let file = &json["storage"]["files"][0];
+            assert_eq!(json["ignition"]["version"], "3.0.0");
+            assert_eq!(file["path"], "/etc/ssh/sshd_config.d/20-afterburn.conf");
+            assert_eq!(file["mode"], 0o644);
+            assert_eq!(file["overwrite"], true);
+            assert_eq!(file["contents"]["source"], contents);
+        }
+    }
+
+    #[test]
+    fn test_write_sshd_ignition_fragment_skipped_when_absent() {
+        let tmp = tempfile::tempdir().unwrap();
+        FakeProvider::default()
+            .write_sshd_ignition_fragment(tmp.path().to_str().unwrap())
+            .unwrap();
+        assert!(!tmp.path().join("sshd.ign").exists());
+    }
+
+    #[test]
+    fn test_all_fragments_disabled() {
+        let cli = CliRenderIgnition::try_parse_from([
+            "render-ignition",
+            "--provider",
+            "azure",
+            "--render-ignition-dir",
+            "/unused",
+            "--disable-hostname-fragment",
+            "--disable-user-fragment",
+            "--disable-sshd-fragment",
+        ])
+        .unwrap();
+        cli.run().unwrap();
     }
 }

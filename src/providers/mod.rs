@@ -239,6 +239,10 @@ pub trait MetadataProvider {
         Ok(None)
     }
 
+    fn disable_password_authentication(&self) -> Result<Option<bool>> {
+        Ok(None)
+    }
+
     fn ssh_keys(&self) -> Result<Vec<PublicKey>> {
         warn!("ssh-keys requested, but not supported on this platform");
         Ok(vec![])
@@ -354,6 +358,32 @@ pub trait MetadataProvider {
         let path = Path::new(output_dir).join("user.ign");
         IgnitionConfig::user_fragment(username, groups, ssh_keys, password_hash).write_to(&path)?;
         slog_scope::info!("wrote platform-user ignition fragment"; "path" => path.display().to_string());
+        Ok(())
+    }
+
+    /// Write an Ignition fragment configuring SSH password authentication when
+    /// the provider supplies a setting.
+    fn write_sshd_ignition_fragment(&self, output_dir: &str) -> Result<()> {
+        let Some(disabled) = self
+            .disable_password_authentication()
+            .context("failed to query SSH password authentication from provider")?
+        else {
+            warn!("SSH password authentication setting not available from this provider");
+            return Ok(());
+        };
+
+        let contents = if disabled {
+            // Some distros do not disable keyboard-interactive authentication, which
+            // may still allow password-based logins with only `PasswordAuthentication no`
+            // so we disable it here too.
+            // See https://github.com/coreos/afterburn/pull/1326#issuecomment-6877216290.
+            "PasswordAuthentication no\nKbdInteractiveAuthentication no\n"
+        } else {
+            "PasswordAuthentication yes\n"
+        };
+        let path = Path::new(output_dir).join("sshd.ign");
+        IgnitionConfig::sshd_fragment(contents).write_to(&path)?;
+        slog_scope::info!("wrote sshd ignition fragment"; "path" => path.display().to_string());
         Ok(())
     }
 
