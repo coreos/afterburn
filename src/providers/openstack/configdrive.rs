@@ -39,9 +39,6 @@ pub struct MetadataEc2JSON {
 pub struct MetadataOpenstackJSON {
     /// Instance ID.
     pub uuid: Option<String>,
-    /// Availability zone.
-    #[allow(dead_code)]
-    pub availability_zone: Option<String>,
     /// Local hostname.
     pub hostname: Option<String>,
     /// SSH public keys.
@@ -242,7 +239,6 @@ mod tests {
             parsed.hostname.unwrap_or_default(),
             "abai-fcos-afterburn-test"
         );
-        assert_eq!(parsed.availability_zone.unwrap_or_default(), "nova");
         assert_eq!(
             parsed.uuid.unwrap_or_default(),
             "b3c7f4de-da0b-44ae-a42c-fa3806b61d7f"
